@@ -28,6 +28,7 @@ enum Category {
 
 model User {
   id            Int      @id @default(autoincrement()) @map("사용자 아이디")
+  loginId   String  @unique
   settingId     Int      @map("설정 아이디")
   username      String?  @map("사용자명")
   password      String?  @map("비밀번호")
