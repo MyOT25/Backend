@@ -17,7 +17,7 @@ const swaggerDefinition = {
 
 const options = {
   swaggerDefinition,
-  apis: ["./src/routes/*.js", "./src/controllers/*.js"], // 주석으로 API 문서 작성할 경로
+  apis: ["./src/controllers/*.js"], // 주석으로 API 문서 작성할 경로
 };
 
 const swaggerSpec = swaggerJSDoc(options);

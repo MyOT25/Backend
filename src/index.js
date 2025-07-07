@@ -1,12 +1,15 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
-import errorHandler from "./middlewares/errorHandler.js";
-import testRoutes from "./routes/testRoutes.js";
-import swaggerUi from "swagger-ui-express";
-import swaggerSpec from "./utils/swagger.js"; // 경로 확인
 import passport from "passport";
-import "./config/passport.js"; // 위에 만든 passport 설정 파일 import
+import swaggerUi from "swagger-ui-express";
+
+import errorHandler from "./middlewares/errorHandler.js";
+import swaggerSpec from "./config/swagger.js";
+import testRouter from "./controllers/testController.js"; // 변경된 경로
+import userRouter from "./controllers/userController.js"; // (있다면 추가)
+
+import "./config/passport.js"; // passport 설정
 
 dotenv.config();
 
@@ -35,18 +38,21 @@ app.use(express.static("public"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Swagger UI 경로 설정
+app.use(passport.initialize());
+
+// Swagger 문서
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.use(passport.initialize()); // passport 초기화
+// 라우터 연결 (controllers에서 라우터 export하는 구조)
+app.use("/api/test", testRouter);
+app.use("/api/user", userRouter); // 필요에 따라 추가
 
+// 기본 라우트
 app.get("/", (req, res) => {
-  res.send("Hello World!");
+  res.send("Hello MyOT!");
 });
 
-app.use("/api/test", testRoutes); // 테스트 라우트 연결
-
-// 전역 오류 처리 미들웨어
+// 공통 예외 처리 미들웨어
 app.use(errorHandler);
 
 app.listen(port, () => {

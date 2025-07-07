@@ -1,7 +1,9 @@
 import jwt from "jsonwebtoken";
-import asyncHandler from "../utils/asyncHandler.js";
-import db from "../utils/db.config.js"; // 유저 찾을 DB 로직
-import { UnauthorizedError } from "../utils/CustomError.js";
+import asyncHandler from "../middlewares/asyncHandler.js";
+import db from "../db.config.js"; // 유저 찾을 DB 로직
+import { UnauthorizedError } from "../middlewares/CustomError.js";
+
+import express from "express";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = "7d"; // 만료 기간 설정
@@ -26,3 +28,10 @@ export const loginUser = asyncHandler(async (req, res) => {
     user: { id: user.id, email: user.email, nickname: user.nickname },
   });
 });
+
+
+const router = express.Router();
+
+router.post("/login", loginUser);
+
+export default router;

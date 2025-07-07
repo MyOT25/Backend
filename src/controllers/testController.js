@@ -1,7 +1,11 @@
-import asyncHandler from "../utils/asyncHandler.js";
-import { DuplicateUserEmailError } from "../utils/CustomError.js";
+// controllers/testController.js
+import express from "express";
+import asyncHandler from "../middlewares/asyncHandler.js";
 
-export const testError = asyncHandler(async (req, res) => {
-  // 공통 예외 처리 테스트용 에러 발생
-  throw new DuplicateUserEmailError("이메일이 이미 사용 중입니다.", { email: "test@example.com" });
-});
+const router = express.Router();
+
+router.get("/ping", asyncHandler(async (req, res) => {
+  res.success({ message: "pong!" });
+}));
+
+export default router;
