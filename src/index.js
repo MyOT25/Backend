@@ -10,13 +10,20 @@ import testRouter from "./controllers/testController.js"; // 변경된 경로
 import userRouter from "./controllers/userController.js"; // (있다면 추가)
 
 import "./config/passport.js"; // passport 설정
+// 임시로 
+// import "./config/passport.js"; // Passport JWT 설정 
+
+import { getUserTicketbook } from "./controllers/post.controller.js";
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+
 // 공통 응답 헬퍼 등록
+
+// ✅ 공통 응답 헬퍼 등록
 app.use((req, res, next) => {
   res.success = (success) => {
     return res.json({ resultType: "SUCCESS", error: null, success });
@@ -33,11 +40,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// ✅ 미들웨어
 app.use(cors());
 app.use(express.static("public"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
 app.use(passport.initialize());
 
 // Swagger 문서
@@ -48,6 +55,14 @@ app.use("/api/test", testRouter);
 app.use("/api/user", userRouter); // 필요에 따라 추가
 
 // 기본 라우트
+
+app.use(passport.initialize()); // JWT 인증 활성화
+
+// Swagger UI 경로 설정
+
+app.get("/api/posts/ticketbook",getUserTicketbook);
+
+
 app.get("/", (req, res) => {
   res.send("Hello MyOT!");
 });
@@ -55,6 +70,12 @@ app.get("/", (req, res) => {
 // 공통 예외 처리 미들웨어
 app.use(errorHandler);
 
+
+// 전역 오류 처리 미들웨어
+app.use(errorHandler);
+
+// ✅ 서버 실행
 app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+  console.log(`🚀 Server running on http://localhost:${port}`);
+
 });
