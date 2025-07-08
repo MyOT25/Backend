@@ -186,14 +186,16 @@ model Seat {
 }
 
 model Community {
-  id           Int      @id
-  createdAt    DateTime?
-  name         String?
-  type         String?
+  id        Int      @id @default(autoincrement()) 
+  createdAt DateTime?
+  name      String?
+  type      String?
+  description  String?
 
-  userCommunities    UserCommunity[]
+  userCommunities UserCommunity[]
   musicalCommunities MusicalCommunity[]
 }
+
 
 model Setting {
   id              Int      @id
