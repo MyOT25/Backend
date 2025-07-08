@@ -82,9 +82,9 @@ model Post {
 
   comments       Comment[]
   postLikes      PostLike[]
-  tags           Tag[]
   images         Image[]
   reviews        Review[]
+  tags   Tag[] @relation("PostTags")
 }
 
 model Comment {
@@ -209,12 +209,15 @@ model Setting {
 
 model Tag {
   id     Int    @id @default(autoincrement())
-  postId    Int
-  name   String? @unique  
-  type      String?
+  name   String @unique
+  type   String?
 
-  post      Post    @relation(fields: [postId], references: [id])
+  posts  Post[] @relation("PostTags") 
 }
+
+
+
+
 
 model Image {
   id        Int     @id
