@@ -210,7 +210,7 @@ model Setting {
 model Tag {
   id        Int     @id
   postId    Int
-  name      String?
+  name   String? @unique  
   type      String?
 
   post      Post    @relation(fields: [postId], references: [id])
