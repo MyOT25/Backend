@@ -1,0 +1,134 @@
+import prisma from "../../prisma/client.js";
+
+import express from "express";
+import {
+  getPostByActorName,
+  handleCreatePost,
+  fetchPostList,
+  fetchPostDetail,
+  handleAddComment,
+} from "../services/postService.js";
+
+import {
+  getPostTags,
+  getPostImages,
+  getPostComments,
+} from "../repositories/postRepositories.js";
+
+const router = express.Router();
+
+router.get("/filter", async (req, res) => {
+  try {
+    const { actorName } = req.query;
+    const posts = await getPostByActorName(actorName);
+    res.status(200).json({ success: true, posts });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+router.post("/", async (req, res) => {
+  try {
+    const { userId, communityId, title, content, category, tagNames, images } =
+      req.body;
+    const postId = await handleCreatePost({
+      userId,
+      communityId,
+      title,
+      content,
+      category,
+      tagNames,
+      images,
+    });
+    res.status(201).json({
+      success: true,
+      message: "게시글이 성공적으로 등록되었습니다.",
+      postId,
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+router.get("/", async (req, res) => {
+  try {
+    const { id: communityId, category, sort } = req.query;
+    const posts = await fetchPostList({
+      communityId: parseInt(communityId),
+      category,
+      sort,
+    });
+    res.status(200).json({ success: true, posts });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+router.get("/communities/:communityId/posts/:postId", async (req, res) => {
+  try {
+    const communityId = parseInt(req.params.communityId);
+    const postId = parseInt(req.params.postId);
+
+    const post = await prisma.post.findFirst({
+      where: {
+        id: postId,
+        communityId: communityId,
+      },
+      include: {
+        user: { select: { nickname: true } },
+      },
+    });
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "해당 커뮤니티에 이 게시글이 없습니다.",
+      });
+    }
+
+    const tags = await getPostTags(postId);
+    const images = await getPostImages(postId);
+    const comments = await getPostComments(postId);
+
+    res.status(200).json({
+      success: true,
+      post: {
+        postId: post.id,
+        title: post.title,
+        content: post.content,
+        author: post.user.nickname,
+        category: post.category,
+        createdAt: post.createdAt,
+        likeCount: post.likeCount,
+        tags,
+        images,
+        comments,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+router.post("/:postId/comments", async (req, res) => {
+  try {
+    const postId = parseInt(req.params.postId);
+    const { userId, communityId, content, isAnonymous } = req.body;
+    const commentId = await handleAddComment({
+      postId,
+      userId,
+      communityId,
+      content,
+      isAnonymous,
+    });
+    res.status(201).json({
+      success: true,
+      message: "댓글이 성공적으로 등록되었습니다.",
+      commentId,
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+export default router;
