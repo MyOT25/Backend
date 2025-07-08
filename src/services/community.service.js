@@ -6,7 +6,7 @@ import {
   checkDuplicateCommunityName,
   insertCommunityRequest,
   findUnjoinedCommunities,
-} from "../repositories/communityRepository.js";
+} from "../repositories/community.repository.js";
 
 // 공연 커뮤니티 가입 / 탈퇴
 export const handleJoinOrLeaveCommunity = async (

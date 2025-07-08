@@ -10,7 +10,7 @@ import {
   getPostImages,
   getPostComments,
   insertComment,
-} from "../repositories/postRepositories.js";
+} from "../repositories/post.repositories.js";
 
 // 배우 이름으로 후기 필터링
 export const getPostByActorName = async (actorName) => {

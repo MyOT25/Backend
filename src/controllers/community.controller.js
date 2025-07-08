@@ -5,7 +5,7 @@ import {
   handleJoinOrLeaveCommunity,
   handleCommunityRequest,
   fetchAvailableCommunities,
-} from "../services/communityService.js";
+} from "../services/community.service.js";
 
 const router = express.Router();
 

@@ -33,13 +33,13 @@ export const deleteUserFromCommunity = async (userId, communityId) => {
 
 // 커뮤니티 이름 중복 확인
 export const checkDuplicateCommunityName = async (name) => {
-  console.log("🔍 checking for community name:", name); // 로그 추가
+  console.log("checking for community name:", name);
   const exists = await prisma.community.findFirst({
     where: {
       name,
     },
   });
-  console.log("📌 exists:", exists); // 로그 추가
+  console.log(" exists:", exists);
   return !!exists;
 };
 

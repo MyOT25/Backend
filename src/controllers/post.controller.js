@@ -7,13 +7,13 @@ import {
   fetchPostList,
   fetchPostDetail,
   handleAddComment,
-} from "../services/postService.js";
+} from "../services/post.service.js";
 
 import {
   getPostTags,
   getPostImages,
   getPostComments,
-} from "../repositories/postRepositories.js";
+} from "../repositories/post.repositories.js";
 
 const router = express.Router();
 
