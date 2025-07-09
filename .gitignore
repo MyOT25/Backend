@@ -138,4 +138,4 @@ dist
 
 node_modules/
 src/generated/prisma/
-.prisma/seed.js
+.prisma/seed.j.
