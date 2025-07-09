@@ -3,7 +3,7 @@ import * as questionRepository from '../repositories/question.repository.js';
 export const registerQuestion = async (userId, title, content) => {
   // ✨ 추가 비즈니스 로직이 있다면 여기에 작성
   // 예: 질문 수가 하루 10개 이상이면 차단 등
-  console.log('등록 요청 들어옴', userId, title, content); 
+
   const newQuestion = await questionRepository.createQuestion({
     userId,
     title,

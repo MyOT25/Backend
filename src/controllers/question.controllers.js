@@ -1,6 +1,6 @@
 import express from 'express';
 import * as questionService from '../services/question.service.js';
-import pkg from '@prisma/client';
+import pkg from '../generated/prisma/index.js';
 const { PrismaClient } = pkg;
 
 const prisma = new PrismaClient();

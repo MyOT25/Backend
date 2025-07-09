@@ -1,10 +1,10 @@
-import pkg from '@prisma/client';
+import pkg from '../generated/prisma/index.js';
 const { PrismaClient } = pkg;
 
-export const prisma = new PrismaClient();
+const prisma = new PrismaClient();
 
 export const createQuestion = async ({ userId, title, content }) => {
-  console.log(Object.keys(prisma));
+
   return await prisma.question.create({
     data: {
       userId,

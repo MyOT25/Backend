@@ -6,12 +6,14 @@ import swaggerUi from "swagger-ui-express";
 
 import errorHandler from "./middlewares/errorHandler.js";
 import swaggerSpec from "./config/swagger.js";
-import testRouter from "./controllers/testController.js"; // 변경된 경로
-import userRouter from "./controllers/userController.js"; // (있다면 추가)
+//import testRouter from "./controllers/testController.js"; // 변경된 경로
+//import userRouter from "./controllers/userController.js"; // (있다면 추가)
 
 import questionRouter from "./controllers/question.controllers.js";
 
 import "./config/passport.js"; // passport 설정
+
+
 
 dotenv.config();
 
@@ -46,8 +48,8 @@ app.use(passport.initialize());
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // 라우터 연결 (controllers에서 라우터 export하는 구조)
-app.use("/api/test", testRouter);
-app.use("/api/user", userRouter); // 필요에 따라 추가
+// app.use("/api/test", testRouter);
+// app.use("/api/user", userRouter); // 필요에 따라 추가
 app.use('/api/questions', questionRouter);
 
 // 기본 라우트

@@ -245,7 +245,8 @@ exports.Prisma.CommunityScalarFieldEnum = {
   id: 'id',
   createdAt: 'createdAt',
   name: 'name',
-  type: 'type'
+  type: 'type',
+  description: 'description'
 };
 
 exports.Prisma.SettingScalarFieldEnum = {
@@ -257,7 +258,6 @@ exports.Prisma.SettingScalarFieldEnum = {
 
 exports.Prisma.TagScalarFieldEnum = {
   id: 'id',
-  postId: 'postId',
   name: 'name',
   type: 'type'
 };
@@ -416,7 +416,8 @@ exports.Prisma.SeatOrderByRelevanceFieldEnum = {
 
 exports.Prisma.CommunityOrderByRelevanceFieldEnum = {
   name: 'name',
-  type: 'type'
+  type: 'type',
+  description: 'description'
 };
 
 exports.Prisma.TagOrderByRelevanceFieldEnum = {
