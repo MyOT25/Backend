@@ -19,4 +19,13 @@ export class UnauthorizedError extends Error {
   }
 }
 
-// ... 필요한 만큼 추가 정의 가능
+export class BadRequestError extends Error {
+  errorCode = "C001";
+
+  constructor(reason = "잘못된 요청입니다", data = null) {
+    super(reason);
+    this.reason = reason;
+    this.data = data;
+    this.statusCode = 400;
+  }
+}

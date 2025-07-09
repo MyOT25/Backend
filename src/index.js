@@ -6,8 +6,9 @@ import swaggerUi from "swagger-ui-express";
 
 import errorHandler from "./middlewares/errorHandler.js";
 import swaggerSpec from "./config/swagger.js";
-import testRouter from "./controllers/testController.js"; // 변경된 경로
-import userRouter from "./controllers/userController.js"; // (있다면 추가)
+import testRouter from "./controllers/test.controller.js"; // 변경된 경로
+import userRouter from "./controllers/user.controller.js"; // (있다면 추가)
+import authRouter from "./controllers/auth.controller.js";
 
 import "./config/passport.js"; // passport 설정
 
@@ -46,6 +47,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // 라우터 연결 (controllers에서 라우터 export하는 구조)
 app.use("/api/test", testRouter);
 app.use("/api/user", userRouter); // 필요에 따라 추가
+app.use("/api", authRouter);
 
 // 기본 라우트
 app.get("/", (req, res) => {
