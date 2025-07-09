@@ -16,10 +16,15 @@ import communityRouter from './controllers/community.controller.js';
 
 import postRouter from './controllers/post.controller.js';
 
-import { getTabs } from './controllers/tab.controller.js';
-import { getActor } from './controllers/actor.controller.js';
+import authRouter from './controllers/auth.controller.js';
+
+// import testRouter from "./controllers/testController.js"; // 변경된 경로
+// import userRouter from "./controllers/userController.js"; // (있다면 추가)
 
 import './config/passport.js'; // passport 설정
+
+import { getTabs } from './controllers/tab.controller.js';
+import { getActor } from './controllers/actor.controller.js';
 
 dotenv.config();
 
@@ -62,6 +67,10 @@ app.get('/api/communities/:communityId/tabs', getTabs);
 
 // 배우 정보 받아오기 API
 app.get('/api/communities/:communityId/actor', getActor);
+
+app.use('/api/test', testRouter);
+app.use('/api/user', userRouter); // 필요에 따라 추가
+app.use('/api', authRouter);
 
 app.use('/api/questions', questionRouter);
 // app.use("/api/test", testRouter);
