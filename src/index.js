@@ -10,6 +10,7 @@ import testRouter from './controllers/test.controller.js'; // 변경된 경로
 import userRouter from './controllers/user.controller.js'; // (있다면 추가)
 
 import { getTabs } from './controllers/tab.controller.js';
+import { getActor } from './controllers/actor.controller.js';
 
 import './config/passport.js'; // passport 설정
 
@@ -51,6 +52,9 @@ app.use('/api/user', userRouter); // 필요에 따라 추가
 
 // 탭 목록 조회 API
 app.get('/api/communities/:communityId/tabs', getTabs);
+
+// 배우 정보 받아오기 API
+app.get('/api/communities/:communityId/actor', getActor);
 
 // 기본 라우트
 app.get('/', (req, res) => {
