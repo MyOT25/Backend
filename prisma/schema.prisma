@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -22,10 +21,10 @@ enum Category {
 model User {
   id            Int      @id @default(autoincrement())
   loginId       String   @unique
-  settingId     Int
+  settingId     Int      @unique
   username      String?
   password      String?
-  email         String?
+  email         String  @unique
   nickname      String?
   profileImage  String?
   createdAt     DateTime?
@@ -34,6 +33,7 @@ model User {
   birthDate     DateTime?
   isSubscribed  Boolean?
 
+  setting        Setting   @relation(fields: [settingId], references: [id])
   posts         Post[]
   comments      Comment[]
   reviews       Review[]
@@ -45,7 +45,6 @@ model User {
   follows       Follow[] @relation("Following")
   followers     Follow[] @relation("Follower")
 
-  setting        Setting   @relation(fields: [settingId], references: [id])
   multiProfiles  MultiProfile[]
   userCommunities UserCommunity[]
 }
@@ -198,12 +197,12 @@ model Community {
 
 
 model Setting {
-  id              Int      @id
+  id              Int      @id  @default(autoincrement())
   useBackground   Boolean?
   useProfilePhoto Boolean?
   allowRepost     Boolean?
 
-  users           User[]
+  users           User?    @relation()
   posts           Post[]
 }
 
