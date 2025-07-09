@@ -9,8 +9,8 @@ import swaggerSpec from "./config/swagger.js";
 
 import testRouter from "./controllers/test.controller.js"; // 변경된 경로
 import userRouter from "./controllers/user.controller.js"; // (있다면 추가)
-import authRouter from "./controllers/auth.controller.js";
 
+//import authRouter from "./controllers/auth.controller.js";
 // import testRouter from "./controllers/testController.js"; // 변경된 경로
 // import userRouter from "./controllers/userController.js"; // (있다면 추가)
 
@@ -19,10 +19,7 @@ import communityRouter from "./controllers/community.controller.js";
 import postRouter from "./controllers/post.controller.js";
 import authRouter from "./controllers/auth.controller.js";
 
-
 import "./config/passport.js"; // passport 설정
-
-
 
 dotenv.config();
 
@@ -62,13 +59,11 @@ app.use("/api/test", testRouter);
 app.use("/api/user", userRouter); // 필요에 따라 추가
 app.use("/api", authRouter);
 
-
-app.use('/api/questions', questionRouter);
+app.use("/api/questions", questionRouter);
 // app.use("/api/test", testRouter);
 // app.use("/api/user", userRouter); // 필요에 따라 추가
 app.use("/api/community", communityRouter);
 app.use("/api/posts", postRouter);
-
 
 // 기본 라우트
 app.get("/", (req, res) => {
