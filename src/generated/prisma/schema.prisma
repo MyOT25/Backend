@@ -1,0 +1,385 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum ImageOrVideo {
+  image
+  video
+}
+
+enum Category {
+  highlight
+  media
+  memorybook
+}
+
+model User {
+  id           Int       @id @default(autoincrement()) @map("사용자 아이디")
+  loginId      String    @unique
+  settingId    Int       @map("설정 아이디")
+  username     String?   @map("사용자명")
+  password     String?   @map("비밀번호")
+  email        String?   @map("이메일")
+  nickname     String?   @map("닉네임")
+  profileImage String?   @map("프로필 이미지")
+  createdAt    DateTime? @map("가입일")
+  updatedAt    DateTime? @map("수정일")
+  bio          String?   @map("자기소개")
+  birthDate    DateTime? @map("생년월일")
+  isSubscribed Boolean?  @map("구독 여부")
+
+  posts         Post[]
+  comments      Comment[]
+  reviews       Review[]
+  postLikes     PostLike[]
+  questions     Question[]
+  answers       Answer[]
+  subscriptions Subscribe[]
+  viewings      ViewingRecord[]
+  follows       Follow[]        @relation("Following")
+  followers     Follow[]        @relation("Follower")
+
+  setting Setting @relation(fields: [settingId], references: [id])
+
+  multiProfiles   MultiProfile[]
+  userCommunities UserCommunity[]
+
+  @@map("유저")
+}
+
+model Post {
+  id             Int           @id @default(autoincrement()) @map("글 아이디")
+  userId         Int           @map("사용자 아이디")
+  settingId      Int           @map("설정 아이디")
+  communityId    Int           @map("커뮤니티 아이디")
+  title          String?       @map("글 제목")
+  content        String?       @map("글 내용")
+  category       String?       @map("카테고리")
+  like           String?       @map("글 공감(좋아요)")
+  likeCount      Int?          @map("글 좋아요 수")
+  commentCount   Int?          @map("댓글 수")
+  createdAt      DateTime?     @map("글 작성일")
+  updatedAt      DateTime?     @map("글 수정일")
+  repost         Int?          @map("리포스트")
+  bookmark       Int?          @map("북마크")
+  communityGroup String?       @map("커뮤니티 그룹(커뮤니티명)")
+  viewCount      Int?          @map("조회수")
+  tag            String?       @map("글 태그")
+  mediaType      ImageOrVideo? @map("이미지/영상")
+  isPinned       Boolean?      @map("고정글 여부")
+  tabCategory    Category?     @map("탭 분류(하이라이트,미디어,메모리북?)")
+  isShared       Boolean?      @map("글 공유 상태(노출 여부)")
+  musicalId      Int?          @map("뮤지컬 아이디")
+  actorId        Int?          @map("배우 아이디")
+  extraField     String?       @map("Field")
+
+  user    User    @relation(fields: [userId], references: [id])
+  actor   Actor?  @relation(fields: [actorId], references: [id])
+  setting Setting @relation(fields: [settingId], references: [id])
+
+  comments  Comment[]
+  postLikes PostLike[]
+  tags      Tag[]
+  images    Image[]
+  reviews   Review[]
+
+  @@map("게시글")
+}
+
+model Comment {
+  id          Int       @id @default(autoincrement()) @map("댓글 아이디")
+  postId      Int       @map("글 아이디2")
+  userId      Int       @map("사용자 아이디2")
+  settingId   Int       @map("설정 아이디")
+  communityId Int       @map("커뮤니티 아이디")
+  content     String?   @map("댓글 내용")
+  createdAt   DateTime? @map("댓글 작성날짜")
+  anonymous   Boolean?  @map("익명 여부")
+
+  post Post @relation(fields: [postId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("댓글")
+}
+
+model Review {
+  id          Int       @id @default(autoincrement()) @map("리뷰 아이디")
+  userId      Int       @map("사용자 아이디")
+  settingId   Int       @map("설정 아이디")
+  theaterId   Int       @map("극장 고유 ID")
+  key         Int       @map("Key")
+  postId      Int?      @map("글 아이디")
+  content     String?   @map("리뷰 내용")
+  rating      Int?      @map("별점")
+  spoiler     Boolean?  @map("스포일러 여부")
+  createdAt   DateTime? @map("리뷰 작성일")
+  updatedAt   DateTime? @map("리뷰 수정일")
+  liked       String?   @map("리뷰 좋아요")
+  likeCount   Int?      @map("리뷰 좋아요 수")
+  comment     String?   @map("리뷰 댓글")
+  imageUrl    String?   @map("리뷰 이미지")
+  reported    Boolean?  @map("신고")
+  watchDate   DateTime? @map("관람날짜")
+  watchTime   DateTime? @map("관람시간")
+  extraField2 String?   @map("Field2")
+
+  user User  @relation(fields: [userId], references: [id])
+  post Post? @relation(fields: [postId], references: [id], map: "review_postId_fkey")
+
+  @@map("후기")
+}
+
+model Actor {
+  id          Int     @id @default(autoincrement()) @map("배우 아이디")
+  postId      Int     @map("글 아이디")
+  userId      Int     @map("사용자 아이디")
+  settingId   Int     @map("설정 아이디")
+  communityId Int     @map("커뮤니티 아이디")
+  key         Int     @map("Key")
+  name        String? @map("이름")
+  image       String? @map("배우 사진")
+  profile     String? @map("자기소개/간단한 프로필")
+  snsLink     String? @map("SNS 링크")
+  fk          Int?    @map("FK")
+
+  posts    Post[]
+  castings Casting[]
+
+  @@map("배우")
+}
+
+model Musical {
+  id        Int       @id @map("뮤지컬 아이디")
+  theaterId Int       @map("극장 고유 ID")
+  name      String?   @map("뮤지컬이름")
+  startDate DateTime? @map("시작날짜")
+  endDate   DateTime? @map("종료날짜")
+  poster    String?   @map("뮤지컬 포스터")
+  createdAt DateTime? @map("생성시간")
+  updatedAt DateTime? @map("수정시간")
+
+  theater     Theater            @relation(fields: [theaterId], references: [id])
+  castings    Casting[]
+  viewings    ViewingRecord[]
+  communities MusicalCommunity[]
+
+  @@map("뮤지컬")
+}
+
+model Theater {
+  id          Int       @id @map("극장 고유 ID")
+  regionId    Int       @map("지역 고유 ID")
+  name        String?   @map("극장 이름")
+  seatCount   Int?      @map("총 좌석수")
+  roadAddress String?   @map("도로명 주소")
+  createdAt   DateTime? @map("생성시간")
+  updatedAt   DateTime? @map("수정시간")
+
+  region   Region    @relation(fields: [regionId], references: [id])
+  musicals Musical[]
+  seats    Seat[]
+
+  @@map("공연장")
+}
+
+model Seat {
+  id         Int     @id @map("좌석 고유 ID")
+  theaterId  Int     @map("극장 고유 ID")
+  locationId Int     @map("위치 고유 ID")
+  field      String? @map("Field")
+  field2     String? @map("Field2")
+  field3     String? @map("Field3")
+  floor      String? @map("층수")
+
+  theater Theater @relation(fields: [theaterId], references: [id])
+
+  @@map("극장 내 좌석")
+}
+
+model Community {
+  id        Int       @id @map("커뮤니티 아이디")
+  createdAt DateTime? @map("생성시간")
+  name      String?   @map("커뮤니티 그룹(커뮤니티명)")
+  type      String?   @map("커뮤니티 타입")
+
+  userCommunities    UserCommunity[]
+  musicalCommunities MusicalCommunity[]
+
+  @@map("커뮤니티")
+}
+
+model Setting {
+  id              Int      @id @map("설정 아이디")
+  useBackground   Boolean? @map("배경 설정 여부")
+  useProfilePhoto Boolean? @map("프로필사진 설정 여부")
+  allowRepost     Boolean? @map("리포스트 허용 여부")
+
+  users User[]
+  posts Post[]
+
+  @@map("설정")
+}
+
+model Tag {
+  id     Int     @id @map("태그 아이디")
+  postId Int     @map("글 아이디")
+  name   String? @map("태그명")
+  type   String? @map("태그 타입")
+
+  post Post @relation(fields: [postId], references: [id])
+
+  @@map("태그")
+}
+
+model Image {
+  id      Int     @id @map("이미지 아이디")
+  postId  Int     @map("글 아이디")
+  url     String? @map("이미지 경로")
+  caption String? @map("이미지 설명")
+
+  post Post @relation(fields: [postId], references: [id])
+
+  @@map("이미지")
+}
+
+model Subscribe {
+  id        Int       @id @map("구독 아이디")
+  userId    Int       @map("사용자 아이디")
+  startDate DateTime? @map("구독 시작일")
+  endDate   DateTime? @map("구독 종료일")
+  isActive  Boolean?  @map("구독 활성 상태")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("구독")
+}
+
+model Follow {
+  id          Int       @id @map("팔로우 아이디")
+  followerId  Int       @map("팔로워 아이디")
+  followingId Int       @map("팔로잉 아이디")
+  createdAt   DateTime? @map("팔로우 생성일")
+
+  follower  User @relation("Follower", fields: [followerId], references: [id])
+  following User @relation("Following", fields: [followingId], references: [id])
+
+  @@map("팔로우")
+}
+
+model ViewingRecord {
+  id        Int       @id @map("관극기록 아이디")
+  userId    Int       @map("사용자 아이디")
+  musicalId Int       @map("뮤지컬 아이디")
+  date      DateTime? @map("관극일")
+  seat      String?   @map("좌석 정보")
+
+  user    User    @relation(fields: [userId], references: [id])
+  musical Musical @relation(fields: [musicalId], references: [id])
+
+  @@map("관극기록")
+}
+
+model PostLike {
+  id      Int       @id @default(autoincrement())
+  postId  Int
+  userId  Int
+  likedAt DateTime? @default(now())
+
+  post Post @relation(fields: [postId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("사용자가 게시글에 누른 좋아요")
+}
+
+model Question {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  title     String
+  content   String
+  createdAt DateTime? @default(now())
+
+  user    User     @relation(fields: [userId], references: [id])
+  answers Answer[]
+
+  @@map("질문")
+}
+
+model Answer {
+  id         Int       @id @default(autoincrement())
+  questionId Int
+  userId     Int
+  content    String
+  createdAt  DateTime? @default(now())
+
+  question Question @relation(fields: [questionId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@map("답변")
+}
+
+model Region {
+  id       Int       @id @default(autoincrement())
+  name     String
+  theaters Theater[]
+
+  @@map("지역")
+}
+
+model Casting {
+  id        Int     @id @default(autoincrement())
+  musicalId Int
+  actorId   Int
+  role      String?
+
+  musical Musical @relation(fields: [musicalId], references: [id])
+  actor   Actor   @relation(fields: [actorId], references: [id])
+
+  @@map("뮤지컬_배우 중개테이블")
+}
+
+model UserCommunity {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  communityId Int
+  joinedAt    DateTime? @default(now())
+
+  user      User      @relation(fields: [userId], references: [id])
+  community Community @relation(fields: [communityId], references: [id])
+
+  @@map("유저_커뮤니티 중개테이블")
+}
+
+model MusicalCommunity {
+  id          Int @id @default(autoincrement())
+  musicalId   Int
+  communityId Int
+
+  musical   Musical   @relation(fields: [musicalId], references: [id])
+  community Community @relation(fields: [communityId], references: [id])
+
+  @@map("뮤지컬 커뮤니티")
+}
+
+model MultiProfile {
+  id       Int     @id @default(autoincrement())
+  userId   Int
+  nickname String
+  image    String?
+  bio      String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("멀티프로필")
+}
