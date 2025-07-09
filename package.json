@@ -3,6 +3,9 @@
   "type": "module",
   "version": "1.0.0",
   "main": "index.js",
+  "prisma": {
+  "seed": "node prisma/seed.js"
+},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js"
@@ -19,6 +22,7 @@
     "mysql2": "^3.14.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "prisma": "^6.11.1",
     "swagger-autogen": "^2.23.7",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
