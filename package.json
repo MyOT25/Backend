@@ -3,6 +3,9 @@
   "type": "module",
   "version": "1.0.0",
   "main": "index.js",
+  "prisma": {
+  "seed": "node prisma/seed.js"
+},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js"
@@ -12,6 +15,7 @@
   "description": "",
   "dependencies": {
     "@prisma/client": "^6.11.1",
+
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.0.1",
