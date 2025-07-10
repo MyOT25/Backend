@@ -190,6 +190,7 @@ export const getPostComments = async (postId) => {
   }));
 };
 
+/*
 export const insertComment = async ({
   postId,
   userId,
@@ -204,6 +205,70 @@ export const insertComment = async ({
       communityId,
       content,
       isAnonymous,
+    },
+  });
+
+  return comment;
+};
+*/
+
+export const togglePostLike = async ({ postId, userId }) => {
+  const existing = await prisma.postLike.findFirst({
+    where: { postId, userId },
+  });
+
+  if (existing) {
+    await prisma.postLike.delete({
+      where: { id: existing.id },
+    });
+
+    await prisma.post.update({
+      where: { id: postId },
+      data: {
+        likeCount: {
+          decrement: 1,
+        },
+      },
+    });
+
+    return "좋아요가 취소되었습니다.";
+  } else {
+    await prisma.postLike.create({
+      data: {
+        postId,
+        userId,
+      },
+    });
+
+    await prisma.post.update({
+      where: { id: postId },
+      data: {
+        likeCount: {
+          increment: 1,
+        },
+      },
+    });
+
+    return "좋아요가 등록되었습니다.";
+  }
+};
+
+export const insertComment = async ({
+  postId,
+  userId,
+  communityId,
+  content,
+  isAnonymous,
+}) => {
+  const comment = await prisma.comment.create({
+    data: {
+      postId,
+      userId,
+      communityId,
+      settingId,
+      content,
+      anonymous: isAnonymous ?? false,
+      createdAt: new Date(),
     },
   });
 

@@ -7,6 +7,7 @@ import {
   fetchPostList,
   fetchPostDetail,
   handleAddComment,
+  handleToggleLike,
 } from "../services/post.service.js";
 
 import {
@@ -110,6 +111,7 @@ router.get("/communities/:communityId/posts/:postId", async (req, res) => {
   }
 });
 
+/*
 router.post("/:postId/comments", async (req, res) => {
   try {
     const postId = parseInt(req.params.postId);
@@ -127,6 +129,45 @@ router.post("/:postId/comments", async (req, res) => {
       commentId,
     });
   } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+*/
+
+router.post("/:postId/like", async (req, res) => {
+  try {
+    const postId = parseInt(req.params.postId);
+    const { userId } = req.body;
+
+    const message = await handleToggleLike({ postId, userId });
+
+    res.status(200).json({ success: true, message });
+  } catch (err) {
+    console.error(err); // ✅ 오류 추적용
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+router.post("/:postId/comments", async (req, res) => {
+  try {
+    const postId = parseInt(req.params.postId);
+    const { userId, communityId, content, isAnonymous } = req.body;
+
+    const commentId = await handleAddComment({
+      postId,
+      userId,
+      communityId,
+      content,
+      isAnonymous,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "댓글이 성공적으로 등록되었습니다.",
+      commentId,
+    });
+  } catch (err) {
+    console.error(err);
     res.status(400).json({ success: false, message: err.message });
   }
 });
