@@ -1,37 +1,81 @@
-// prisma/seed.js
-import { PrismaClient } from '../src/generated/prisma/index.js'; // 경로 주의
+import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
+
 async function main() {
-  // 1. Setting 더미 데이터 생성
+  console.log("🌱 Seed 시작");
+
+  // ✅ Region 생성 (autoincrement 있으므로 id 지정 필요 X)
+  const region = await prisma.region.create({
+    data: { name: "서울" },
+  });
+
+  // ✅ Setting 생성 (id 수동 지정)
   const setting = await prisma.setting.create({
     data: {
-        id: 11,
+      id: 1, // 👈 직접 지정
       useBackground: false,
       useProfilePhoto: true,
       allowRepost: true,
     },
   });
 
-  // 2. User 더미 생성 (userId가 1이 되게 하려면 clean 상태거나 truncate 했어야 함)
-  await prisma.user.create({
+  // ✅ User 생성 (autoincrement 있음)
+  const user = await prisma.user.create({
     data: {
-      loginId: 'dummyuser',
-      password: '1234',
-      username: '더미',
-      email: 'dummy@cc.com',
-      nickname: '더미유저!',
-      settingId: setting.id,
+      loginId: "testuser",
+      username: "테스트유저",
+      password: "password123",
+      email: "test@example.com",
+      nickname: "Testy",
+      birthDate: new Date("2000-01-01"),
+      isSubscribed: true,
+      settingId: setting.id, // 관계 연결
+    },
+  });
+  console.log("👤 유저 생성 완료");
+
+  // ✅ Theater 생성 (id 수동 지정)
+  const theater = await prisma.theater.create({
+    data: {
+      id: 1, // 👈 직접 지정
+      name: "예술의전당",
+      seatCount: 1000,
+      roadAddress: "서울시 서초구 남부순환로 2406",
+      regionId: region.id,
     },
   });
 
-  console.log('✅ 더미 유저 삽입 완료!');
+  // ✅ Musical 생성 (id 수동 지정)
+  const musical = await prisma.musical.create({
+    data: {
+      id: 1, // 👈 직접 지정
+      name: "엘리자벳",
+      startDate: new Date("2025-05-01"),
+      endDate: new Date("2025-06-30"),
+      poster: "https://example.com/poster1.jpg",
+      theaterId: theater.id,
+    },
+  });
+
+  // ✅ ViewingRecord 생성 (id 수동 지정)
+  await prisma.viewingRecord.create({
+    data: {
+      id: 1, // 👈 직접 지정
+      userId: user.id,
+      musicalId: musical.id,
+      date: new Date("2025-05-15"),
+      seat: "A열 12번",
+    },
+  });
+
+  console.log("🎉 Seed 완료");
 }
 
+// 🛠️ 실행
 main()
-  .catch((e) => {
-    console.error(e);
+  .then(() => prisma.$disconnect())
+  .catch((err) => {
+    console.error("🔥 Seed 중 오류 발생:", err);
+    prisma.$disconnect();
     process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
   });

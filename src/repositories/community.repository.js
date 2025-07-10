@@ -1,4 +1,4 @@
-import prisma from "../../prisma/client.js";
+import prisma from "../config/prismaClient.js";
 
 // 커뮤니티 가입 여부 확인하기
 export const checkUserInCommunity = async (userId, communityId) => {

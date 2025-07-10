@@ -1,4 +1,4 @@
-import prisma from "../../prisma/client.js";
+import prisma from "../config/prismaClient.js";
 import {
   checkUserInCommunity,
   insertUserToCommunity,

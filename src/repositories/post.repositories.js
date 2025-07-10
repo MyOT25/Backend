@@ -1,4 +1,4 @@
-import prisma from "../../prisma/client.js";
+import prisma from "../config/prismaClient.js";
 
 //  배우 이름으로 후기 필터 조회
 export const findPostsByActorName = async (actorName) => {
