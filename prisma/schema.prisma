@@ -21,10 +21,10 @@ enum Category {
 model User {
   id            Int      @id @default(autoincrement())
   loginId       String   @unique
-  settingId     Int
+  settingId     Int      @unique
   username      String?
   password      String?
-  email         String?
+  email         String  @unique
   nickname      String?
   profileImage  String?
   createdAt     DateTime?
@@ -33,6 +33,7 @@ model User {
   birthDate     DateTime?
   isSubscribed  Boolean?
 
+  setting        Setting   @relation(fields: [settingId], references: [id])
   posts         Post[]
   comments      Comment[]
   reviews       Review[]
@@ -44,7 +45,6 @@ model User {
   follows       Follow[] @relation("Following")
   followers     Follow[] @relation("Follower")
 
-  setting        Setting   @relation(fields: [settingId], references: [id])
   multiProfiles  MultiProfile[]
   userCommunities UserCommunity[]
 }
@@ -81,9 +81,9 @@ model Post {
 
   comments       Comment[]
   postLikes      PostLike[]
-  tags           Tag[]
   images         Image[]
   reviews        Review[]
+  tags   Tag[] @relation("PostTags")
 }
 
 model Comment {
@@ -189,36 +189,41 @@ enum SeatType {
 }
 
 model Community {
-  id           Int      @id
-  createdAt    DateTime?
-  name         String?
-  type         String?
+  id        Int      @id @default(autoincrement()) 
+  createdAt DateTime?
+  name      String?
+  type      String?
+  description  String?
 
-  userCommunities    UserCommunity[]
+  userCommunities UserCommunity[]
   musicalCommunities MusicalCommunity[]
 }
 
+
 model Setting {
-  id              Int      @id
+  id              Int      @id  @default(autoincrement())
   useBackground   Boolean?
   useProfilePhoto Boolean?
   allowRepost     Boolean?
 
-  users           User[]
+  users           User?    @relation()
   posts           Post[]
 }
 
 model Tag {
-  id        Int     @id
-  postId    Int
-  name      String?
-  type      String?
+  id     Int    @id @default(autoincrement())
+  name   String @unique
+  type   String?
 
-  post      Post    @relation(fields: [postId], references: [id])
+  posts  Post[] @relation("PostTags") 
 }
 
+
+
+
+
 model Image {
-  id        Int     @id
+  id     Int    @id @default(autoincrement())
   postId    Int
   url       String?
   caption   String?

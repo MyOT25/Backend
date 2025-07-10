@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-
 const prisma = new PrismaClient();
 
 async function main() {
@@ -7,9 +6,7 @@ async function main() {
 
   // ✅ Region 생성 (autoincrement 있으므로 id 지정 필요 X)
   const region = await prisma.region.create({
-    data: {
-      name: "서울",
-    },
+    data: { name: "서울" },
   });
 
   // ✅ Setting 생성 (id 수동 지정)
@@ -32,9 +29,10 @@ async function main() {
       nickname: "Testy",
       birthDate: new Date("2000-01-01"),
       isSubscribed: true,
-      settingId: setting.id,
+      settingId: setting.id, // 관계 연결
     },
   });
+  console.log("👤 유저 생성 완료");
 
   // ✅ Theater 생성 (id 수동 지정)
   const theater = await prisma.theater.create({
@@ -70,9 +68,10 @@ async function main() {
     },
   });
 
-  console.log("🌱 Seed 완료");
+  console.log("🎉 Seed 완료");
 }
 
+// 🛠️ 실행
 main()
   .then(() => prisma.$disconnect())
   .catch((err) => {
