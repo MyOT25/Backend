@@ -2,10 +2,16 @@ import prisma from "../../prisma/client.js";
 
 //  배우 이름으로 후기 필터 조회
 export const findPostsByActorName = async (actorName) => {
-  const tags = await prisma.tag.findMany({
-    where: {
-      name: actorName,
-    },
+  // 1. actorName에 해당하는 Tag 찾기
+  const tag = await prisma.tag.findUnique({
+    where: { name: actorName },
+  });
+
+  if (!tag) return [];
+
+  // 2. 해당 Tag ID로 PostTag 테이블에서 post 연결
+  const postTags = await prisma.postTag.findMany({
+    where: { tagId: tag.id },
     include: {
       post: {
         include: {
@@ -18,10 +24,11 @@ export const findPostsByActorName = async (actorName) => {
     },
   });
 
-  const posts = tags
-    .filter((tag) => tag.post !== null)
-    .map((tag) => {
-      const post = tag.post;
+  // 3. postTags → post로 매핑
+  const posts = postTags
+    .filter((pt) => pt.post !== null)
+    .map((pt) => {
+      const post = pt.post;
       return {
         postId: post.id,
         title: post.title,
