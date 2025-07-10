@@ -1,9 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-<<<<<<< HEAD
-  output   = "../src/generated/prisma"
-=======
->>>>>>> 9f904d2 (✨feat: 나의 티켓북 조회 기능 개발 (#3) , jwt 토큰 적용 전)
 }
 
 datasource db {
@@ -177,15 +173,19 @@ model Theater {
 }
 
 model Seat {
-  id           Int     @id
+  id           Int     @id @default(autoincrement())
   theaterId    Int
-  locationId   Int
-  field        String?
-  field2       String?
-  field3       String?
+  row          String  
+  column       Int 
+  seat_type    SeatType
   floor        String?
 
   theater      Theater @relation(fields: [theaterId], references: [id])
+  viewings     ViewingRecord[] // 이 좌석을 사용한 관극기록들 
+}
+enum SeatType {
+  VIP
+  일반석
 }
 
 model Community {
@@ -250,11 +250,15 @@ model ViewingRecord {
   id         Int     @id
   userId     Int
   musicalId  Int
-  date       DateTime?
-  seat       String?
-
+  seatId     Int? // 좌석 FK
+  date       DateTime? // 관극 날짜 
+  time       DateTime? // 관극 시간 
+  content    String?  // 관람 후기 
+  image_url  String? // 관극 사진 URL 
+  
   user       User    @relation(fields: [userId], references: [id])
   musical    Musical @relation(fields: [musicalId], references: [id])
+  seat       Seat?   @relation(fields: [seatId], references: [id])
 }
 
 model PostLike {

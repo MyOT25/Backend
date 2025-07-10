@@ -6,14 +6,14 @@ import swaggerUi from "swagger-ui-express";
 
 import errorHandler from "./middlewares/errorHandler.js";
 import swaggerSpec from "./config/swagger.js";
-import testRouter from "./controllers/testController.js"; // 변경된 경로
-import userRouter from "./controllers/userController.js"; // (있다면 추가)
+import testRouter from "./controllers/test.controller.js"; // 변경된 경로
+import userRouter from "./controllers/user.Controller.js"; // (있다면 추가)
 
 import "./config/passport.js"; // passport 설정
 // 임시로 
 // import "./config/passport.js"; // Passport JWT 설정 
 
-import { getUserTicketbook } from "./controllers/post.controller.js";
+import { getUserTicketbook,getMonthlySummary } from "./controllers/post.controller.js";
 
 dotenv.config();
 
@@ -61,6 +61,7 @@ app.use(passport.initialize()); // JWT 인증 활성화
 // Swagger UI 경로 설정
 
 app.get("/api/posts/ticketbook",getUserTicketbook);
+app.get("/api/posts/monthly-summary",getMonthlySummary);
 
 
 app.get("/", (req, res) => {
