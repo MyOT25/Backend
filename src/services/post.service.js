@@ -10,6 +10,7 @@ import {
   getPostImages,
   getPostComments,
   insertComment,
+  togglePostLike,
 } from "../repositories/post.repositories.js";
 
 // 배우 이름으로 후기 필터링
@@ -119,4 +120,11 @@ export const handleAddComment = async ({
   });
 
   return comment.id;
+};
+
+// 좋아요 등록
+
+export const handleToggleLike = async ({ postId, userId }) => {
+  const message = await togglePostLike({ postId, userId });
+  return message;
 };
