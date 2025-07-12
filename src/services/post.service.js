@@ -12,6 +12,9 @@ import {
   getPostComments,
   insertComment,
   togglePostLike,
+  updatePostById,
+  deletePostById,
+  getPostByIdForUpdate,
 } from "../repositories/post.repositories.js";
 export const getTicketbook = async (userId) => {
   console.log(Object.keys(prisma)); // 모델들 확인
@@ -131,6 +134,40 @@ export const handleCreatePost = async ({
   }
 
   return postId;
+};
+
+// 게시글 수정
+export const handleUpdatePost = async ({
+  postId,
+  userId,
+  title,
+  content,
+  category,
+  tagNames,
+  images,
+}) => {
+  const existingPost = await getPostByIdForUpdate(postId);
+
+  console.log("👉 [서비스] 기존 게시글 작성자 userId:", existingPost.userId);
+  console.log("👉 [서비스] 요청자가 보낸 userId:", userId);
+  if (!existingPost) throw new Error("존재하지 않는 게시글입니다.");
+  if (existingPost.userId !== userId) throw new Error("수정 권한이 없습니다.");
+
+  await updatePostById(postId, {
+    title,
+    content,
+    category,
+    tags: tagNames,
+  });
+};
+
+// 게시글 삭제
+export const handleDeletePost = async ({ postId, userId }) => {
+  const post = await getPostById(postId);
+  if (!post) throw new Error("존재하지 않는 게시글입니다.");
+  if (post.userId !== userId) throw new Error("삭제 권한이 없습니다.");
+
+  await deletePostById(postId);
 };
 
 // 게시글 목록 조회

@@ -147,6 +147,7 @@ export const getPostById = async (postId) => {
     category: post.category,
     createdAt: post.createdAt,
     likeCount: post.likeCount,
+    userId: post.userId,
   };
 };
 
@@ -273,4 +274,43 @@ export const insertComment = async ({
   });
 
   return comment;
+};
+
+export const updatePostById = async (
+  postId,
+  { title, content, category, images, tags }
+) => {
+  return await prisma.post.update({
+    where: { id: Number(postId) },
+    data: {
+      title,
+      content,
+      category,
+      images,
+      tags: {
+        set: [], // 기존 태그 초기화
+        connectOrCreate:
+          tags?.map((name) => ({
+            where: { name },
+            create: { name },
+          })) || [],
+      },
+    },
+  });
+};
+
+export const deletePostById = async (postId) => {
+  return await prisma.post.delete({
+    where: { id: Number(postId) },
+  });
+};
+
+export const getPostByIdForUpdate = async (postId) => {
+  return await prisma.post.findUnique({
+    where: { id: Number(postId) },
+    select: {
+      id: true,
+      userId: true,
+    },
+  });
 };
