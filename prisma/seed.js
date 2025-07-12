@@ -12,7 +12,6 @@ async function main() {
   // ✅ Setting 생성 (id 수동 지정)
   const setting = await prisma.setting.create({
     data: {
-      id: 1, // 👈 직접 지정
       useBackground: false,
       useProfilePhoto: true,
       allowRepost: true,
@@ -37,7 +36,6 @@ async function main() {
   // ✅ Theater 생성 (id 수동 지정)
   const theater = await prisma.theater.create({
     data: {
-      id: 1, // 👈 직접 지정
       name: "예술의전당",
       seatCount: 1000,
       roadAddress: "서울시 서초구 남부순환로 2406",
@@ -48,7 +46,6 @@ async function main() {
   // ✅ Musical 생성 (id 수동 지정)
   const musical = await prisma.musical.create({
     data: {
-      id: 1, // 👈 직접 지정
       name: "엘리자벳",
       startDate: new Date("2025-05-01"),
       endDate: new Date("2025-06-30"),
@@ -60,7 +57,6 @@ async function main() {
   // ✅ ViewingRecord 생성 (id 수동 지정)
   await prisma.viewingRecord.create({
     data: {
-      id: 1, // 👈 직접 지정
       userId: user.id,
       musicalId: musical.id,
       date: new Date("2025-05-15"),
