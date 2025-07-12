@@ -12,6 +12,9 @@ import {
   getPostComments,
   insertComment,
 } from "../repositories/post.repositories.js";
+
+/* 티켓북 조회 */
+
 export const getTicketbook = async (userId) => {
   console.log(Object.keys(prisma)); // 모델들 확인
   const viewings = await prisma.viewingRecord.findMany({
@@ -73,7 +76,74 @@ export const getMonthlySummary = async (userId, year, month) => {
     }));
   };
 
+/* 오늘의 관극 등록 
+*/ 
+export const createViewingRecord = async (userId, body) => {
+  const {
+    musicalId,
+    watchDate,
+    watchTime,
+    seat,
+    casts,
+    content,
+    rating,
+    imageUrls,
+  } = body;
 
+  // 좌석 upsert
+  const seatRecord = await prisma.seat.upsert({
+    where: {
+      theaterId_row_column: {
+        theaterId: seat.locationId,
+        row: seat.row,
+        column: seat.column,
+      },
+    },
+    update: {},
+    create: {
+      theaterId: seat.locationId,
+      row: seat.row,
+      column: seat.column,
+      seat_type: seat.seatType,
+    },
+  });
+
+  // 관극 기록 생성
+  const viewing = await prisma.viewingRecord.create({
+    data: {
+      userId,
+      musicalId,
+      seatId: seatRecord.id,
+      date: new Date(watchDate),
+      time: new Date(`${watchDate}T${watchTime}`),
+      content,
+      rating,
+    },
+  });
+
+  // 이미지 등록
+  if (imageUrls?.length) {
+    await prisma.viewingImage.createMany({
+      data: imageUrls.map((url) => ({
+        viewingId: viewing.id,
+        url,
+      })),
+    });
+  }
+
+  // 출연진 등록
+  if (casts?.length) {
+    await prisma.casting.createMany({
+      data: casts.map((c) => ({
+        musicalId,
+        actorId: c.actorId,
+        role: c.role,
+      })),
+    });
+  }
+
+  return viewing;
+};
 
 
 // 배우 이름으로 후기 필터링
@@ -184,4 +254,5 @@ export const handleAddComment = async ({
 
   return comment.id;
 };
+
 
