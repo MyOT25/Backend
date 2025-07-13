@@ -49,14 +49,21 @@ export const insertCommunityRequest = async ({
   name,
   description,
   type,
-  requestedAt,
+  musicalName,
+  recentPerformanceDate,
+  theaterName,
+  ticketLink,
 }) => {
   await prisma.community.create({
     data: {
       name,
       description,
       type,
-      createdAt: new Date(requestedAt),
+      createdAt: new Date(),
+      musicalName,
+      recentPerformanceDate: new Date(recentPerformanceDate),
+      theaterName,
+      ticketLink,
       userCommunities: {
         create: {
           user: {

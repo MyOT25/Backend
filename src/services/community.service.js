@@ -37,14 +37,16 @@ export const handleCommunityRequest = async ({
   name,
   description,
   type,
-  requestedAt,
+  musicalName,
+  recentPerformanceDate,
+  theaterName,
+  ticketLink,
 }) => {
   console.log("요청 받은 데이터:", {
     userId,
     name,
     description,
     type,
-    requestedAt,
   });
 
   console.log("checking for community name:", name);
@@ -58,7 +60,10 @@ export const handleCommunityRequest = async ({
     name,
     description,
     type,
-    requestedAt,
+    musicalName,
+    recentPerformanceDate,
+    theaterName,
+    ticketLink,
   });
 
   return "커뮤니티 신청이 완료되었습니다.";

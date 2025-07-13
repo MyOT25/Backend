@@ -25,13 +25,25 @@ router.post("/work/join", async (req, res) => {
 
 router.post("/request", async (req, res) => {
   try {
-    const { userId, name, description, type, requestedAt } = req.body;
+    const {
+      userId,
+      name,
+      description,
+      type,
+      musicalName,
+      recentPerformanceDate,
+      theaterName,
+      ticketLink,
+    } = req.body;
     const message = await handleCommunityRequest({
       userId,
       name,
       description,
       type,
-      requestedAt,
+      musicalName,
+      recentPerformanceDate,
+      theaterName,
+      ticketLink,
     });
     res.status(200).json({ success: true, message });
   } catch (err) {
