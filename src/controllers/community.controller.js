@@ -57,12 +57,19 @@ router.get("/list", async (req, res) => {
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
-        name: true,
+        //name: true,
         type: true,
         description: true,
         createdAt: true,
       },
     });
+
+    const formatted = communities.map((c) => ({
+      communityId: c.id,
+      communityName: "작품",
+      type: c.type,
+      createdAt: c.createdAt,
+    }));
 
     res.status(200).json({ success: true, communities });
   } catch (err) {
