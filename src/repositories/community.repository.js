@@ -103,3 +103,16 @@ export const findUnjoinedCommunities = async (userId) => {
 
   return communities;
 };
+
+// 모든 커뮤니티 목록 보기
+export const findAllCommunities = async () => {
+  return await prisma.community.findMany({
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      createdAt: true,
+    },
+  });
+};

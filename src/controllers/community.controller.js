@@ -70,17 +70,23 @@ router.get("/type/:userId", async (req, res) => {
   }
 });
 
-/*
 // 모든 커뮤니티 목록 보기
 router.get("/", async (req, res) => {
   try {
     const communities = await fetchAllCommunities();
 
-    const 
-  } catch (err) {}
-});
+    const formatted = communities.map((c) => ({
+      communityId: c.id,
+      communitiyName: c.name,
+      type: c.type,
+      createdAt: c.createdAt,
+    }));
 
-*/
+    res.status(200).json({ success: true, communities: formatted });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
 
 router.get("/list", async (req, res) => {
   try {

@@ -6,6 +6,7 @@ import {
   checkDuplicateCommunityName,
   insertCommunityRequest,
   findUnjoinedCommunities,
+  findAllCommunities,
 } from "../repositories/community.repository.js";
 
 // 공연 커뮤니티 가입 / 탈퇴
@@ -72,4 +73,9 @@ export const handleCommunityRequest = async ({
 // 가입 가능한 커뮤니티 탐색하기
 export const fetchAvailableCommunities = async (userId) => {
   return await findUnjoinedCommunities(userId);
+};
+
+// 모든 커뮤니티 목록 보기
+export const fetchAllCommunities = async () => {
+  return await findAllCommunities();
 };
