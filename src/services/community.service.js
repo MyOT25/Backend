@@ -69,7 +69,7 @@ export const handleCommunityRequest = async ({
   return "커뮤니티 신청이 완료되었습니다.";
 };
 
-// 커뮤니티 목록 조회
+// 가입 가능한 커뮤니티 탐색하기
 export const fetchAvailableCommunities = async (userId) => {
   return await findUnjoinedCommunities(userId);
 };
