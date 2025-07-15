@@ -6,6 +6,7 @@ import {
   handleCommunityRequest,
   fetchAvailableCommunities,
   fetchAllCommunities,
+  fetchMyCommunities,
 } from "../services/community.service.js";
 
 const router = express.Router();
@@ -88,27 +89,24 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.get("/list", async (req, res) => {
+// 내가 가입한 커뮤니티 목록 조회
+router.get("/mine", async (req, res) => {
   try {
-    const communities = await prisma.community.findMany({
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        //name: true,
-        type: true,
-        description: true,
-        createdAt: true,
-      },
-    });
+    const userId = req.user?.id;
+    if (!userId) {
+      return res
+        .status(401)
+        .json({ success: false, message: "로그인이 필요합니다." });
+    }
+    const communityId = await fetchMyCommunities(userId);
 
     const formatted = communities.map((c) => ({
       communityId: c.id,
-      communityName: "작품",
+      communityName: c.name,
       type: c.type,
       createdAt: c.createdAt,
     }));
-
-    res.status(200).json({ success: true, communities });
+    res.status(200).json({ success: true, communities: formatted });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }

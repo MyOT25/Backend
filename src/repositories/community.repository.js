@@ -116,3 +116,22 @@ export const findAllCommunities = async () => {
     },
   });
 };
+
+// 내가 가입한 커뮤니티 목록 조회
+export const findMyCommunities = async (userId) => {
+  const userCommunities = await prisma.userCommunity.findMany({
+    where: { userId },
+    include: {
+      community: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          createdAt: true,
+        },
+      },
+    },
+  });
+
+  return userCommunities.map((uc) => uc.community);
+};
