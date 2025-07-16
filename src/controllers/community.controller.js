@@ -10,6 +10,8 @@ import {
   fetchCommunityById,
 } from "../services/community.service.js";
 
+import { checkUserInCommunity } from "../repositories/community.repository.js";
+
 const router = express.Router();
 
 router.post("/type/join", async (req, res) => {
@@ -138,6 +140,24 @@ router.get("/:type/:id", async (req, res) => {
       createdAt: community.createdAt,
     };
     res.status(200).json({ success: true, community: formatted });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// 커뮤니티 가입 여부 조회
+router.get("/type/:id/status", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const communityId = Number(req.params.id);
+
+    if (!userId) {
+      return res
+        .status(401)
+        .json({ success: false, message: "로그인이 필요합니다." });
+    }
+    const isJoined = await checkUserInCommunity(userId, communityId);
+    res.status(200).json({ success: true, isMember: isJoined });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
