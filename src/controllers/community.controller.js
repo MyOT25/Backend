@@ -28,7 +28,7 @@ router.post("/type/join", async (req, res) => {
   }
 });
 
-router.post("/request", async (req, res) => {
+router.post("/type/request", async (req, res) => {
   try {
     const {
       userId,
@@ -57,7 +57,7 @@ router.post("/request", async (req, res) => {
 });
 
 // 가입 가능한 커뮤니티 탐색(로그인 유저 전용)
-router.get("/type/:userId", async (req, res) => {
+router.get("/:type/:userId", async (req, res) => {
   try {
     const userId = Number(req.params.userId);
     const communities = await fetchAvailableCommunities(userId);
