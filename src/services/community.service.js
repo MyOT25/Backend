@@ -8,6 +8,7 @@ import {
   findUnjoinedCommunities,
   findAllCommunities,
   findMyCommunities,
+  findCommunityById,
 } from "../repositories/community.repository.js";
 
 // 공연 커뮤니티 가입 / 탈퇴
@@ -84,4 +85,9 @@ export const fetchAllCommunities = async () => {
 // 내가 가입한 커뮤니티 목록 조회
 export const fetchMyCommunities = async (userId) => {
   return await findMyCommunities(userId);
+};
+
+// 커뮤니티 정보 조회
+export const fetchCommunityById = async (communityId) => {
+  return await findCommunityById(communityId);
 };

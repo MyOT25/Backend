@@ -135,3 +135,21 @@ export const findMyCommunities = async (userId) => {
 
   return userCommunities.map((uc) => uc.community);
 };
+
+// 커뮤니티 정보 조회
+export const findCommunityById = async (communityId) => {
+  return await prisma.community.findUnique({
+    where: { id: communityId },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      type: true,
+      musicalName: true,
+      recentPerformanceDate: true,
+      theaterName: true,
+      ticketLink: true,
+      createdAt: true,
+    },
+  });
+};

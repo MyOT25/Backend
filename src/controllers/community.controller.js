@@ -7,6 +7,7 @@ import {
   fetchAvailableCommunities,
   fetchAllCommunities,
   fetchMyCommunities,
+  fetchCommunityById,
 } from "../services/community.service.js";
 
 const router = express.Router();
@@ -107,6 +108,36 @@ router.get("/mine", async (req, res) => {
       createdAt: c.createdAt,
     }));
     res.status(200).json({ success: true, communities: formatted });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// 커뮤니티 정보 조회
+router.get("/:type/:id", async (req, res) => {
+  try {
+    const communityId = Number(req.params.id);
+    const { type } = req.params;
+
+    const community = await fetchCommunityById(communityId);
+    if (!community || community.type !== type) {
+      return res
+        .status(404)
+        .json({ success: false, message: "커뮤니티를 찾을 수 없습니다." });
+    }
+
+    const formatted = {
+      communityId: community.id,
+      communityName: community.name,
+      description: community.description,
+      type: community.type,
+      musicalName: community.musicalName,
+      recentPerformanceDate: community.recentPerformanceDate,
+      theaterName: community.theaterName,
+      ticketLink: community.ticketLink,
+      createdAt: community.createdAt,
+    };
+    res.status(200).json({ success: true, community: formatted });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
