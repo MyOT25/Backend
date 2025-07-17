@@ -12,6 +12,19 @@ const swaggerDefinition = {
       url: "http://localhost:3000",
       description: "로컬 개발 서버",
     },
+  ],components: {
+    securitySchemes: {
+      bearerAuth: {         // 이름은 bearerAuth로 지정
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT", // 옵션 (UI에 표시)
+      },
+    },
+  },
+  security: [
+    {
+      bearerAuth: [],       // 모든 API에 기본 적용
+    },
   ],
 };
 

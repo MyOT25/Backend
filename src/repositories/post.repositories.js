@@ -19,6 +19,13 @@ export const findPostsByActorName = async (actorName) => {
             select: { nickname: true },
           },
           tags: true,
+          reviews: {
+            take: 5,
+            select: {
+              watchDate: true,
+              imageUrl: true,
+            },
+          },
         },
       },
     },
@@ -29,13 +36,17 @@ export const findPostsByActorName = async (actorName) => {
     .filter((pt) => pt.post !== null)
     .map((pt) => {
       const post = pt.post;
+      const review = post.reviews?.[0];
+
       return {
         postId: post.id,
         title: post.title,
         content: post.content,
-        author: post.user.nickname,
+        author: post.user?.nickname || "익명",
         createdAt: post.createdAt,
-        likeCount: post.likeCount,
+        watchDate: review?.watchDate || null,
+        imageUrl: review?.imageUrl || null,
+        likeCount: post.likeCount || 0,
         tags: post.tags.map((t) => t.name),
       };
     });
