@@ -8,6 +8,7 @@ import {
   fetchAllCommunities,
   fetchMyCommunities,
   fetchCommunityById,
+  addCommunityProfile,
 } from "../services/community.service.js";
 
 import { checkUserInCommunity } from "../repositories/community.repository.js";
@@ -160,6 +161,49 @@ router.get("/type/:id/status", async (req, res) => {
     res.status(200).json({ success: true, isMember: isJoined });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// 커뮤니티 프로필 추가
+router.post("/profile", async (req, res) => {
+  try {
+    const {
+      name,
+      type,
+      description,
+      profileImage,
+      ticketLink,
+      musicalName,
+      theaterName,
+      recentPerformanceDate,
+    } = req.body;
+
+    const profileData = {
+      name,
+      type,
+      description,
+      profileImage,
+      ticketLink,
+      musicalName,
+      theaterName,
+      recentPerformanceDate,
+    };
+
+    const newCommunity = await addCommunityProfile(profileData);
+
+    res.status(200).json({
+      success: true,
+      communityId: newCommunity.id,
+      message: "커뮤니티 프로필이 추가되었습니다.",
+    });
+  } catch (err) {
+    console.error("커뮤니티 프로필 추가 실패:", err);
+    console.log("req.body 확인 👉", req.body);
+
+    res.status(500).json({
+      success: false,
+      message: "커뮤니티 프로필 추가 중 오류가 발생했습니다.",
+    });
   }
 });
 
