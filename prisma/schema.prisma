@@ -127,9 +127,7 @@ model Review {
 
 model Actor {
   id             Int     @id @default(autoincrement())
-  postId         Int
   userId         Int
-  settingId      Int
   communityId    Int
   key            Int
   name           String?
@@ -182,6 +180,8 @@ model Seat {
 
   theater      Theater @relation(fields: [theaterId], references: [id])
   viewings     ViewingRecord[] // 이 좌석을 사용한 관극기록들 
+
+  @@unique([theaterId,row,column])
 }
 enum SeatType {
   VIP
@@ -257,19 +257,31 @@ model Follow {
 }
 
 model ViewingRecord {
-  id         Int     @id
+  id         Int     @id @default(autoincrement())
   userId     Int
   musicalId  Int
   seatId     Int? // 좌석 FK
   date       DateTime? // 관극 날짜 
   time       DateTime? // 관극 시간 
   content    String?  // 관람 후기 
-  image_url  String? // 관극 사진 URL 
+  rating     Int?   // ⭐️ 별점 (1~5)
   
   user       User    @relation(fields: [userId], references: [id])
   musical    Musical @relation(fields: [musicalId], references: [id])
   seat       Seat?   @relation(fields: [seatId], references: [id])
+  images     ViewingImage[] // 1:N관계 
 }
+
+model ViewingImage {
+  id         Int            @id @default(autoincrement())
+  viewingId  Int            // 관극기록 FK
+  url        String         // 이미지 URL
+  createdAt  DateTime?      @default(now())
+
+  viewing    ViewingRecord  @relation(fields: [viewingId], references: [id])
+}
+
+
 
 model PostLike {
   id        Int     @id @default(autoincrement())
