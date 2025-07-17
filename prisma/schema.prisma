@@ -194,6 +194,11 @@ model Community {
   name      String?
   type      String?
   description  String?
+  musicalName         String?
+  recentPerformanceDate DateTime?
+  theaterName         String?
+  ticketLink          String?
+  profileImage        String?
 
   userCommunities UserCommunity[]
   musicalCommunities MusicalCommunity[]
