@@ -10,6 +10,7 @@ import {
   findMyCommunities,
   findCommunityById,
   createCommunityProfile,
+  modifyCommunityProfile,
 } from "../repositories/community.repository.js";
 
 // 공연 커뮤니티 가입 / 탈퇴
@@ -96,4 +97,9 @@ export const fetchCommunityById = async (communityId) => {
 // 커뮤니티 프로필 추가
 export const addCommunityProfile = async (profileDate) => {
   return await createCommunityProfile(profileDate);
+};
+
+// 커뮤니티 프로필 수정
+export const updateCommunityProfile = async (communityId, profileDate) => {
+  return await modifyCommunityProfile(communityId, profileDate);
 };

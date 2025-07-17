@@ -9,6 +9,7 @@ import {
   fetchMyCommunities,
   fetchCommunityById,
   addCommunityProfile,
+  updateCommunityProfile,
 } from "../services/community.service.js";
 
 import { checkUserInCommunity } from "../repositories/community.repository.js";
@@ -207,4 +208,44 @@ router.post("/profile", async (req, res) => {
   }
 });
 
+// 커뮤니티 프로필 수정하기
+router.put("/profile/:id", async (req, res) => {
+  try {
+    const communityId = Number(req.params.id);
+    const {
+      name,
+      type,
+      description,
+      profileImage,
+      ticketLink,
+      musicalName,
+      theaterName,
+      recentPerformanceDate,
+    } = req.body;
+
+    const profileData = {
+      name,
+      type,
+      description,
+      profileImage,
+      ticketLink,
+      musicalName,
+      theaterName,
+      recentPerformanceDate,
+    };
+
+    const updated = await updateCommunityProfile(communityId, profileData);
+    res.status(200).json({
+      success: true,
+      communityId: updated.id,
+      message: "커뮤니티 프로필이 수정되었습니다.",
+    });
+  } catch (err) {
+    console.error("커뮤니티 프로필 수정 실패:", err);
+    res.status(500).json({
+      success: false,
+      message: "커뮤니티 프로필 수정 중 오류가 발생했습니다.",
+    });
+  }
+});
 export default router;

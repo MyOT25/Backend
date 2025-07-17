@@ -185,3 +185,30 @@ export const createCommunityProfile = async (data) => {
     },
   });
 };
+
+// 커뮤니티 프로필 수정하기
+export const modifyCommunityProfile = async (communityId, data) => {
+  let parsedDate = null;
+  if (data.recentPerformanceDate) {
+    parsedDate = new Date(data.recentPerformanceDate);
+    if (isNaN(parsedDate.getTime())) {
+      throw new Error("유효하지 않은 날짜 형식입니다.");
+    }
+  }
+
+  const updated = await prisma.community.update({
+    where: { id: communityId },
+    data: {
+      name: data.name,
+      type: data.type,
+      description: data.description,
+      profileImage: data.profileImage,
+      ticketLink: data.ticketLink,
+      musicalName: data.musicalName,
+      theaterName: data.theaterName,
+      recentPerformanceDate: parsedDate,
+    },
+  });
+
+  return updated;
+};
