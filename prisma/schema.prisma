@@ -7,15 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum ImageOrVideo {
-  image
-  video
+enum RepostType {
+  post
+  review
 }
 
-enum Category {
-  highlight
-  media
-  memorybook
+enum MediaType {
+  image
+  video
 }
 
 model User {
@@ -35,9 +34,10 @@ model User {
 
   setting        Setting   @relation(fields: [settingId], references: [id])
   posts         Post[]
-  comments      Comment[]
   reviews       Review[]
+  comments      Comment[]
   postLikes     PostLike[]
+  bookmarks     Bookmark[]
   questions     Question[]
   answers       Answer[]
   subscriptions Subscribe[]
@@ -50,54 +50,69 @@ model User {
 }
 
 model Post {
-  id               Int       @id @default(autoincrement())
-  userId           Int
-  settingId        Int
-  communityId      Int
-  title            String?
-  content          String?
-  category         String?
-  like             String?
-  likeCount        Int?
-  commentCount     Int?
-  createdAt        DateTime?
-  updatedAt        DateTime?
-  repost           Int?
-  bookmark         Int?
-  communityGroup   String?
-  viewCount        Int?
-  tag              String?
-  mediaType        ImageOrVideo?
-  isPinned         Boolean?
-  tabCategory      Category?
-  isShared         Boolean?
-  musicalId        Int?
-  actorId          Int?
-  extraField       String?
+  id                Int            @id @default(autoincrement())
+  userId            Int
+  communityId       Int
+  isRepost          Boolean        @default(false)       
+  repostType        RepostType?                         //'post', 'review'
+  repostTargetId    Int?                                
+  title             String?                             
+  content           String?                             
+  mediaType         MediaType?                          //'image', 'video'
+  viewCount         Int            @default(0)           
+  commentCount      Int            @default(0)           
+  likeCount         Int            @default(0)           
+  bookmarkCount     Int            @default(0)           
+  repostCount       Int            @default(0)           
+  createdAt         DateTime       @default(now())       
+  updatedAt         DateTime       @updatedAt            
 
-  user           User    @relation(fields: [userId], references: [id])
-  actor          Actor?  @relation(fields: [actorId], references: [id])
-  setting        Setting @relation(fields: [settingId], references: [id])
+  // Relations
+  user              User           @relation(fields: [userId], references: [id])
+  community         Community      @relation(fields: [communityId], references: [id])
 
-  comments       Comment[]
-  postLikes      PostLike[]
-  images         Image[]
-  reviews        Review[]
-  tags   Tag[] @relation("PostTags")
+  comments          Comment[]
+  postLikes         PostLike[]
+  bookmarks         Bookmark[]
+  postTags          PostTag[] 
+  images            Image[]
+  reviews           Review[]
 }
 
 model Comment {
   id              Int      @id @default(autoincrement())
   postId          Int
   userId          Int
-  settingId       Int
-  communityId     Int
-  content         String?
-  createdAt       DateTime?
   anonymous       Boolean?
+  content         String?
+  createdAt         DateTime       @default(now())       
+  updatedAt         DateTime       @updatedAt  
 
   post            Post     @relation(fields: [postId], references: [id])
   user            User     @relation(fields: [userId], references: [id])
+}
+
+model PostLike {
+  id        Int     @id @default(autoincrement())
+  postId    Int
+  userId    Int
+  likedAt   DateTime? @default(now())
+
+  post      Post    @relation(fields: [postId], references: [id])
+  user      User    @relation(fields: [userId], references: [id])
+
+  @@unique([userId, postId]) // 같은 유저가 같은 글에 여러 번 좋아요 못 누르게
+}
+
+model Bookmark {
+  id      Int    @id @default(autoincrement())
+  userId  Int
+  postId  Int
+
+  user    User   @relation(fields: [userId], references: [id])
+  post    Post   @relation(fields: [postId], references: [id])
+
+  @@unique([userId, postId]) // 중복 북마크 방지
 }
 
 model Review {
@@ -136,7 +151,6 @@ model Actor {
   snsLink        String?
   fk             Int?
 
-  posts          Post[]
   castings       Casting[]
 }
 
@@ -202,6 +216,7 @@ model Community {
 
   userCommunities UserCommunity[]
   musicalCommunities MusicalCommunity[]
+  posts Post[]
 }
 
 
@@ -212,18 +227,26 @@ model Setting {
   allowRepost     Boolean?
 
   users           User?    @relation()
-  posts           Post[]
 }
 
 model Tag {
   id     Int    @id @default(autoincrement())
   name   String @unique
-  type   String?
+  createdAt         DateTime       @default(now())
 
-  posts  Post[] @relation("PostTags") 
+  postTags      PostTag[]
 }
 
+model PostTag {
+  postId Int
+  tagId  Int
+  createdAt         DateTime       @default(now())
 
+  post   Post @relation(fields: [postId], references: [id])
+  tag    Tag  @relation(fields: [tagId], references: [id])
+
+  @@id([postId, tagId]) // 복합 PK로 중복 저장 방지
+}
 
 
 
@@ -272,6 +295,7 @@ model ViewingRecord {
   images     ViewingImage[] // 1:N관계 
 }
 
+
 model ViewingImage {
   id         Int            @id @default(autoincrement())
   viewingId  Int            // 관극기록 FK
@@ -281,8 +305,6 @@ model ViewingImage {
   viewing    ViewingRecord  @relation(fields: [viewingId], references: [id])
 }
 
-
-
 model PostLike {
   id        Int     @id @default(autoincrement())
   postId    Int
@@ -291,6 +313,8 @@ model PostLike {
 
   post      Post    @relation(fields: [postId], references: [id])
   user      User    @relation(fields: [userId], references: [id])
+
+  @@unique([userId, postId]) // 같은 유저가 같은 글에 여러 번 좋아요 못 누르게
 }
 
 model Question {
