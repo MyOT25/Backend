@@ -20,7 +20,6 @@ enum MediaType {
 model User {
   id            Int      @id @default(autoincrement())
   loginId       String   @unique
-  settingId     Int      @unique
   username      String?
   password      String?
   email         String  @unique
@@ -32,7 +31,7 @@ model User {
   birthDate     DateTime?
   isSubscribed  Boolean?
 
-  setting        Setting   @relation(fields: [settingId], references: [id])
+  setting       Setting?
   posts         Post[]
   reviews       Review[]
   comments      Comment[]
@@ -222,11 +221,12 @@ model Community {
 
 model Setting {
   id              Int      @id  @default(autoincrement())
+  userId          Int      @unique
   useBackground   Boolean?
   useProfilePhoto Boolean?
   allowRepost     Boolean?
 
-  users           User?    @relation()
+  users           User     @relation(fields:[userId], references: [id])
 }
 
 model Tag {

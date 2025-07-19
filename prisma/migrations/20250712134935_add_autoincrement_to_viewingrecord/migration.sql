@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE `ViewingRecord` MODIFY `id` INTEGER NOT NULL AUTO_INCREMENT;
