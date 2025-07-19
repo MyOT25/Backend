@@ -16,10 +16,10 @@ import authRouter from "./controllers/auth.controller.js";
 
 import "./config/passport.js"; // passport 설정
 
-import {
-  getUserTicketbook,
-  getMonthlySummary,
-} from "./controllers/post.controller.js";
+import { getUserTicketbook,getMonthlySummary } from "./controllers/post.controller.js";
+import { addMemoryBook,
+  getMemoryBook,
+updateMemoryBook } from "./controllers/memorybook.controller.js";
 import { authenticateJWT } from "./middlewares/authMiddleware.js";
 // 임시로
 // import "./config/passport.js"; // Passport JWT 설정
@@ -76,9 +76,10 @@ app.get("/api/posts/ticketbook", authenticateJWT, getUserTicketbook);
 app.get("/api/posts/monthly-summary", authenticateJWT, getMonthlySummary);
 app.post("/api/posts/musical", authenticateJWT, createPost);
 app.post("/api/posts/musical/castings", authenticateJWT, addCasting);
+app.post("/api/posts/memorybooks", authenticateJWT,addMemoryBook);
+app.get("/api/posts/memorybooks",authenticateJWT,getMemoryBook);
+app.put("/api/posts/memorybooks",authenticateJWT,updateMemoryBook);
 
-app.get("/api/posts/ticketbook", getUserTicketbook);
-app.get("/api/posts/monthly-summary", getMonthlySummary);
 
 app.get("/", (req, res) => {
   res.send("Hello MyOT!");

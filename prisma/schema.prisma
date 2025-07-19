@@ -47,6 +47,8 @@ model User {
 
   multiProfiles  MultiProfile[]
   userCommunities UserCommunity[]
+  
+  memoryBooks    MemoryBook[]
 }
 
 model Post {
@@ -371,3 +373,22 @@ model MultiProfile {
 
   user        User    @relation(fields: [userId], references: [id])
 }
+
+model MemoryBook {
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  targetType  TargetType
+  targetId    Int
+  title       String
+  content     Json
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id])
+}
+
+enum TargetType {
+  MUSICAL
+  ACTOR
+}
+
