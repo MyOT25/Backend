@@ -297,6 +297,7 @@ model ViewingRecord {
   images     ViewingImage[] // 1:N관계 
 }
 
+
 model ViewingImage {
   id         Int            @id @default(autoincrement())
   viewingId  Int            // 관극기록 FK
@@ -304,16 +305,6 @@ model ViewingImage {
   createdAt  DateTime?      @default(now())
 
   viewing    ViewingRecord  @relation(fields: [viewingId], references: [id])
-}
-
-model PostLike {
-  id        Int     @id @default(autoincrement())
-  postId    Int
-  userId    Int
-  likedAt   DateTime? @default(now())
-
-  post      Post    @relation(fields: [postId], references: [id])
-  user      User    @relation(fields: [userId], references: [id])
 }
 
 model Question {

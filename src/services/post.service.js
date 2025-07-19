@@ -17,6 +17,15 @@ import {
   getPostByIdForUpdate,
 } from "../repositories/post.repositories.js";
 
+//일반 게시글 등록
+import {
+  findUserCommunity,
+  createPost,
+  createImages,
+  upsertTagByName,
+  createPostTag,
+} from "../repositories/post.repository.js";
+
 /* 티켓북 조회 */
 
 export const getTicketbook = async (userId) => {
@@ -57,31 +66,35 @@ export const getTicketbook = async (userId) => {
  * 신규 월별 정산판 조회 (함수 방식으로 추가)
  */
 export const getMonthlySummary = async (userId, year, month) => {
-    const viewings = await PostRepository.findViewingRecordsByMonth(userId, year, month);
-  
-    if (!viewings || viewings.length === 0) {
-      throw new UnauthorizedError('해당 월에 관람 기록이 없습니다.', 404);
-    }
-  
-    return viewings.map((v) => ({
-      postId: v.id,
-      musicalId: v.musical.id,
-      musicalTitle: v.musical.name,
-      watchDate: v.date,
-      watchTime: v.time,
-      seat: {
-        locationId: v.seat?.id,
-        row: v.seat?.row,
-        column: v.seat?.column,
-        seatType: v.seat?.seat_type
-      },
-      content: v.content,
-      imageUrls: [v.musical.poster] || []
-    }));
-  };
+  const viewings = await PostRepository.findViewingRecordsByMonth(
+    userId,
+    year,
+    month
+  );
 
-/* 오늘의 관극 등록 
-*/ 
+  if (!viewings || viewings.length === 0) {
+    throw new UnauthorizedError("해당 월에 관람 기록이 없습니다.", 404);
+  }
+
+  return viewings.map((v) => ({
+    postId: v.id,
+    musicalId: v.musical.id,
+    musicalTitle: v.musical.name,
+    watchDate: v.date,
+    watchTime: v.time,
+    seat: {
+      locationId: v.seat?.id,
+      row: v.seat?.row,
+      column: v.seat?.column,
+      seatType: v.seat?.seat_type,
+    },
+    content: v.content,
+    imageUrls: [v.musical.poster] || [],
+  }));
+};
+
+/* 오늘의 관극 등록
+ */
 export const createViewingRecord = async (userId, body) => {
   const {
     musicalId,
@@ -147,32 +160,6 @@ export const createViewingRecord = async (userId, body) => {
   }
 
   return viewing;
-};
-  const viewings = await PostRepository.findViewingRecordsByMonth(
-    userId,
-    year,
-    month
-  );
-
-  if (!viewings || viewings.length === 0) {
-    throw new UnauthorizedError("해당 월에 관람 기록이 없습니다.", 404);
-  }
-
-  return viewings.map((v) => ({
-    postId: v.id,
-    musicalId: v.musical.id,
-    musicalTitle: v.musical.name,
-    watchDate: v.date,
-    watchTime: v.time,
-    seat: {
-      locationId: v.seat?.id,
-      row: v.seat?.row,
-      column: v.seat?.column,
-      seatType: v.seat?.seat_type,
-    },
-    content: v.content,
-    imageUrls: [v.musical.poster] || [],
-  }));
 };
 
 // 배우 이름으로 후기 필터링
@@ -318,10 +305,37 @@ export const handleAddComment = async ({
   return comment.id;
 };
 
-
 // 좋아요 등록
 
 export const handleToggleLike = async ({ postId, userId }) => {
   const message = await togglePostLike({ postId, userId });
   return message;
+};
+
+//일반 게시글 등록(생성)
+export const createPostService = async (userId, dto) => {
+  const { communityId, content, mediaType, images } = dto;
+
+  // 커뮤니티 가입 여부 확인
+  const membership = await findUserCommunity(userId, communityId);
+  if (!membership) {
+    throw new Error("해당 커뮤니티에 가입된 사용자만 글을 작성할 수 있습니다.");
+  }
+
+  // 게시글 생성
+  const post = await createPost({ userId, communityId, content, mediaType });
+
+  // 이미지들 저장
+  if (Array.isArray(images) && images.length > 0) {
+    await createImages(post.id, images);
+  }
+
+  // 태그 저장 및 연결
+  const tags = dto.extractHashtags();
+  for (const tagName of tags) {
+    const tag = await upsertTagByName(tagName);
+    await createPostTag(post.id, tag.id);
+  }
+
+  return post;
 };
