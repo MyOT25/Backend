@@ -10,9 +10,9 @@ import testRouter from "./controllers/test.controller.js"; // 변경된 경로
 import userRouter from "./controllers/user.Controller.js"; // (있다면 추가)
 
 import communityRouter from "./controllers/community.controller.js";
-import { createPost,addCasting } from "./controllers/post.controller.js";
+import postRouter from "./controllers/post.controller.js";
+import { createPost, addCasting } from "./controllers/post.controller.js";
 import authRouter from "./controllers/auth.controller.js";
-
 
 import "./config/passport.js"; // passport 설정
 
@@ -23,8 +23,6 @@ updateMemoryBook } from "./controllers/memorybook.controller.js";
 import { authenticateJWT } from "./middlewares/authMiddleware.js";
 // 임시로
 // import "./config/passport.js"; // Passport JWT 설정
-
-
 
 dotenv.config();
 
@@ -56,7 +54,6 @@ app.use(express.static("public"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-
 // Swagger 문서
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
@@ -75,8 +72,8 @@ app.use(passport.initialize()); // JWT 인증 활성화
 
 // Swagger UI 경로 설정
 
-app.get("/api/posts/ticketbook",authenticateJWT, getUserTicketbook);
-app.get("/api/posts/monthly-summary",authenticateJWT,getMonthlySummary);
+app.get("/api/posts/ticketbook", authenticateJWT, getUserTicketbook);
+app.get("/api/posts/monthly-summary", authenticateJWT, getMonthlySummary);
 app.post("/api/posts/musical", authenticateJWT, createPost);
 app.post("/api/posts/musical/castings", authenticateJWT, addCasting);
 app.post("/api/posts/memorybooks", authenticateJWT,addMemoryBook);
@@ -84,8 +81,6 @@ app.get("/api/posts/memorybooks",authenticateJWT,getMemoryBook);
 app.put("/api/posts/memorybooks",authenticateJWT,updateMemoryBook);
 
 
-app.get("/api/posts/ticketbook", getUserTicketbook);
-app.get("/api/posts/monthly-summary", getMonthlySummary);
 
 app.get("/", (req, res) => {
   res.send("Hello MyOT!");
