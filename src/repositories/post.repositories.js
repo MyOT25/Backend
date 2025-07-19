@@ -19,6 +19,13 @@ export const findPostsByActorName = async (actorName) => {
             select: { nickname: true },
           },
           tags: true,
+          reviews: {
+            take: 5,
+            select: {
+              watchDate: true,
+              imageUrl: true,
+            },
+          },
         },
       },
     },
@@ -29,13 +36,17 @@ export const findPostsByActorName = async (actorName) => {
     .filter((pt) => pt.post !== null)
     .map((pt) => {
       const post = pt.post;
+      const review = post.reviews?.[0];
+
       return {
         postId: post.id,
         title: post.title,
         content: post.content,
-        author: post.user.nickname,
+        author: post.user?.nickname || "익명",
         createdAt: post.createdAt,
-        likeCount: post.likeCount,
+        watchDate: review?.watchDate || null,
+        imageUrl: review?.imageUrl || null,
+        likeCount: post.likeCount || 0,
         tags: post.tags.map((t) => t.name),
       };
     });
@@ -147,6 +158,7 @@ export const getPostById = async (postId) => {
     category: post.category,
     createdAt: post.createdAt,
     likeCount: post.likeCount,
+    userId: post.userId,
   };
 };
 
@@ -190,6 +202,7 @@ export const getPostComments = async (postId) => {
   }));
 };
 
+/*
 export const insertComment = async ({
   postId,
   userId,
@@ -208,4 +221,107 @@ export const insertComment = async ({
   });
 
   return comment;
+};
+*/
+
+export const togglePostLike = async ({ postId, userId }) => {
+  const existing = await prisma.postLike.findFirst({
+    where: { postId, userId },
+  });
+
+  if (existing) {
+    await prisma.postLike.delete({
+      where: { id: existing.id },
+    });
+
+    await prisma.post.update({
+      where: { id: postId },
+      data: {
+        likeCount: {
+          decrement: 1,
+        },
+      },
+    });
+
+    return "좋아요가 취소되었습니다.";
+  } else {
+    await prisma.postLike.create({
+      data: {
+        postId,
+        userId,
+      },
+    });
+
+    await prisma.post.update({
+      where: { id: postId },
+      data: {
+        likeCount: {
+          increment: 1,
+        },
+      },
+    });
+
+    return "좋아요가 등록되었습니다.";
+  }
+};
+
+export const insertComment = async ({
+  postId,
+  userId,
+  communityId,
+  content,
+  isAnonymous,
+}) => {
+  const comment = await prisma.comment.create({
+    data: {
+      postId,
+      userId,
+      communityId,
+      settingId,
+      content,
+      anonymous: isAnonymous ?? false,
+      createdAt: new Date(),
+    },
+  });
+
+  return comment;
+};
+
+export const updatePostById = async (
+  postId,
+  { title, content, category, images, tags }
+) => {
+  return await prisma.post.update({
+    where: { id: Number(postId) },
+    data: {
+      title,
+      content,
+      category,
+      images,
+      tags: {
+        set: [], // 기존 태그 초기화
+        connectOrCreate:
+          tags?.map((name) => ({
+            where: { name },
+            create: { name },
+          })) || [],
+      },
+    },
+  });
+};
+
+export const deletePostById = async (postId) => {
+  return await prisma.post.delete({
+    where: { id: Number(postId) },
+  });
+};
+
+export const getPostByIdForUpdate = async (postId) => {
+  return await prisma.post.findUnique({
+    where: { id: Number(postId) },
+    select: {
+      id: true,
+      userId: true,
+    },
+  });
 };

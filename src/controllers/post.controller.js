@@ -1,6 +1,10 @@
-import { getTicketbook, getMonthlySummary as getMonthlySummaryService } from '../services/post.service.js';
-import asyncHandler from '../middlewares/asyncHandler.js';
-import prisma from '../config/prismaClient.js';
+import {
+  getTicketbook,
+  getMonthlySummary as getMonthlySummaryService,
+} from "../services/post.service.js";
+import asyncHandler from "../middlewares/asyncHandler.js";
+import prisma from "../config/prismaClient.js";
+// import prisma from "../../prisma/client.js";
 import express from "express";
 import {
   getPostByActorName,
@@ -9,6 +13,9 @@ import {
   fetchPostDetail,
   handleAddComment,
   createViewingRecord
+  handleToggleLike,
+  handleUpdatePost,
+  handleDeletePost,
 } from "../services/post.service.js";
 import {
   getPostTags,
@@ -16,8 +23,8 @@ import {
   getPostComments,
 } from "../repositories/post.repositories.js";
 import { authenticateJWT } from "../middlewares/authMiddleware.js";
-
-
+import firebaseAdmin from "firebase-admin";
+const { messaging } = firebaseAdmin;
 
 /**
  * GET /api/posts/ticketbook
@@ -83,16 +90,17 @@ import { authenticateJWT } from "../middlewares/authMiddleware.js";
  *                                 example: 서울
  */
 
+
 export const getUserTicketbook = [
   authenticateJWT,
   asyncHandler(async (req, res) => {
     
    const userId = req.user.id; // JWT 인증 미들웨어로부터 유저 ID 추출
    const records = await getTicketbook(userId);
-
-  res.success({
-    message: '티켓북 조회 성공',
-    data: records
+    
+   res.success({
+    message: "티켓북 조회 성공",
+    data: records,
   });
 })];
 
@@ -367,6 +375,40 @@ export const addCasting = asyncHandler(async (req, res) => {
 });
 
   
+export const getMonthlySummary = async (req, res, next) => {
+  try {
+    const { year, month } = req.query;
+
+    if (!year || !month) {
+      throw new Error("year와 month는 필수입니다.");
+    }
+
+    const userId = req.user?.id || 1; // 임시 userId
+
+    // ⬇️ 수정: userId도 같이 넘김
+    const data = await getMonthlySummaryService(
+      userId,
+      parseInt(year, 10),
+      parseInt(month, 10)
+    );
+
+    res.status(200).json({
+      resultType: "SUCCESS",
+      error: {
+        errorCode: null,
+        reason: null,
+        data: null,
+      },
+      success: {
+        message: `${year}년 ${month}월 월별 정산판 조회 성공`,
+        data,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const router = express.Router();
 
 router.get("/filter", async (req, res) => {
@@ -396,6 +438,56 @@ router.post("/", async (req, res) => {
       success: true,
       message: "게시글이 성공적으로 등록되었습니다.",
       postId,
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+router.patch("/:postId", async (req, res) => {
+  try {
+    const { userId, communityId, title, content, category, tagNames, images } =
+      req.body;
+    const { postId } = req.params;
+    await handleUpdatePost({
+      postId: Number(postId),
+      userId,
+      communityId,
+      title,
+      content,
+      category,
+      tagNames,
+      images,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "게시글이 성공적으로 수정되었습니다.",
+      postId: Number(postId),
+    });
+  } catch (err) {
+    res.status(500).json({
+      resultType: "FAIL",
+      error: {
+        errorCode: "unknown",
+        reason: err.message,
+        data: null,
+      },
+      success: null,
+    });
+  }
+});
+
+router.delete("/:postId", async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { userId } = req.body;
+
+    await handleDeletePost({ postId: Number(postId), userId });
+
+    res.status(200).json({
+      success: true,
+      message: "게시글이 성공적으로 삭제되었습니다.",
     });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -462,6 +554,7 @@ router.get("/communities/:communityId/posts/:postId", async (req, res) => {
   }
 });
 
+/*
 router.post("/:postId/comments", async (req, res) => {
   try {
     const postId = parseInt(req.params.postId);
@@ -479,6 +572,45 @@ router.post("/:postId/comments", async (req, res) => {
       commentId,
     });
   } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+*/
+
+router.post("/:postId/like", async (req, res) => {
+  try {
+    const postId = parseInt(req.params.postId);
+    const { userId } = req.body;
+
+    const message = await handleToggleLike({ postId, userId });
+
+    res.status(200).json({ success: true, message });
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+router.post("/:postId/comments", async (req, res) => {
+  try {
+    const postId = parseInt(req.params.postId);
+    const { userId, communityId, content, isAnonymous } = req.body;
+
+    const commentId = await handleAddComment({
+      postId,
+      userId,
+      communityId,
+      content,
+      isAnonymous,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "댓글이 성공적으로 등록되었습니다.",
+      commentId,
+    });
+  } catch (err) {
+    console.error(err);
     res.status(400).json({ success: false, message: err.message });
   }
 });

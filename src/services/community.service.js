@@ -6,6 +6,11 @@ import {
   checkDuplicateCommunityName,
   insertCommunityRequest,
   findUnjoinedCommunities,
+  findAllCommunities,
+  findMyCommunities,
+  findCommunityById,
+  createCommunityProfile,
+  modifyCommunityProfile,
 } from "../repositories/community.repository.js";
 
 // 공연 커뮤니티 가입 / 탈퇴
@@ -37,14 +42,16 @@ export const handleCommunityRequest = async ({
   name,
   description,
   type,
-  requestedAt,
+  musicalName,
+  recentPerformanceDate,
+  theaterName,
+  ticketLink,
 }) => {
   console.log("요청 받은 데이터:", {
     userId,
     name,
     description,
     type,
-    requestedAt,
   });
 
   console.log("checking for community name:", name);
@@ -58,13 +65,41 @@ export const handleCommunityRequest = async ({
     name,
     description,
     type,
-    requestedAt,
+    musicalName,
+    recentPerformanceDate,
+    theaterName,
+    ticketLink,
   });
 
   return "커뮤니티 신청이 완료되었습니다.";
 };
 
-// 커뮤니티 목록 조회
+// 가입 가능한 커뮤니티 탐색하기
 export const fetchAvailableCommunities = async (userId) => {
   return await findUnjoinedCommunities(userId);
+};
+
+// 모든 커뮤니티 목록 보기
+export const fetchAllCommunities = async () => {
+  return await findAllCommunities();
+};
+
+// 내가 가입한 커뮤니티 목록 조회
+export const fetchMyCommunities = async (userId) => {
+  return await findMyCommunities(userId);
+};
+
+// 커뮤니티 정보 조회
+export const fetchCommunityById = async (communityId) => {
+  return await findCommunityById(communityId);
+};
+
+// 커뮤니티 프로필 추가
+export const addCommunityProfile = async (profileDate) => {
+  return await createCommunityProfile(profileDate);
+};
+
+// 커뮤니티 프로필 수정
+export const updateCommunityProfile = async (communityId, profileDate) => {
+  return await modifyCommunityProfile(communityId, profileDate);
 };

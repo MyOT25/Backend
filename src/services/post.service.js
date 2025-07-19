@@ -1,5 +1,5 @@
-import prisma from '../config/prismaClient.js';
-import { UnauthorizedError } from '../middlewares/CustomError.js';
+import prisma from "../config/prismaClient.js";
+import { UnauthorizedError } from "../middlewares/CustomError.js";
 import PostRepository from "../repositories/post.repository.js";
 import {
   findPostsByActorName,
@@ -11,6 +11,10 @@ import {
   getPostImages,
   getPostComments,
   insertComment,
+  togglePostLike,
+  updatePostById,
+  deletePostById,
+  getPostByIdForUpdate,
 } from "../repositories/post.repositories.js";
 
 /* 티켓북 조회 */
@@ -24,17 +28,17 @@ export const getTicketbook = async (userId) => {
         include: {
           theater: {
             include: {
-              region: true
-            }
-          }
-        }
-      }
+              region: true,
+            },
+          },
+        },
+      },
     },
-    orderBy: { date: 'desc' }
+    orderBy: { date: "desc" },
   });
 
   if (!viewings || viewings.length === 0) {
-    throw new UnauthorizedError('티켓북에 기록이 없습니다.', 404);
+    throw new UnauthorizedError("티켓북에 기록이 없습니다.", 404);
   }
 
   return viewings.map((v) => ({
@@ -44,8 +48,8 @@ export const getTicketbook = async (userId) => {
     watch_date: v.date,
     theater: {
       name: v.musical.theater.name,
-      region: v.musical.theater.region.name
-    }
+      region: v.musical.theater.region.name,
+    },
   }));
 };
 
@@ -144,7 +148,32 @@ export const createViewingRecord = async (userId, body) => {
 
   return viewing;
 };
+  const viewings = await PostRepository.findViewingRecordsByMonth(
+    userId,
+    year,
+    month
+  );
 
+  if (!viewings || viewings.length === 0) {
+    throw new UnauthorizedError("해당 월에 관람 기록이 없습니다.", 404);
+  }
+
+  return viewings.map((v) => ({
+    postId: v.id,
+    musicalId: v.musical.id,
+    musicalTitle: v.musical.name,
+    watchDate: v.date,
+    watchTime: v.time,
+    seat: {
+      locationId: v.seat?.id,
+      row: v.seat?.row,
+      column: v.seat?.column,
+      seatType: v.seat?.seat_type,
+    },
+    content: v.content,
+    imageUrls: [v.musical.poster] || [],
+  }));
+};
 
 // 배우 이름으로 후기 필터링
 export const getPostByActorName = async (actorName) => {
@@ -199,6 +228,40 @@ export const handleCreatePost = async ({
   }
 
   return postId;
+};
+
+// 게시글 수정
+export const handleUpdatePost = async ({
+  postId,
+  userId,
+  title,
+  content,
+  category,
+  tagNames,
+  images,
+}) => {
+  const existingPost = await getPostByIdForUpdate(postId);
+
+  console.log("👉 [서비스] 기존 게시글 작성자 userId:", existingPost.userId);
+  console.log("👉 [서비스] 요청자가 보낸 userId:", userId);
+  if (!existingPost) throw new Error("존재하지 않는 게시글입니다.");
+  if (existingPost.userId !== userId) throw new Error("수정 권한이 없습니다.");
+
+  await updatePostById(postId, {
+    title,
+    content,
+    category,
+    tags: tagNames,
+  });
+};
+
+// 게시글 삭제
+export const handleDeletePost = async ({ postId, userId }) => {
+  const post = await getPostById(postId);
+  if (!post) throw new Error("존재하지 않는 게시글입니다.");
+  if (post.userId !== userId) throw new Error("삭제 권한이 없습니다.");
+
+  await deletePostById(postId);
 };
 
 // 게시글 목록 조회
@@ -256,3 +319,9 @@ export const handleAddComment = async ({
 };
 
 
+// 좋아요 등록
+
+export const handleToggleLike = async ({ postId, userId }) => {
+  const message = await togglePostLike({ postId, userId });
+  return message;
+};
