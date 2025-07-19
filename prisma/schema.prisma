@@ -305,18 +305,6 @@ model ViewingImage {
   viewing    ViewingRecord  @relation(fields: [viewingId], references: [id])
 }
 
-model PostLike {
-  id        Int     @id @default(autoincrement())
-  postId    Int
-  userId    Int
-  likedAt   DateTime? @default(now())
-
-  post      Post    @relation(fields: [postId], references: [id])
-  user      User    @relation(fields: [userId], references: [id])
-
-  @@unique([userId, postId]) // 같은 유저가 같은 글에 여러 번 좋아요 못 누르게
-}
-
 model Question {
   id          Int     @id @default(autoincrement())
   userId      Int

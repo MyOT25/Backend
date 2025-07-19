@@ -10,9 +10,8 @@ import {
   getPostByActorName,
   handleCreatePost,
   fetchPostList,
-  fetchPostDetail,
   handleAddComment,
-  createViewingRecord
+  createViewingRecord,
   handleToggleLike,
   handleUpdatePost,
   handleDeletePost,
@@ -25,6 +24,10 @@ import {
 import { authenticateJWT } from "../middlewares/authMiddleware.js";
 import firebaseAdmin from "firebase-admin";
 const { messaging } = firebaseAdmin;
+
+//일반 게시글 등록 관련 import
+import { CreatePostDTO } from "../dtos/post.dto.js";
+import { createPostService } from "../services/post.service.js";
 
 /**
  * GET /api/posts/ticketbook
@@ -90,19 +93,18 @@ const { messaging } = firebaseAdmin;
  *                                 example: 서울
  */
 
-
 export const getUserTicketbook = [
   authenticateJWT,
   asyncHandler(async (req, res) => {
-    
-   const userId = req.user.id; // JWT 인증 미들웨어로부터 유저 ID 추출
-   const records = await getTicketbook(userId);
-    
-   res.success({
-    message: "티켓북 조회 성공",
-    data: records,
-  });
-})];
+    const userId = req.user.id; // JWT 인증 미들웨어로부터 유저 ID 추출
+    const records = await getTicketbook(userId);
+
+    res.success({
+      message: "티켓북 조회 성공",
+      data: records,
+    });
+  }),
+];
 
 /**
  * 월별 정산판 조회
@@ -169,39 +171,6 @@ export const getUserTicketbook = [
  *                             type: integer
  *                             example: 3
  */
-
-export const getMonthlySummary = [
-  authenticateJWT,
-  async (req, res, next) => {
-    try {
-      const { year, month } = req.query;
-  
-      if (!year || !month) {
-        throw new Error('year와 month는 필수입니다.');
-      }
-  
-      const userId = req.user?.id; // 임시 userId
-  
-      // ⬇️ 수정: userId도 같이 넘김
-      const data = await getMonthlySummaryService(userId, 
-        parseInt(year, 10), parseInt(month, 10));
-  
-      res.status(200).json({
-        resultType: 'SUCCESS',
-        error: {
-          errorCode: null,
-          reason: null,
-          data: null
-        },
-        success: {
-          message: `${year}년 ${month}월 월별 정산판 조회 성공`,
-          data
-        }
-      });
-    } catch (err) {
-      next(err);
-    }
-  }];
 
 /**
  * POST /api/posts
@@ -327,7 +296,7 @@ export const getMonthlySummary = [
  *                   type: null
  */
 
-export const createPost = asyncHandler(async (req, res) => {
+/*export const createPost = asyncHandler(async (req, res) => {
   const userId = req.user.id; // JWT로부터 유저 ID 추출
   const result = await createViewingRecord(userId, req.body);
 
@@ -336,9 +305,24 @@ export const createPost = asyncHandler(async (req, res) => {
     data: result,
   });
 });
+*/
+export const createPost = asyncHandler(async (req, res) => {
+  const userId = req.user.id; // JWT 인증 후 user.id가 존재한다고 가정
+  const createPostDto = new CreatePostDTO(req.body);
+
+  const post = await createPostService(userId, createPostDto);
+
+  res.status(201).json({
+    resultType: "SUCCESS",
+    success: {
+      id: post.id,
+      message: "게시글이 성공적으로 생성되었습니다.",
+    },
+  });
+});
 
 /**
- * 미등록 출연진 추가 
+ * 미등록 출연진 추가
  */
 export const addCasting = asyncHandler(async (req, res) => {
   const { musicalId, actorId, role } = req.body;
@@ -374,7 +358,6 @@ export const addCasting = asyncHandler(async (req, res) => {
   });
 });
 
-  
 export const getMonthlySummary = async (req, res, next) => {
   try {
     const { year, month } = req.query;
@@ -421,28 +404,24 @@ router.get("/filter", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
-  try {
-    const { userId, communityId, title, content, category, tagNames, images } =
-      req.body;
-    const postId = await handleCreatePost({
-      userId,
-      communityId,
-      title,
-      content,
-      category,
-      tagNames,
-      images,
-    });
+router.post(
+  "/",
+  authenticateJWT, // JWT 인증 미들웨어 필요 시 포함
+  asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const createPostDto = new CreatePostDTO(req.body);
+
+    const post = await createPostService(userId, createPostDto);
+
     res.status(201).json({
-      success: true,
-      message: "게시글이 성공적으로 등록되었습니다.",
-      postId,
+      resultType: "SUCCESS",
+      success: {
+        id: post.id,
+        message: "게시글이 성공적으로 생성되었습니다.",
+      },
     });
-  } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
-  }
-});
+  })
+);
 
 router.patch("/:postId", async (req, res) => {
   try {
