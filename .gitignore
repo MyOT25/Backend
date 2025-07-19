@@ -124,7 +124,7 @@ dist
 
 # TernJS port file
 .tern-port
-
+d
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
@@ -136,4 +136,26 @@ dist
 .pnp.*
 
 src/generated/prisma/
+
+
+# node modules 
+node_modules/
+
+.env
+.env.*.local
+
+#빌드결과 
+dist/
+build/
+
+#로그 파일
+*.log
+npm-debug.log*
+d
+#dd macOS
+.DS_Store
+
+#Yarn integrity file
+.yarn-integrity
+
 
