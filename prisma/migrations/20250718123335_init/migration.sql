@@ -92,9 +92,7 @@ CREATE TABLE `Review` (
 -- CreateTable
 CREATE TABLE `Actor` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `postId` INTEGER NOT NULL,
     `userId` INTEGER NOT NULL,
-    `settingId` INTEGER NOT NULL,
     `communityId` INTEGER NOT NULL,
     `key` INTEGER NOT NULL,
     `name` VARCHAR(191) NULL,
@@ -135,14 +133,14 @@ CREATE TABLE `Theater` (
 
 -- CreateTable
 CREATE TABLE `Seat` (
-    `id` INTEGER NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
     `theaterId` INTEGER NOT NULL,
-    `locationId` INTEGER NOT NULL,
-    `field` VARCHAR(191) NULL,
-    `field2` VARCHAR(191) NULL,
-    `field3` VARCHAR(191) NULL,
+    `row` VARCHAR(191) NOT NULL,
+    `column` INTEGER NOT NULL,
+    `seat_type` ENUM('VIP', '일반석') NOT NULL,
     `floor` VARCHAR(191) NULL,
 
+    UNIQUE INDEX `Seat_theaterId_row_column_key`(`theaterId`, `row`, `column`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -210,11 +208,24 @@ CREATE TABLE `Follow` (
 
 -- CreateTable
 CREATE TABLE `ViewingRecord` (
-    `id` INTEGER NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
     `userId` INTEGER NOT NULL,
     `musicalId` INTEGER NOT NULL,
+    `seatId` INTEGER NULL,
     `date` DATETIME(3) NULL,
-    `seat` VARCHAR(191) NULL,
+    `time` DATETIME(3) NULL,
+    `content` VARCHAR(191) NULL,
+    `rating` INTEGER NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `ViewingImage` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `viewingId` INTEGER NOT NULL,
+    `url` VARCHAR(191) NOT NULL,
+    `createdAt` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -300,6 +311,20 @@ CREATE TABLE `MultiProfile` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
+CREATE TABLE `MemoryBook` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `userId` INTEGER NOT NULL,
+    `targetType` ENUM('MUSICAL', 'ACTOR') NOT NULL,
+    `targetId` INTEGER NOT NULL,
+    `title` VARCHAR(191) NOT NULL,
+    `content` JSON NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
 CREATE TABLE `_PostTags` (
     `A` INTEGER NOT NULL,
     `B` INTEGER NOT NULL,
@@ -360,6 +385,12 @@ ALTER TABLE `ViewingRecord` ADD CONSTRAINT `ViewingRecord_userId_fkey` FOREIGN K
 ALTER TABLE `ViewingRecord` ADD CONSTRAINT `ViewingRecord_musicalId_fkey` FOREIGN KEY (`musicalId`) REFERENCES `Musical`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `ViewingRecord` ADD CONSTRAINT `ViewingRecord_seatId_fkey` FOREIGN KEY (`seatId`) REFERENCES `Seat`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `ViewingImage` ADD CONSTRAINT `ViewingImage_viewingId_fkey` FOREIGN KEY (`viewingId`) REFERENCES `ViewingRecord`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `PostLike` ADD CONSTRAINT `PostLike_postId_fkey` FOREIGN KEY (`postId`) REFERENCES `Post`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -394,6 +425,9 @@ ALTER TABLE `MusicalCommunity` ADD CONSTRAINT `MusicalCommunity_communityId_fkey
 
 -- AddForeignKey
 ALTER TABLE `MultiProfile` ADD CONSTRAINT `MultiProfile_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `MemoryBook` ADD CONSTRAINT `MemoryBook_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `_PostTags` ADD CONSTRAINT `_PostTags_A_fkey` FOREIGN KEY (`A`) REFERENCES `Post`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
