@@ -153,7 +153,6 @@ router.get("/mine", authenticateJWT, async (req, res) => {
   }
 });
 
-// 커뮤니티 정보 조회
 router.get("/:type/:id", async (req, res) => {
   try {
     const communityId = Number(req.params.id);
@@ -175,10 +174,16 @@ router.get("/:type/:id", async (req, res) => {
 
     const formatted = {
       communityId: community.id,
-      communityName: community.groupName,
+      groupName: community.groupName,
       type: community.type,
+      targetId: community.targetId,
+      musicalName: community.musicalName,
+      recentPerformanceDate: community.recentPerformanceDate,
+      theaterName: community.theaterName,
+      ticketLink: community.ticketLink,
       createdAt: community.createdAt,
     };
+
     res.status(200).json({ success: true, community: formatted });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });

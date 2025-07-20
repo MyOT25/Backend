@@ -133,6 +133,11 @@ export const findCommunityById = async (communityId) => {
       id: true,
       groupName: true,
       type: true,
+      targetId: true,
+      musicalName: true,
+      recentPerformanceDate: true,
+      theaterName: true,
+      ticketLink: true,
       createdAt: true,
     },
   });
