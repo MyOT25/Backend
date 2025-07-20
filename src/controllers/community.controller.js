@@ -131,7 +131,7 @@ router.get("/", async (req, res) => {
 });
 
 // 내가 가입한 커뮤니티 목록 조회
-router.get("/mine", async (req, res) => {
+router.get("/mine", authenticateJWT, async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
