@@ -17,6 +17,11 @@ enum MediaType {
   video
 }
 
+enum CommunityType {
+  musical
+  actor
+}
+
 model User {
   id            Int      @id @default(autoincrement())
   loginId       String   @unique
@@ -43,6 +48,10 @@ model User {
   viewings      ViewingRecord[]
   follows       Follow[] @relation("Following")
   followers     Follow[] @relation("Follower")
+  questionLikes   QuestionLike[]      
+  answerLikes     AnswerLike[]        
+  questionTags    QuestionTag[]       
+  questionImages  QuestionImage[]     
 
   multiProfiles  MultiProfile[]
   userCommunities UserCommunity[]
@@ -204,20 +213,19 @@ enum SeatType {
 }
 
 model Community {
-  id        Int      @id @default(autoincrement()) 
-  createdAt DateTime?
-  name      String?
-  type      String?
-  description  String?
-  musicalName         String?
-  recentPerformanceDate DateTime?
-  theaterName         String?
-  ticketLink          String?
-  profileImage        String?
+  id            Int           @id @default(autoincrement())  
+  type          CommunityType 
+  targetId      Int?          
+  groupName     String        
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  userCommunities UserCommunity[]
+  // Relations
+  userCommunities    UserCommunity[]
   musicalCommunities MusicalCommunity[]
-  posts Post[]
+  posts              Post[]
+  multiProfiles      MultiProfile[]
+  memoryBooks        MemoryBook[]
 }
 
 
@@ -320,6 +328,7 @@ model Question {
   likes       QuestionLike[]
   tags        QuestionTag[]
   images      QuestionImage[]
+  answerLikes  AnswerLike[]
 }
 
 model Answer {
@@ -435,8 +444,10 @@ model MultiProfile {
   nickname    String
   image       String?
   bio         String?
+  communityId Int
 
   user        User    @relation(fields: [userId], references: [id])
+  community   Community @relation(fields: [communityId], references: [id])
 }
 
 model MemoryBook {
@@ -445,11 +456,13 @@ model MemoryBook {
   targetType  TargetType
   targetId    Int
   title       String
+  communityId Int
   content     Json
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
   user        User        @relation(fields: [userId], references: [id])
+  community   Community   @relation(fields: [communityId], references: [id])
 }
 
 enum TargetType {
