@@ -37,41 +37,13 @@ export const handleJoinOrLeaveCommunity = async (
 };
 
 // 커뮤니티 신청
-export const handleCommunityRequest = async ({
-  userId,
-  name,
-  description,
-  type,
-  musicalName,
-  recentPerformanceDate,
-  theaterName,
-  ticketLink,
-}) => {
-  console.log("요청 받은 데이터:", {
-    userId,
-    name,
-    description,
-    type,
-  });
-
-  console.log("checking for community name:", name);
-  const exists = await checkDuplicateCommunityName(name);
+export const handleCommunityRequest = async ({ type, targetId, groupName }) => {
+  const exists = await checkDuplicateCommunityName(groupName);
   if (exists) {
-    throw new Error("이미 존재하는 커뮤니티입니다.");
+    throw new Error("이미 존재하는 커뮤니티 이름입니다.");
   }
 
-  await insertCommunityRequest({
-    userId,
-    name,
-    description,
-    type,
-    musicalName,
-    recentPerformanceDate,
-    theaterName,
-    ticketLink,
-  });
-
-  return "커뮤니티 신청이 완료되었습니다.";
+  return await insertCommunityRequest({ type, targetId, groupName });
 };
 
 // 가입 가능한 커뮤니티 탐색하기

@@ -32,27 +32,36 @@ router.post("/type/join", async (req, res) => {
 
 router.post("/type/request", async (req, res) => {
   try {
-    const {
-      userId,
-      name,
-      description,
+    const userId = req.user?.id;
+    if (!userId) {
+      return res
+        .status(401)
+        .json({ success: false, message: "로그인이 필요합니다." });
+    }
+    const { type, targetId, groupName } = req.body;
+    if (!type || !["musical", "actor"].includes(type)) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "유효한 커뮤니티 타입이 필요합니다.",
+        });
+    }
+    if (!groupName || groupName.trim() === "") {
+      return res
+        .status(400)
+        .json({ success: false, message: "커뮤니티 이름은 필수입니다." });
+    }
+    const community = await handleCommunityRequest({
       type,
-      musicalName,
-      recentPerformanceDate,
-      theaterName,
-      ticketLink,
-    } = req.body;
-    const message = await handleCommunityRequest({
-      userId,
-      name,
-      description,
-      type,
-      musicalName,
-      recentPerformanceDate,
-      theaterName,
-      ticketLink,
+      targetId,
+      groupName,
     });
-    res.status(200).json({ success: true, message });
+    res.status(201).json({
+      success: true,
+      message: "커뮤니티가 성공적으로 생성되었습니다.",
+      community,
+    });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }

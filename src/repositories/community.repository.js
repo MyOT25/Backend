@@ -32,45 +32,20 @@ export const deleteUserFromCommunity = async (userId, communityId) => {
 };
 
 // 커뮤니티 이름 중복 확인
-export const checkDuplicateCommunityName = async (name) => {
-  console.log("checking for community name:", name);
-  const exists = await prisma.community.findFirst({
-    where: {
-      name,
-    },
+export const checkDuplicateCommunityName = async (groupName) => {
+  const existing = await prisma.community.findFirst({
+    where: { groupName },
   });
-  console.log(" exists:", exists);
-  return !!exists;
+  return !!existing;
 };
 
 //  커뮤니티 신청 (등록)
-export const insertCommunityRequest = async ({
-  userId,
-  name,
-  description,
-  type,
-  musicalName,
-  recentPerformanceDate,
-  theaterName,
-  ticketLink,
-}) => {
-  await prisma.community.create({
+export const insertCommunityRequest = async ({ type, targetId, groupName }) => {
+  return await prisma.community.create({
     data: {
-      name,
-      description,
       type,
-      createdAt: new Date(),
-      musicalName,
-      recentPerformanceDate: new Date(recentPerformanceDate),
-      theaterName,
-      ticketLink,
-      userCommunities: {
-        create: {
-          user: {
-            connect: { id: userId },
-          },
-        },
-      },
+      targetId,
+      groupName,
     },
   });
 };
