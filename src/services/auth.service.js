@@ -13,7 +13,7 @@ import { BadRequestError } from "../middlewares/CustomError.js";
 export const loginService = async ({ loginId, password }) => {
   const user = await findUserByLoginId(loginId);
 
-  if (user) {
+  if (!user) {
     throw new UnauthorizedError("해당 로그인 ID의 사용자가 존재하지 않습니다.");
   }
 
