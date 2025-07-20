@@ -17,9 +17,16 @@ import { checkUserInCommunity } from "../repositories/community.repository.js";
 
 const router = express.Router();
 
-router.post("/type/join", async (req, res) => {
+router.post("/type/join", authenticateJWT, async (req, res) => {
   try {
-    const { userId, communityId, action } = req.body;
+    const userId = req.user?.id;
+    const { communityId, action } = req.body;
+    if (!userId || !communityId || !["join", "leave"].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: "userId, communityId, action(join/leave)을 확인하세요.",
+      });
+    }
     const message = await handleJoinOrLeaveCommunity(
       userId,
       communityId,
