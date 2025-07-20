@@ -40,12 +40,10 @@ router.post("/type/request", async (req, res) => {
     }
     const { type, targetId, groupName } = req.body;
     if (!type || !["musical", "actor"].includes(type)) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "유효한 커뮤니티 타입이 필요합니다.",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "유효한 커뮤니티 타입이 필요합니다.",
+      });
     }
     if (!groupName || groupName.trim() === "") {
       return res
@@ -71,11 +69,16 @@ router.post("/type/request", async (req, res) => {
 router.get("/:type/:userId", async (req, res) => {
   try {
     const userId = Number(req.params.userId);
+    if (isNaN(userId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "유효한 userId가 필요합니다." });
+    }
     const communities = await fetchAvailableCommunities(userId);
 
     const formatted = communities.map((c) => ({
       communityId: c.id,
-      communityName: c.name,
+      communityName: c.groupName,
       type: c.type,
       createdAt: c.createdAt,
     }));

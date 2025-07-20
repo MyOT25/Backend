@@ -70,7 +70,7 @@ export const findUnjoinedCommunities = async (userId) => {
     },
     select: {
       id: true,
-      name: true,
+      groupName: true,
       type: true,
       createdAt: true,
     },
