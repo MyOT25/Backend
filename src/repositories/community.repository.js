@@ -100,7 +100,7 @@ export const findMyCommunities = async (userId) => {
       community: {
         select: {
           id: true,
-          name: true,
+          groupName: true,
           type: true,
           createdAt: true,
         },

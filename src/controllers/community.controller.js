@@ -119,7 +119,7 @@ router.get("/mine", async (req, res) => {
 
     const formatted = communities.map((c) => ({
       communityId: c.id,
-      communityName: c.name,
+      communityName: c.groupName,
       type: c.type,
       createdAt: c.createdAt,
     }));
