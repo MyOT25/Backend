@@ -16,10 +16,10 @@ export const findUserByEmail = async (email) => {
 };
 
 //새로운 설정 아이디 생성
-export const createSetting = async () => {
+export const createSetting = async (userId) => {
   return prisma.setting.create({
     data: {
-      //data에 임의로 기본값 넣음
+      userId,
       useBackground: true,
       useProfilePhoto: false,
       allowRepost: true,
