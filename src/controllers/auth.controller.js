@@ -7,9 +7,9 @@ import { SignUpDto } from "../dtos/auth.dto.js";
 
 const router = express.Router();
 
-// api/posts/login
+// api/auth/login
 router.post(
-  "/posts/login",
+  "/auth/login",
   asyncHandler(async (req, res) => {
     const dto = new LoginRequestDto(req.body);
     const { valid, message } = dto.validate();
@@ -26,9 +26,9 @@ router.post(
   })
 );
 
-// api/posts/signup
+// api/auth/signup
 router.post(
-  "/posts/signup",
+  "/auth/signup",
   asyncHandler(async (req, res) => {
     const signUpDto = new SignUpDto(req.body);
     const result = await signupService(signUpDto);

@@ -231,6 +231,7 @@ model Setting {
   users           User     @relation(fields:[userId], references: [id])
 }
 
+//게시글 관련 태그
 model Tag {
   id     Int    @id @default(autoincrement())
   name   String @unique
