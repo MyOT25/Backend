@@ -85,7 +85,7 @@ export const findAllCommunities = async () => {
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
-      name: true,
+      groupName: true,
       type: true,
       createdAt: true,
     },
