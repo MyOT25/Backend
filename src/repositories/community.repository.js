@@ -117,13 +117,8 @@ export const findCommunityById = async (communityId) => {
     where: { id: communityId },
     select: {
       id: true,
-      name: true,
-      description: true,
+      groupName: true,
       type: true,
-      musicalName: true,
-      recentPerformanceDate: true,
-      theaterName: true,
-      ticketLink: true,
       createdAt: true,
     },
   });

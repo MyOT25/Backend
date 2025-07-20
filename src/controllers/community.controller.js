@@ -135,6 +135,15 @@ router.get("/:type/:id", async (req, res) => {
     const communityId = Number(req.params.id);
     const { type } = req.params;
 
+    if (!["musical", "actor"].includes(type)) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "유효하지 않은 커뮤니티 타입입니다.",
+        });
+    }
+
     const community = await fetchCommunityById(communityId);
     if (!community || community.type !== type) {
       return res
@@ -144,13 +153,8 @@ router.get("/:type/:id", async (req, res) => {
 
     const formatted = {
       communityId: community.id,
-      communityName: community.name,
-      description: community.description,
+      communityName: community.groupName,
       type: community.type,
-      musicalName: community.musicalName,
-      recentPerformanceDate: community.recentPerformanceDate,
-      theaterName: community.theaterName,
-      ticketLink: community.ticketLink,
       createdAt: community.createdAt,
     };
     res.status(200).json({ success: true, community: formatted });
