@@ -30,14 +30,19 @@ export const loginService = async ({ loginId, password }) => {
 
   return {
     userId: user.id,
-    nickname: user.nickname,
     accessToken,
   };
 };
 
 //일반 회원가입 로직
 export const signupService = async (signUpDto) => {
-  const { email, password, ...rest } = signUpDto;
+  const { email, password, loginId, ...rest } = signUpDto;
+
+  // 로그인 ID 중복 확인
+  const existingUserByLoginId = await findUserByLoginId(loginId);
+  if (existingUserByLoginId) {
+    throw new BadRequestError("이미 사용 중인 로그인 ID입니다.");
+  }
 
   // 이메일 중복 확인
   const existingUser = await findUserByEmail(email);
@@ -47,24 +52,21 @@ export const signupService = async (signUpDto) => {
 
   // 비밀번호 해싱
   const hashedPassword = await bcrypt.hash(password, 10);
-  // 빈 세팅 생성
-  const newSetting = await createSetting();
 
   // 사용자 생성
   const newUser = await createUser({
     ...rest,
     email,
+    loginId,
     password: hashedPassword,
-    setting: {
-      connect: { id: newSetting.id },
-    },
   });
+
+  // 사용자 기반 설정(setting) 생성
+  await createSetting(newUser.id);
 
   return {
     id: newUser.id,
-    settingId: newUser.settingId,
+    nicname: newUser.nickname,
     email: newUser.email,
-    loginId: newUser.loginId,
-    nickname: newUser.nickname,
   };
 };

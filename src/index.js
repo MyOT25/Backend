@@ -81,7 +81,6 @@ app.get("/api/posts/memorybooks",authenticateJWT,getMemoryBook);
 app.put("/api/posts/memorybooks",authenticateJWT,updateMemoryBook);
 
 
-
 app.get("/", (req, res) => {
   res.send("Hello MyOT!");
 });
