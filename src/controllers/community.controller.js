@@ -10,11 +10,11 @@ import {
   fetchAllCommunities,
   fetchMyCommunities,
   fetchCommunityById,
-  addCommunityProfile,
   updateCommunityProfile,
   getRepostFeed,
   getMediaFeed,
   getPopularFeed,
+  createCommunityProfileService,
 } from "../services/community.service.js";
 
 import { checkUserInCommunity } from "../repositories/community.repository.js";
@@ -228,43 +228,31 @@ router.get("/type/:id/status", async (req, res) => {
 // 커뮤니티 프로필 추가
 router.post("/profile", async (req, res) => {
   try {
-    const {
-      name,
-      type,
-      description,
-      profileImage,
-      ticketLink,
-      musicalName,
-      theaterName,
-      recentPerformanceDate,
-    } = req.body;
+    const { userId, communityId, nickname, image, bio } = req.body;
 
-    const profileData = {
-      name,
-      type,
-      description,
-      profileImage,
-      ticketLink,
-      musicalName,
-      theaterName,
-      recentPerformanceDate,
-    };
+    if (!userId || !communityId || !nickname) {
+      return res.status(400).json({
+        success: false,
+        message: "userId, communityId, nickname은 필수입니다.",
+      });
+    }
 
-    const newCommunity = await addCommunityProfile(profileData);
+    const profile = await createCommunityProfileService({
+      userId,
+      communityId,
+      nickname,
+      image,
+      bio,
+    });
 
-    res.status(200).json({
+    res.status(201).json({
       success: true,
-      communityId: newCommunity.id,
-      message: "커뮤니티 프로필이 추가되었습니다.",
+      message: "커뮤니티 프로필이 생성되었습니다.",
+      profile,
     });
   } catch (err) {
-    console.error("커뮤니티 프로필 추가 실패:", err);
-    console.log("req.body 확인 👉", req.body);
-
-    res.status(500).json({
-      success: false,
-      message: "커뮤니티 프로필 추가 중 오류가 발생했습니다.",
-    });
+    console.error("커뮤니티 프로필 추가 오류:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

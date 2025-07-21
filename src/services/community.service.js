@@ -8,11 +8,12 @@ import {
   findAllCommunities,
   findMyCommunities,
   findCommunityById,
-  createCommunityProfile,
   modifyCommunityProfile,
   findRepostFeed,
   findMediaFeed,
   findPopularFeed,
+  createCommunityProfileRepository,
+  countUserProfilesInCommunity,
 } from "../repositories/community.repository.js";
 
 // 공연 커뮤니티 가입 / 탈퇴
@@ -112,8 +113,31 @@ export const fetchCommunityById = async (communityId) => {
 };
 
 // 커뮤니티 프로필 추가
-export const addCommunityProfile = async (profileDate) => {
-  return await createCommunityProfile(profileDate);
+const MAX_FREE_PROFILES = 5;
+
+export const createCommunityProfileService = async ({
+  userId,
+  communityId,
+  nickname,
+  image,
+  bio,
+}) => {
+  const currentCount = await countUserProfilesInCommunity(userId);
+
+  if (currentCount >= MAX_FREE_PROFILES) {
+    throw new Error(
+      "무료 회원은 최대 5개의 커뮤니티 프로필만 생성할 수 있습니다."
+    );
+  }
+  const profile = await createCommunityProfileRepository({
+    userId,
+    communityId,
+    nickname,
+    image,
+    bio,
+  });
+
+  return profile;
 };
 
 // 커뮤니티 프로필 수정
