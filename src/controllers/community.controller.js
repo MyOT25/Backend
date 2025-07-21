@@ -12,6 +12,7 @@ import {
   fetchCommunityById,
   addCommunityProfile,
   updateCommunityProfile,
+  getRepostFeed,
 } from "../services/community.service.js";
 
 import { checkUserInCommunity } from "../repositories/community.repository.js";
@@ -305,4 +306,17 @@ router.put("/profile/:id", async (req, res) => {
     });
   }
 });
+
+// 커뮤니티 내 피드 다른 커뮤니티로 인용
+//현재 커뮤니티의 피드 중, '다른 커뮤니티의 글을 인용한 글(repost)'만 보여줌
+router.post("/:id/feed/reposts", async (req, res) => {
+  try {
+    const communityId = Number(req.params.id);
+    const feed = await getRepostFeed(communityId);
+    res.status(200).json({ success: true, feed });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
 export default router;

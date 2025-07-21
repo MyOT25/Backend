@@ -10,6 +10,7 @@ import {
   findCommunityById,
   createCommunityProfile,
   modifyCommunityProfile,
+  findRepostFeed,
 } from "../repositories/community.repository.js";
 
 // 공연 커뮤니티 가입 / 탈퇴
@@ -116,4 +117,10 @@ export const addCommunityProfile = async (profileDate) => {
 // 커뮤니티 프로필 수정
 export const updateCommunityProfile = async (communityId, profileDate) => {
   return await modifyCommunityProfile(communityId, profileDate);
+};
+
+// // 커뮤니티 내 피드 다른 커뮤니티로 인용
+//현재 커뮤니티의 피드 중, '다른 커뮤니티의 글을 인용한 글(repost)'만 보여줌
+export const getRepostFeed = async (communityId) => {
+  return await findRepostFeed(communityId);
 };

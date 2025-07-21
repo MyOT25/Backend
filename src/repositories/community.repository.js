@@ -201,3 +201,29 @@ export const modifyCommunityProfile = async (communityId, data) => {
 
   return updated;
 };
+
+// 커뮤니티 내 피드 다른 커뮤니티로 인용
+//현재 커뮤니티의 피드 중, '다른 커뮤니티의 글을 인용한 글(repost)'만 보여줌
+
+export const findRepostFeed = async (communityId) => {
+  const posts = await prisma.post.findMany({
+    where: {
+      communityId, // 현재 커뮤니티에서 작성된 글
+      isRepost: true,
+      repostTargetId: { not: null },
+    },
+    include: {
+      repostTarget: {
+        include: {
+          community: true,
+        },
+      },
+      user: { select: { nickname: true, profileImage: true } },
+      community: { select: { groupName: true } },
+      postTags: { include: { tag: true } },
+    },
+  });
+
+  // 인용 대상이 다른 커뮤니티 글인지 필터링
+  return posts.filter((post) => post.repostTarget?.communityId !== communityId);
+};
