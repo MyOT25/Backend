@@ -11,6 +11,7 @@ import {
   createCommunityProfile,
   modifyCommunityProfile,
   findRepostFeed,
+  findMediaFeed,
 } from "../repositories/community.repository.js";
 
 // 공연 커뮤니티 가입 / 탈퇴
@@ -123,4 +124,9 @@ export const updateCommunityProfile = async (communityId, profileDate) => {
 //현재 커뮤니티의 피드 중, '다른 커뮤니티의 글을 인용한 글(repost)'만 보여줌
 export const getRepostFeed = async (communityId) => {
   return await findRepostFeed(communityId);
+};
+
+// 커뮤니티 내 미디어가 있는 피드만 필터링 할 수 있는 탭
+export const getMediaFeed = async (communityId) => {
+  return await findMediaFeed(communityId);
 };

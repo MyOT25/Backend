@@ -13,6 +13,7 @@ import {
   addCommunityProfile,
   updateCommunityProfile,
   getRepostFeed,
+  getMediaFeed,
 } from "../services/community.service.js";
 
 import { checkUserInCommunity } from "../repositories/community.repository.js";
@@ -313,6 +314,17 @@ router.get("/:id/feed/reposts", async (req, res) => {
   try {
     const communityId = Number(req.params.id);
     const feed = await getRepostFeed(communityId);
+    res.status(200).json({ success: true, feed });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+//커뮤니티 내 미디어가 있는 피드만 필터링 할 수 있는 탭
+router.get("/:id/feed/media", async (req, res) => {
+  try {
+    const communityId = Number(req.params.id);
+    const feed = await getMediaFeed(communityId);
     res.status(200).json({ success: true, feed });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });

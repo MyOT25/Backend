@@ -227,3 +227,24 @@ export const findRepostFeed = async (communityId) => {
   // 인용 대상이 다른 커뮤니티 글인지 필터링
   return posts.filter((post) => post.repostTarget?.communityId !== communityId);
 };
+
+// 커뮤니티 내 미디어가 있는 피드만 필터링 할 수 있는 탭
+export const findMediaFeed = async (communityId) => {
+  return await prisma.post.findMany({
+    where: {
+      communityId,
+      mediaType: {
+        in: ["image", "video"],
+      },
+    },
+    include: {
+      user: { select: { nickname: true, profileImage: true } },
+      community: { select: { groupName: true } },
+      postTags: { include: { tag: true } },
+      images: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+};
