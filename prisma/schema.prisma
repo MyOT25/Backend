@@ -49,6 +49,11 @@ model User {
   userCommunities UserCommunity[]
   
   memoryBooks    MemoryBook[]
+
+   // ✅ 역방향 필드 추가
+  questionGoods  QuestionGood[]
+  questionImages QuestionImage[]
+  questionTags   QuestionTag[]
 }
 
 model Post {
@@ -219,6 +224,7 @@ model Community {
   userCommunities UserCommunity[]
   musicalCommunities MusicalCommunity[]
   posts Post[]
+  memoryBook         MemoryBook? // 추가: MemoryBook와 1:1 관계 
 }
 
 
@@ -313,9 +319,13 @@ model Question {
   title       String
   content     String
   createdAt   DateTime? @default(now())
+  updatedAt   DateTime  @updatedAt
 
   user        User     @relation(fields: [userId], references: [id])
   answers     Answer[]
+  questionGoods QuestionGood[]
+  questionImages QuestionImage[]
+  questionTags  QuestionTag[]
 }
 
 model Answer {
@@ -383,8 +393,10 @@ model MemoryBook {
   content     Json
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+  communityId Int?        @unique // 추가 : Commnity와 1:1 FK
 
   user        User        @relation(fields: [userId], references: [id])
+  community   Community?  @relation(fields: [communityId], references: [id])
 }
 
 enum TargetType {
@@ -392,3 +404,35 @@ enum TargetType {
   ACTOR
 }
 
+model QuestionGood {
+  id         Int      @id @default(autoincrement()) // Key: 질문 좋아요 아이디
+  questionId Int                               // 질문 아이디
+  userId     Int                               // 사용자 아이디
+  createdAt  DateTime @default(now())          // 생성시간
+
+  question   Question @relation(fields: [questionId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model QuestionImage {
+  id         Int      @id @default(autoincrement()) // Key: 질문 이미지 ID
+  questionId Int                               // 질문 아이디
+  userId     Int                               // 사용자 아이디
+  imageUrl   String                            // 이미지 주소
+  createdAt  DateTime @default(now())          // 생성시간
+  updatedAt  DateTime @updatedAt                // 수정시간
+
+  question   Question @relation(fields: [questionId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model QuestionTag {
+  id         Int      @id @default(autoincrement()) // Key: 질문 태그 아이디
+  questionId Int                               // 질문 아이디
+  userId     Int                               // 사용자 아이디
+  tagName    String                            // 태그 이름
+  createdAt  DateTime @default(now())          // 태그 생성시간
+
+  question   Question @relation(fields: [questionId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+}

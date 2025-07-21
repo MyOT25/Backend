@@ -7,7 +7,7 @@ import swaggerUi from "swagger-ui-express";
 import errorHandler from "./middlewares/errorHandler.js";
 import swaggerSpec from "./config/swagger.js";
 import testRouter from "./controllers/test.controller.js"; // 변경된 경로
-import userRouter from "./controllers/user.Controller.js"; // (있다면 추가)
+import userRouter from "./controllers/user.controller.js"; // (있다면 추가)
 
 import communityRouter from "./controllers/community.controller.js";
 import postRouter from "./controllers/post.controller.js";
@@ -93,6 +93,6 @@ app.use(errorHandler);
 app.use(errorHandler);
 
 // ✅ 서버 실행
-app.listen(port, () => {
+app.listen(port,'0.0.0.0', () => {
   console.log(`🚀 Server running on http://localhost:${port}`);
 });
