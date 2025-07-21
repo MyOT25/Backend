@@ -64,11 +64,12 @@ model Post {
   userId         Int
   communityId    Int
   isRepost       Boolean     @default(false)
-  repostType     RepostType? //'post', 'review'
+  repostType     RepostType?
   repostTargetId Int?
+
   title          String?
   content        String?
-  mediaType      MediaType? //'image', 'video'
+  mediaType      MediaType?
   viewCount      Int         @default(0)
   commentCount   Int         @default(0)
   likeCount      Int         @default(0)
@@ -81,13 +82,17 @@ model Post {
   user      User      @relation(fields: [userId], references: [id])
   community Community @relation(fields: [communityId], references: [id])
 
-  comments  Comment[]
-  postLikes PostLike[]
-  bookmarks Bookmark[]
-  postTags  PostTag[]
-  images    Image[]
-  reviews   Review[]
+  repostTarget Post?  @relation("RepostedPost", fields: [repostTargetId], references: [id])
+  reposts      Post[] @relation("RepostedPost")
+
+  comments   Comment[]
+  postLikes  PostLike[]
+  bookmarks  Bookmark[]
+  postTags   PostTag[]
+  images     Image[]
+  reviews    Review[]
 }
+
 
 model Comment {
   id        Int      @id @default(autoincrement())
