@@ -39,9 +39,9 @@ model User {
   setting       Setting?
   posts         Post[]
   reviews       Review[]
-  comments      Comment[]
+  postcomments  PostComment[]
   postLikes     PostLike[]
-  bookmarks     Bookmark[]
+  postbookmarks PostBookmark[]
   questions     Question[]
   answers       Answer[]
   subscriptions Subscribe[]
@@ -65,10 +65,9 @@ model Post {
   communityId       Int
   isRepost          Boolean        @default(false)       
   repostType        RepostType?                         //'post', 'review'
-  repostTargetId    Int?                                
-  title             String?                             
+  repostTargetId    Int?                                                            
   content           String?                             
-  mediaType         MediaType?                          //'image', 'video'
+  hasMedia          Boolean        @default(false)
   viewCount         Int            @default(0)           
   commentCount      Int            @default(0)           
   likeCount         Int            @default(0)           
@@ -81,15 +80,15 @@ model Post {
   user              User           @relation(fields: [userId], references: [id])
   community         Community      @relation(fields: [communityId], references: [id])
 
-  comments          Comment[]
+  postcomments      PostComment[]
   postLikes         PostLike[]
-  bookmarks         Bookmark[]
+  postbookmarks     PostBookmark[]
   postTags          PostTag[] 
-  images            Image[]
+  postimages        PostImage[]
   reviews           Review[]
 }
 
-model Comment {
+model PostComment {
   id              Int      @id @default(autoincrement())
   postId          Int
   userId          Int
@@ -114,7 +113,7 @@ model PostLike {
   @@unique([userId, postId]) // 같은 유저가 같은 글에 여러 번 좋아요 못 누르게
 }
 
-model Bookmark {
+model PostBookmark {
   id      Int    @id @default(autoincrement())
   userId  Int
   postId  Int
@@ -123,6 +122,35 @@ model Bookmark {
   post    Post   @relation(fields: [postId], references: [id])
 
   @@unique([userId, postId]) // 중복 북마크 방지
+}
+
+//게시글 관련 태그
+model Tag_Post {
+  id     Int    @id @default(autoincrement())
+  name   String @unique
+  createdAt         DateTime       @default(now())
+
+  postTags      PostTag[]
+}
+
+model PostTag {
+  postId Int
+  tagId  Int
+  createdAt         DateTime       @default(now())
+
+  post   Post @relation(fields: [postId], references: [id])
+  tag_post    Tag_Post  @relation(fields: [tagId], references: [id])
+
+  @@id([postId, tagId]) // 복합 PK로 중복 저장 방지
+}
+
+model PostImage {
+  id     Int    @id @default(autoincrement())
+  postId    Int
+  url       String?
+  caption   String?
+
+  post      Post    @relation(fields: [postId], references: [id])
 }
 
 model Review {
@@ -181,7 +209,7 @@ model Musical {
 }
 
 model Theater {
-  id           Int       @id
+  id           Int       @id  @default(autoincrement())
   regionId     Int
   name         String?
   seatCount    Int?
@@ -237,37 +265,6 @@ model Setting {
   allowRepost     Boolean?
 
   users           User     @relation(fields:[userId], references: [id])
-}
-
-//게시글 관련 태그
-model Tag {
-  id     Int    @id @default(autoincrement())
-  name   String @unique
-  createdAt         DateTime       @default(now())
-
-  postTags      PostTag[]
-}
-
-model PostTag {
-  postId Int
-  tagId  Int
-  createdAt         DateTime       @default(now())
-
-  post   Post @relation(fields: [postId], references: [id])
-  tag    Tag  @relation(fields: [tagId], references: [id])
-
-  @@id([postId, tagId]) // 복합 PK로 중복 저장 방지
-}
-
-
-
-model Image {
-  id     Int    @id @default(autoincrement())
-  postId    Int
-  url       String?
-  caption   String?
-
-  post      Post    @relation(fields: [postId], references: [id])
 }
 
 model Subscribe {

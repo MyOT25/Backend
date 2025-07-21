@@ -1,33 +1,10 @@
 import prisma from "../config/prismaClient.js";
 import { UnauthorizedError } from "../middlewares/CustomError.js";
 import PostRepository from "../repositories/post.repository.js";
-import {
-  findPostsByActorName,
-  insertPost,
-  findOrCreateTag,
-  getPostListByFilters,
-  getPostById,
-  getPostTags,
-  getPostImages,
-  getPostComments,
-  insertComment,
-  togglePostLike,
-  updatePostById,
-  deletePostById,
-  getPostByIdForUpdate,
-} from "../repositories/post.repositories.js";
-
-//일반 게시글 등록
-import {
-  findUserCommunity,
-  createPost,
-  createImages,
-  upsertTagByName,
-  createPostTag,
-} from "../repositories/post.repository.js";
+/** */
+import { findPostsByActorName } from "../repositories/post.repositories.js";
 
 /* 티켓북 조회 */
-
 export const getTicketbook = async (userId) => {
   console.log(Object.keys(prisma)); // 모델들 확인
   const viewings = await prisma.viewingRecord.findMany({
@@ -169,173 +146,185 @@ export const getPostByActorName = async (actorName) => {
   return posts;
 };
 
-// 게시글 작성
-export const handleCreatePost = async ({
-  userId,
-  communityId,
-  title,
-  content,
-  category,
-  tagNames,
-  images,
-}) => {
-  // 게시글 생성
-  const postId = await insertPost(
-    userId,
-    communityId,
-    title,
-    content,
-    category
-  );
-
-  // 태그 생성 및 연결
-  const tagIds = [];
-  for (const tagName of tagNames) {
-    const tagId = await findOrCreateTag(tagName);
-    tagIds.push(tagId);
-  }
-
-  await prisma.post.update({
-    where: { id: postId },
-    data: {
-      tags: {
-        connect: tagIds.map((id) => ({ id })),
-      },
-    },
-  });
-
-  // 이미지 등록 (Image 모델 기반으로 직접 작성)
-  for (const imageUrl of images) {
-    await prisma.image.create({
-      data: {
-        post: { connect: { id: postId } },
-        url: imageUrl,
-      },
-    });
-  }
-
-  return postId;
-};
-
-// 게시글 수정
-export const handleUpdatePost = async ({
-  postId,
-  userId,
-  title,
-  content,
-  category,
-  tagNames,
-  images,
-}) => {
-  const existingPost = await getPostByIdForUpdate(postId);
-
-  console.log("👉 [서비스] 기존 게시글 작성자 userId:", existingPost.userId);
-  console.log("👉 [서비스] 요청자가 보낸 userId:", userId);
-  if (!existingPost) throw new Error("존재하지 않는 게시글입니다.");
-  if (existingPost.userId !== userId) throw new Error("수정 권한이 없습니다.");
-
-  await updatePostById(postId, {
-    title,
-    content,
-    category,
-    tags: tagNames,
-  });
-};
-
-// 게시글 삭제
-export const handleDeletePost = async ({ postId, userId }) => {
-  const post = await getPostById(postId);
-  if (!post) throw new Error("존재하지 않는 게시글입니다.");
-  if (post.userId !== userId) throw new Error("삭제 권한이 없습니다.");
-
-  await deletePostById(postId);
-};
-
-// 게시글 목록 조회
-export const fetchPostList = async ({ communityId, category, sort }) => {
-  if (!communityId || !category || !sort) {
-    throw new Error("communityId, category, sort는 필수입니다.");
-  }
-
-  const validSorts = ["likes", "latest"];
-  if (!validSorts.includes(sort)) {
-    throw new Error("지원하지 않는 정렬 기준입니다.");
-  }
-
-  return await getPostListByFilters(communityId, category, sort);
-};
-
-// 게시글 상세 조회
-export const fetchPostDetail = async (postId) => {
-  const post = await getPostById(postId);
-  if (!post) throw new Error("게시글을 찾을 수 없습니다.");
-
-  const tags = await getPostTags(postId);
-  const images = await getPostImages(postId);
-  const comments = await getPostComments(postId);
-
-  return {
-    ...post,
-    tags,
-    images,
-    comments,
-  };
-};
-
-// 댓글 작성
-export const handleAddComment = async ({
-  postId,
-  userId,
-  communityId,
-  content,
-  isAnonymous,
-}) => {
-  if (!postId || !userId || !communityId || !content) {
-    throw new Error("필수 값이 누락되었습니다.");
-  }
-
-  const comment = await insertComment({
-    postId,
-    userId,
-    communityId,
-    content,
-    isAnonymous,
-  });
-
-  return comment.id;
-};
-
-// 좋아요 등록
-
-export const handleToggleLike = async ({ postId, userId }) => {
-  const message = await togglePostLike({ postId, userId });
-  return message;
-};
-
-//일반 게시글 등록(생성)
+/*일반 게시글 등록(생성)
+ */
 export const createPostService = async (userId, dto) => {
-  const { communityId, content, mediaType, images } = dto;
+  const { communityId, content, hasMedia, postimages } = dto;
 
   // 커뮤니티 가입 여부 확인
-  const membership = await findUserCommunity(userId, communityId);
+  const membership = await PostRepository.findUserCommunity(
+    userId,
+    communityId
+  );
   if (!membership) {
     throw new Error("해당 커뮤니티에 가입된 사용자만 글을 작성할 수 있습니다.");
   }
 
-  // 게시글 생성
-  const post = await createPost({ userId, communityId, content, mediaType });
+  // 트랜잭션 시작
+  const post = await prisma.$transaction(async (tx) => {
+    // 1. 게시글 생성
+    const createdPost = await tx.post.create({
+      data: {
+        userId,
+        communityId,
+        content,
+        hasMedia,
+      },
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+      },
+    });
 
-  // 이미지들 저장
-  if (Array.isArray(images) && images.length > 0) {
-    await createImages(post.id, images);
-  }
+    // 2. 이미지 저장
+    let savedImages = [];
 
-  // 태그 저장 및 연결
-  const tags = dto.extractHashtags();
-  for (const tagName of tags) {
-    const tag = await upsertTagByName(tagName);
-    await createPostTag(post.id, tag.id);
-  }
+    if (postimages && postimages.length > 0) {
+      const imageList = Array.isArray(postimages) ? postimages : [postimages];
+      const imageData = imageList.map((url) => ({
+        postId: createdPost.id,
+        url,
+      }));
+
+      await tx.postImage.createMany({ data: imageData });
+      savedImages = imageList;
+    }
+
+    // 3. 해시태그 추출 및 저장
+    const tags = dto.extractHashtags();
+    for (const tagName of tags) {
+      const tag = await tx.tag_Post.upsert({
+        where: { name: tagName },
+        update: {},
+        create: { name: tagName },
+      });
+
+      await tx.postTag.create({
+        data: {
+          postId: createdPost.id,
+          tagId: tag.id,
+        },
+      });
+    }
+
+    return {
+      post: createdPost,
+      postimages: savedImages,
+    };
+  });
 
   return post;
+};
+
+/*재게시용 게시글 생성 */
+export const createRepostService = async (
+  userId,
+  communityId,
+  postId,
+  createRepostDto
+) => {
+  // 커뮤니티 가입 여부 확인
+  const membership = await PostRepository.findUserCommunity(
+    userId,
+    communityId
+  );
+  if (!membership) {
+    throw new Error("해당 커뮤니티에 가입된 사용자만 재게시할 수 있습니다.");
+  }
+
+  const repost = await PostRepository.createRepost({
+    userId,
+    communityId,
+    repostType: createRepostDto.repostType,
+    repostTargetId: postId,
+  });
+
+  await PostRepository.incrementRepostCount(postId);
+
+  return repost;
+};
+
+/**
+ * 인용 게시글 생성
+ */
+export const createQuotePostService = async (
+  userId,
+  communityId,
+  postId,
+  dto
+) => {
+  const { repostType, content, postimages, hasMedia } = dto;
+
+  // 커뮤니티 가입 여부 확인
+  const membership = await PostRepository.findUserCommunity(
+    userId,
+    communityId
+  );
+  if (!membership) {
+    throw new Error(
+      "해당 커뮤니티에 가입된 사용자만 인용 게시글을 작성할 수 있습니다."
+    );
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    // 1. 인용 게시글 생성
+    const createdPost = await tx.post.create({
+      data: {
+        userId,
+        communityId,
+        isRepost: true,
+        repostType,
+        repostTargetId: postId,
+        content,
+        hasMedia,
+      },
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+      },
+    });
+
+    // 2. 이미지 저장
+    let savedImages = [];
+
+    if (postimages && postimages.length > 0) {
+      const imageList = Array.isArray(postimages) ? postimages : [postimages];
+      const imageData = imageList.map((url) => ({
+        postId: createdPost.id,
+        url,
+      }));
+
+      await tx.postImage.createMany({ data: imageData });
+      savedImages = imageList;
+    }
+
+    // 3. 해시태그 추출 및 저장
+    const tags = dto.extractHashtags?.() ?? [];
+    for (const tagName of tags) {
+      const tag = await tx.tag_Post.upsert({
+        where: { name: tagName },
+        update: {},
+        create: { name: tagName },
+      });
+
+      await tx.postTag.create({
+        data: {
+          postId: createdPost.id,
+          tagId: tag.id,
+        },
+      });
+    }
+
+    return {
+      post: createdPost,
+      postimages: savedImages,
+    };
+  });
+
+  // 4. 원본 게시글 repostCount 증가
+  await PostRepository.incrementRepostCount(postId);
+
+  return result;
 };

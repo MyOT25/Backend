@@ -9,16 +9,7 @@ async function main() {
     data: { name: "서울" },
   });
 
-  // ✅ Setting 생성 (id 수동 지정)
-  const setting = await prisma.setting.create({
-    data: {
-      useBackground: false,
-      useProfilePhoto: true,
-      allowRepost: true,
-    },
-  });
-
-  // ✅ User 생성 (autoincrement 있음)
+  // ✅ User + Setting 동시에 생성
   const user = await prisma.user.create({
     data: {
       loginId: "testuser",
@@ -28,7 +19,13 @@ async function main() {
       nickname: "Testy",
       birthDate: new Date("2000-01-01"),
       isSubscribed: true,
-      settingId: setting.id, // 관계 연결
+      setting: {
+        create: {
+          useBackground: false,
+          useProfilePhoto: true,
+          allowRepost: true,
+        },
+      },
     },
   });
   console.log("👤 유저 생성 완료");
