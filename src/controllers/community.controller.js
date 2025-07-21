@@ -1,6 +1,7 @@
 import express from "express";
 import prisma from "../config/prismaClient.js";
 import { authenticateJWT } from "../middlewares/authMiddleware.js";
+import jwt from "jsonwebtoken";
 
 import {
   handleJoinOrLeaveCommunity,
@@ -38,13 +39,24 @@ router.post("/type/join", authenticateJWT, async (req, res) => {
   }
 });
 
-router.post("/type/request", authenticateJWT, async (req, res) => {
+router.post("/type/request", async (req, res) => {
   try {
-    const userId = req.user?.id;
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res
+        .status(401)
+        .json({ success: false, message: "토큰이 필요합니다." });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id || decoded.userId;
+
+    console.log("🔐 JWT_SECRET 값 확인:", process.env.JWT_SECRET);
+
     if (!userId) {
       return res
         .status(401)
-        .json({ success: false, message: "로그인이 필요합니다." });
+        .json({ success: false, message: "유효하지 않은 토큰입니다." });
     }
 
     const {
@@ -70,6 +82,7 @@ router.post("/type/request", authenticateJWT, async (req, res) => {
     }
 
     const community = await handleCommunityRequest({
+      userId,
       type,
       targetId,
       groupName,
@@ -85,6 +98,7 @@ router.post("/type/request", authenticateJWT, async (req, res) => {
       community,
     });
   } catch (err) {
+    console.error("커뮤니티 신청 오류:", err);
     res.status(400).json({ success: false, message: err.message });
   }
 });

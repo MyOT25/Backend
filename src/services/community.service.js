@@ -4,7 +4,6 @@ import {
   insertUserToCommunity,
   deleteUserFromCommunity,
   checkDuplicateCommunityName,
-  insertCommunityRequest,
   findUnjoinedCommunities,
   findAllCommunities,
   findMyCommunities,
@@ -37,13 +36,56 @@ export const handleJoinOrLeaveCommunity = async (
 };
 
 // 커뮤니티 신청
-export const handleCommunityRequest = async ({ type, targetId, groupName }) => {
-  const exists = await checkDuplicateCommunityName(groupName);
-  if (exists) {
-    throw new Error("이미 존재하는 커뮤니티 이름입니다.");
-  }
+export const handleCommunityRequest = async ({
+  userId,
+  type,
+  targetId,
+  groupName,
+}) => {
+  return await insertCommunityRequest({
+    userId,
+    type,
+    targetId,
+    groupName,
+    musicalName: null,
+    recentPerformanceDate: null,
+    theaterName: null,
+    ticketLink: null,
+  });
+};
 
-  return await insertCommunityRequest({ type, targetId, groupName });
+export const insertCommunityRequest = async ({
+  userId,
+  type,
+  targetId,
+  groupName,
+  musicalName,
+  recentPerformanceDate,
+  theaterName,
+  ticketLink,
+}) => {
+  return await prisma.community.create({
+    data: {
+      type,
+      targetId,
+      groupName,
+      musicalName,
+      recentPerformanceDate: recentPerformanceDate
+        ? new Date(recentPerformanceDate)
+        : null,
+      theaterName,
+      ticketLink,
+      createdAt: new Date(),
+
+      userCommunities: {
+        create: {
+          user: {
+            connect: { id: userId },
+          },
+        },
+      },
+    },
+  });
 };
 
 // 가입 가능한 커뮤니티 탐색하기
