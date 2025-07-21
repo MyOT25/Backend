@@ -153,7 +153,7 @@ router.get("/mine", authenticateJWT, async (req, res) => {
         .status(401)
         .json({ success: false, message: "로그인이 필요합니다." });
     }
-    const communityId = await fetchMyCommunities(userId);
+    const communities = await fetchMyCommunities(userId);
 
     const formatted = communities.map((c) => ({
       communityId: c.id,
