@@ -248,3 +248,36 @@ export const findMediaFeed = async (communityId) => {
     },
   });
 };
+
+// 요즘 인기글만 볼 수 있는 피드
+export const findPopularFeed = async (communityId) => {
+  return await prisma.post.findMany({
+    where: {
+      communityId,
+      likeCount: {
+        gte: 3,
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    select: {
+      id: true,
+      title: true,
+      content: true,
+      likeCount: true,
+      viewCount: true,
+      createdAt: true,
+      user: {
+        select: {
+          nickname: true,
+        },
+      },
+      community: {
+        select: {
+          groupName: true,
+        },
+      },
+    },
+  });
+};

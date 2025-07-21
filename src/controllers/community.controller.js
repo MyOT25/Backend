@@ -14,6 +14,7 @@ import {
   updateCommunityProfile,
   getRepostFeed,
   getMediaFeed,
+  getPopularFeed,
 } from "../services/community.service.js";
 
 import { checkUserInCommunity } from "../repositories/community.repository.js";
@@ -325,6 +326,17 @@ router.get("/:id/feed/media", async (req, res) => {
   try {
     const communityId = Number(req.params.id);
     const feed = await getMediaFeed(communityId);
+    res.status(200).json({ success: true, feed });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// 요즘 인기글만 볼 수 있는 피드
+router.get("/:id/feed/popular", async (req, res) => {
+  try {
+    const communityId = Number(req.params.id);
+    const feed = await getPopularFeed(communityId);
     res.status(200).json({ success: true, feed });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });

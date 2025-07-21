@@ -12,6 +12,7 @@ import {
   modifyCommunityProfile,
   findRepostFeed,
   findMediaFeed,
+  findPopularFeed,
 } from "../repositories/community.repository.js";
 
 // 공연 커뮤니티 가입 / 탈퇴
@@ -129,4 +130,9 @@ export const getRepostFeed = async (communityId) => {
 // 커뮤니티 내 미디어가 있는 피드만 필터링 할 수 있는 탭
 export const getMediaFeed = async (communityId) => {
   return await findMediaFeed(communityId);
+};
+
+// 요즘 인기글만 볼 수 있는 피드
+export const getPopularFeed = async (communityId) => {
+  return await findPopularFeed(communityId);
 };
