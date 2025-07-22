@@ -179,7 +179,7 @@ export const modifyCommunityProfile = async (profileId, data) => {
 
 export const deleteCommunityProfileRepository = async (profileId) => {
   return await prisma.multiProfile.delete({
-    where: { d: profileId },
+    where: { id: profileId },
   });
 };
 
@@ -264,8 +264,17 @@ export const findPopularFeed = async (communityId) => {
 };
 
 // 해당 커뮤니티에 설정한 내 프로필 조회
-export const findMyCommunityProfile = async (userId, communityId) => {
+export const findMyProfileInCommunityRepository = async (
+  userId,
+  communityId
+) => {
+  console.log("🌐 userId in repo:", userId);
+  console.log("🌐 communityId in repo:", communityId);
+
   return await prisma.multiProfile.findFirst({
-    where: { userId, communityId },
+    where: {
+      userId: Number(userId),
+      communityId: Number(communityId),
+    },
   });
 };
