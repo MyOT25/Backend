@@ -11,9 +11,8 @@ class PostRepository {
       throw new Error(`Invalid month: ${month}`);
     }
 
-    // JS Date는 month가 0부터 시작 (0=1월)
-    const startDate = new Date(year, month - 1, 1); // 현재 달 1일
-    const endDate = new Date(year, month, 1); // 다음 달 1일
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 1);
 
     return prisma.viewingRecord.findMany({
       where: {
@@ -29,55 +28,98 @@ class PostRepository {
       },
     });
   }
+
+  // 유저가 해당 커뮤니티에 가입되어 있는지 확인
+  async findUserCommunity(userId, communityId) {
+    return prisma.userCommunity.findFirst({
+      where: { userId, communityId },
+    });
+  }
+
+  //Post 테이블 업데이트
+  async createPost({ userId, communityId, content, hasMedia }) {
+    return prisma.post.create({
+      data: {
+        userId,
+        communityId,
+        content,
+        hasMedia,
+      },
+    });
+  }
+
+  //PostImage 테이블 업데이트
+  async createImages(postId, postimages) {
+    const imageList = Array.isArray(postimages) ? postimages : [postimages];
+    const imageData = imageList.map((url) => ({ postId, url }));
+    return prisma.postImage.createMany({ data: imageData });
+  }
+
+  //Tag_Post 테이블 업데이트
+  async upsertTagByName(name) {
+    return prisma.tag_Post.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+  }
+
+  //PostTag 테이블 업데이트
+  async createPostTag(postId, tagId) {
+    return prisma.postTag.create({
+      data: {
+        postId,
+        tagId,
+      },
+    });
+  }
+
+  // 재게시용 게시글 생성
+  async createRepost({ userId, communityId, repostType, repostTargetId }) {
+    return prisma.post.create({
+      data: {
+        userId,
+        communityId,
+        isRepost: true,
+        repostType,
+        repostTargetId,
+      },
+    });
+  }
+
+  // 인용 게시글 생성
+  async createQuotePost({
+    userId,
+    communityId,
+    repostType,
+    repostTargetId,
+    content,
+    hasMedia,
+  }) {
+    return prisma.post.create({
+      data: {
+        userId,
+        communityId,
+        isRepost: true,
+        repostType,
+        repostTargetId,
+        content,
+        hasMedia,
+      },
+    });
+  }
+
+  // 원본 게시글의 repostCount 증가
+  async incrementRepostCount(postId) {
+    return prisma.post.update({
+      where: { id: postId },
+      data: {
+        repostCount: {
+          increment: 1,
+        },
+      },
+    });
+  }
 }
 
 export default new PostRepository();
-
-//사용자가 해당 커뮤니티에 가입되어 있는지 확인
-export const findUserCommunity = async (userId, communityId) => {
-  return prisma.userCommunity.findFirst({
-    where: { userId, communityId },
-  });
-};
-
-//게시글 생성
-export const createPost = async ({
-  userId,
-  communityId,
-  content,
-  mediaType,
-}) => {
-  return prisma.post.create({
-    data: {
-      userId,
-      communityId,
-      content,
-      mediaType,
-    },
-  });
-};
-
-//이미지 생성 (image 테이블에 저장)
-export const createImages = async (postId, images) => {
-  const imageData = images.map((url) => ({ postId, url }));
-  return prisma.image.createMany({ data: imageData });
-};
-
-//tag 테이블 업데이트 (사용자가 새로운 태그를 사용하면, 추가)
-export const upsertTagByName = async (name) => {
-  return prisma.tag.upsert({
-    where: { name },
-    update: {},
-    create: { name },
-  });
-};
-
-//postTag 테이블 업데이트 (게시글에 사용된 태그 저장)
-export const createPostTag = async (postId, tagId) => {
-  return prisma.postTag.create({
-    data: {
-      postId,
-      tagId,
-    },
-  });
-};
