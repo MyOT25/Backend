@@ -10,7 +10,7 @@ import testRouter from "./controllers/test.controller.js"; // 변경된 경로
 import userRouter from "./controllers/user.controller.js"; // (있다면 추가)
 
 import communityRouter from "./controllers/community.controller.js";
-import postRouter from "./controllers/post.controller.js";
+import postRouter, { createViewingPost } from "./controllers/post.controller.js";
 import { createPost, addCasting } from "./controllers/post.controller.js";
 import authRouter from "./controllers/auth.controller.js";
 
@@ -63,7 +63,7 @@ app.use("/api/user", userRouter); // 필요에 따라 추가
 app.use("/api/community", communityRouter);
 app.use("/api", authRouter);
 app.use("/api/communities", communityRouter);
-
+app.use("/api/communities", postRouter);
 app.use("/api/posts", postRouter);
 
 // 기본 라우트
@@ -74,7 +74,7 @@ app.use(passport.initialize()); // JWT 인증 활성화
 
 app.get("/api/posts/ticketbook", authenticateJWT, getUserTicketbook);
 app.get("/api/posts/monthly-summary", authenticateJWT, getMonthlySummary);
-app.post("/api/posts/musical", authenticateJWT, createPost);
+app.post("/api/posts/musical", authenticateJWT, createViewingPost);
 app.post("/api/posts/musical/castings", authenticateJWT, addCasting);
 app.post("/api/posts/memorybooks", authenticateJWT,addMemoryBook);
 app.get("/api/posts/memorybooks",authenticateJWT,getMemoryBook);
