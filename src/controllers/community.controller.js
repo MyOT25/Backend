@@ -25,6 +25,36 @@ import { checkUserInCommunity } from "../repositories/community.repository.js";
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * /api/community/type/join:
+ *   post:
+ *     summary: 커뮤니티 가입 또는 탈퇴
+ *     tags:
+ *       - Community
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               communityId:
+ *                 type: integer
+ *                 example: 1
+ *               action:
+ *                 type: string
+ *                 enum: [join, leave]
+ *                 example: join
+ *     responses:
+ *       200:
+ *         description: 성공적으로 가입/탈퇴 처리됨
+ *       400:
+ *         description: 잘못된 요청
+ */
+
 router.post("/type/join", authenticateJWT, async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -45,6 +75,50 @@ router.post("/type/join", authenticateJWT, async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 });
+
+/**
+ * @swagger
+ * /api/community/type/request:
+ *   post:
+ *     summary: 커뮤니티 생성 요청
+ *     tags:
+ *       - Community
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               type:
+ *                 type: string
+ *                 enum: [musical, actor]
+ *                 example: musical
+ *               targetId:
+ *                 type: integer
+ *                 example: 101
+ *               groupName:
+ *                 type: string
+ *                 example: 뮤지컬 팬 모임
+ *               musicalName:
+ *                 type: string
+ *                 example: 레미제라블
+ *               recentPerformanceDate:
+ *                 type: string
+ *                 format: date
+ *                 example: 2025-06-15
+ *               theaterName:
+ *                 type: string
+ *                 example: 샤롯데씨어터
+ *               ticketLink:
+ *                 type: string
+ *                 example: https://ticket.com/lesmis
+ *     responses:
+ *       201:
+ *         description: 커뮤니티 생성 성공
+ *       400:
+ *         description: 잘못된 요청 또는 실패
+ */
 
 router.post("/type/request", async (req, res) => {
   try {
@@ -110,6 +184,32 @@ router.post("/type/request", async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/community/{type}/{userId}:
+ *   get:
+ *     summary: 가입 가능한 커뮤니티 조회
+ *     tags:
+ *       - Community
+ *     parameters:
+ *       - in: path
+ *         name: type
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [musical, actor]
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: 가입 가능한 커뮤니티 목록
+ *       400:
+ *         description: 잘못된 요청
+ */
+
 // 가입 가능한 커뮤니티 탐색(로그인 유저 전용)
 router.get("/:type/:userId", async (req, res) => {
   try {
@@ -132,6 +232,19 @@ router.get("/:type/:userId", async (req, res) => {
     res.status(400).json({ success: false, message: err.message });
   }
 });
+/**
+ * @swagger
+ * /api/community/:
+ *   get:
+ *     summary: 전체 커뮤니티 목록 조회
+ *     tags:
+ *       - Community
+ *     responses:
+ *       200:
+ *         description: 커뮤니티 목록 반환
+ *       400:
+ *         description: 조회 실패
+ */
 
 // 모든 커뮤니티 목록 보기
 router.get("/", async (req, res) => {
@@ -150,6 +263,24 @@ router.get("/", async (req, res) => {
     res.status(400).json({ success: false, message: err.message });
   }
 });
+
+/**
+ * @swagger
+ * /api/community/mine:
+ *   get:
+ *     summary: 내가 가입한 커뮤니티 목록 조회
+ *     tags:
+ *       - Community
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 가입한 커뮤니티 목록 반환
+ *       401:
+ *         description: 인증 필요
+ *       400:
+ *         description: 조회 실패
+ */
 
 // 내가 가입한 커뮤니티 목록 조회
 router.get("/mine", authenticateJWT, async (req, res) => {
@@ -174,6 +305,24 @@ router.get("/mine", authenticateJWT, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/community/profile/my/count:
+ *   get:
+ *     summary: 내가 등록한 커뮤니티 프로필 개수 조회
+ *     tags:
+ *       - Community
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 등록된 커뮤니티 프로필 수 반환
+ *       401:
+ *         description: 인증 필요
+ *       400:
+ *         description: 조회 실패
+ */
+
 // 현재 등록된 내 프로필 개수 확인
 router.get("/profile/my/count", authenticateJWT, async (req, res) => {
   try {
@@ -196,6 +345,33 @@ router.get("/profile/my/count", authenticateJWT, async (req, res) => {
     res.status(400).json({ success: false, message: err.message });
   }
 });
+
+/**
+ * @swagger
+ * /api/community/profile/my/{communityId}:
+ *   get:
+ *     summary: 내가 설정한 커뮤니티 프로필 조회
+ *     tags:
+ *       - Community
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: communityId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 커뮤니티 ID
+ *     responses:
+ *       200:
+ *         description: 내 프로필 반환
+ *       400:
+ *         description: 잘못된 요청
+ *       401:
+ *         description: 인증 실패
+ *       500:
+ *         description: 서버 오류
+ */
 
 // 해당 커뮤니티에 설정한 내 프로필 조회
 router.get("/profile/my/:communityId", authenticateJWT, async (req, res) => {
@@ -221,6 +397,35 @@ router.get("/profile/my/:communityId", authenticateJWT, async (req, res) => {
     });
   }
 });
+
+/**
+ * @swagger
+ * /api/community/{type}/{id}:
+ *   get:
+ *     summary: 커뮤니티 상세 조회
+ *     tags:
+ *       - Community
+ *     parameters:
+ *       - in: path
+ *         name: type
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [musical, actor]
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 커뮤니티 ID
+ *     responses:
+ *       200:
+ *         description: 커뮤니티 상세 반환
+ *       400:
+ *         description: 요청 실패
+ *       404:
+ *         description: 커뮤니티를 찾을 수 없음
+ */
 
 router.get("/:type/:id", async (req, res) => {
   try {
@@ -259,6 +464,31 @@ router.get("/:type/:id", async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/community/type/{id}/status:
+ *   get:
+ *     summary: 해당 커뮤니티 가입 여부 확인
+ *     tags:
+ *       - Community
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 커뮤니티 ID
+ *     responses:
+ *       200:
+ *         description: 가입 여부 반환
+ *       401:
+ *         description: 인증 실패
+ *       400:
+ *         description: 요청 실패
+ */
+
 // 커뮤니티 가입 여부 조회
 router.get("/type/:id/status", async (req, res) => {
   try {
@@ -276,6 +506,48 @@ router.get("/type/:id/status", async (req, res) => {
     res.status(400).json({ success: false, message: err.message });
   }
 });
+
+/**
+ * @swagger
+ * /api/community/profile:
+ *   post:
+ *     summary: 커뮤니티 프로필 생성
+ *     tags:
+ *       - Community
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *               - communityId
+ *               - nickname
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *                 example: 1
+ *               communityId:
+ *                 type: integer
+ *                 example: 1
+ *               nickname:
+ *                 type: string
+ *                 example: "열정팬"
+ *               image:
+ *                 type: string
+ *                 example: "https://example.com/image.jpg"
+ *               bio:
+ *                 type: string
+ *                 example: "뮤지컬을 사랑하는 팬입니다."
+ *     responses:
+ *       201:
+ *         description: 커뮤니티 프로필 생성 완료
+ *       400:
+ *         description: 필수 정보 누락 또는 생성 실패
+ *       500:
+ *         description: 서버 오류
+ */
 
 // 커뮤니티 프로필 추가
 router.post("/profile", async (req, res) => {
@@ -308,6 +580,47 @@ router.post("/profile", async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/community/profile/{id}:
+ *   patch:
+ *     summary: 커뮤니티 프로필 수정
+ *     tags:
+ *       - Community
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 프로필 ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nickname
+ *             properties:
+ *               nickname:
+ *                 type: string
+ *                 example: "열정팬2"
+ *               image:
+ *                 type: string
+ *                 example: "https://example.com/image2.jpg"
+ *               bio:
+ *                 type: string
+ *                 example: "뮤지컬 덕후입니다."
+ *     responses:
+ *       200:
+ *         description: 수정 성공
+ *       400:
+ *         description: 잘못된 요청
+ *       500:
+ *         description: 서버 오류
+ */
+
 // 커뮤니티 프로필 수정하기
 router.patch("/profile/:id", async (req, res) => {
   try {
@@ -339,6 +652,29 @@ router.patch("/profile/:id", async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/community/profile/{id}:
+ *   delete:
+ *     summary: 커뮤니티 프로필 삭제
+ *     tags:
+ *       - Community
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 삭제할 프로필 ID
+ *     responses:
+ *       200:
+ *         description: 삭제 성공
+ *       400:
+ *         description: 잘못된 요청
+ *       500:
+ *         description: 서버 오류
+ */
+
 // 커뮤니티 프로필 삭제하기
 router.delete("/profile/:id", async (req, res) => {
   try {
@@ -362,6 +698,27 @@ router.delete("/profile/:id", async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/community/{id}/feed/reposts:
+ *   get:
+ *     summary: 커뮤니티의 인용 피드 목록 조회
+ *     tags:
+ *       - Community Feed
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: 커뮤니티 ID
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: 인용 피드 목록 반환
+ *       400:
+ *         description: 조회 실패
+ */
+
 // 커뮤니티 내 피드 다른 커뮤니티로 인용
 //현재 커뮤니티의 피드 중, '다른 커뮤니티의 글을 인용한 글(repost)'만 보여줌
 router.get("/:id/feed/reposts", async (req, res) => {
@@ -374,6 +731,27 @@ router.get("/:id/feed/reposts", async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/community/{id}/feed/media:
+ *   get:
+ *     summary: 커뮤니티의 미디어 피드 목록 조회
+ *     tags:
+ *       - Community Feed
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: 커뮤니티 ID
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: 미디어 포함 피드 목록 반환
+ *       400:
+ *         description: 조회 실패
+ */
+
 //커뮤니티 내 미디어가 있는 피드만 필터링 할 수 있는 탭
 router.get("/:id/feed/media", async (req, res) => {
   try {
@@ -385,6 +763,27 @@ router.get("/:id/feed/media", async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/community/{id}/feed/popular:
+ *   get:
+ *     summary: 커뮤니티의 인기 피드 목록 조회
+ *     tags:
+ *       - Community Feed
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: 커뮤니티 ID
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: 인기 피드 목록 반환
+ *       400:
+ *         description: 조회 실패
+ */
+
 // 요즘 인기글만 볼 수 있는 피드
 router.get("/:id/feed/popular", async (req, res) => {
   try {
@@ -395,6 +794,33 @@ router.get("/:id/feed/popular", async (req, res) => {
     res.status(400).json({ success: false, message: err.message });
   }
 });
+
+/**
+ * @swagger
+ * /api/community/user-profile/{communityId}/{userId}:
+ *   get:
+ *     summary: 특정 유저의 커뮤니티 프로필 조회
+ *     tags:
+ *       - Community
+ *     parameters:
+ *       - in: path
+ *         name: communityId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 커뮤니티 ID
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 사용자 ID
+ *     responses:
+ *       200:
+ *         description: 유저의 프로필 반환
+ *       400:
+ *         description: 잘못된 요청
+ */
 
 // 특정 유저의 해당 커뮤니티 프로필 조회
 
