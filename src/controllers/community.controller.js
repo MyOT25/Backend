@@ -17,6 +17,7 @@ import {
   createCommunityProfileService,
   deleteCommunityProfile,
   getMyCommunityProfile,
+  getOtherUserProfile,
 } from "../services/community.service.js";
 
 import { checkUserInCommunity } from "../repositories/community.repository.js";
@@ -366,6 +367,19 @@ router.get("/:id/feed/popular", async (req, res) => {
     const communityId = Number(req.params.id);
     const feed = await getPopularFeed(communityId);
     res.status(200).json({ success: true, feed });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// 특정 유저의 해당 커뮤니티 프로필 조회
+
+router.get("/user-profile/:communityId/:userId", async (req, res) => {
+  try {
+    const communityId = Number(req.params.communityId);
+    const userId = Number(req.params.userId);
+    const profile = await getOtherUserProfile(communityId, userId);
+    res.status(200).json({ success: true, profile });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }

@@ -278,3 +278,10 @@ export const findMyProfileInCommunityRepository = async (
     },
   });
 };
+
+// 특정 유저의 해당 커뮤니티 프로필 조회
+export const findMultiProfile = async (communityId, userId) => {
+  return await prisma.multiProfile.findFirst({
+    where: { communityId, userId },
+  });
+};
