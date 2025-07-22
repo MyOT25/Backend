@@ -120,6 +120,50 @@ class PostRepository {
       },
     });
   }
+
+  // 게시글 단건 조회 (해당 postId에 대한 게시글이 존재하는지)
+  async findPostById(postId) {
+    return prisma.post.findUnique({
+      where: { id: postId },
+      include: {
+        user: true,
+        postimages: true,
+        postTags: true,
+      },
+    });
+  }
+
+  // 게시글 수정 (본문 및 미디어 여부)
+  async updatePost(postId, content, hasMedia) {
+    return prisma.post.update({
+      where: { id: postId },
+      data: {
+        content,
+        hasMedia,
+      },
+    });
+  }
+
+  // 기존 이미지 삭제
+  async deletePostImagesByPostId(postId) {
+    return prisma.postImage.deleteMany({
+      where: { postId },
+    });
+  }
+
+  // 기존 태그 삭제
+  async deletePostTagsByPostId(postId) {
+    return prisma.postTag.deleteMany({
+      where: { postId },
+    });
+  }
+
+  // Post 삭제
+  async deletePostById(postId) {
+    return prisma.post.delete({
+      where: { id: postId },
+    });
+  }
 }
 
 export default new PostRepository();

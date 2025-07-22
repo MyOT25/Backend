@@ -328,3 +328,92 @@ export const createQuotePostService = async (
 
   return result;
 };
+
+/**
+ * 게시글 수정
+ */
+export const updatePostService = async (postId, userId, updatePostDto) => {
+  const { content, postimages } = updatePostDto;
+
+  // 1. 게시글 존재 및 작성자 확인
+  const post = await PostRepository.findPostById(postId);
+  if (!post) {
+    throw new NotFoundError("게시글이 존재하지 않습니다.");
+  }
+  if (post.user.id !== userId) {
+    throw new ForbiddenError("게시글 수정 권한이 없습니다.");
+  }
+
+  // 2. hasMedia 판단
+  const hasMedia = Array.isArray(postimages) && postimages.length > 0;
+
+  // 3~6. 트랜잭션으로 수정, 삭제, 삽입 처리
+  await prisma.$transaction(async (tx) => {
+    // 3. 게시글 본문 및 hasMedia 수정
+    await tx.post.update({
+      where: { id: postId },
+      data: {
+        content,
+        hasMedia,
+      },
+    });
+
+    // 4. 기존 이미지 및 태그 삭제
+    await tx.postImage.deleteMany({ where: { postId } });
+    await tx.postTag.deleteMany({ where: { postId } });
+
+    // 5. 새로운 이미지 등록
+    if (hasMedia) {
+      const imageData = postimages.map((url) => ({ postId, url }));
+      await tx.postImage.createMany({ data: imageData });
+    }
+
+    // 6. 해시태그 추출 및 저장
+    const hashtags = updatePostDto.extractHashtags();
+    for (const tag of hashtags) {
+      const tagRecord = await tx.tag_Post.upsert({
+        where: { name: tag },
+        update: {},
+        create: { name: tag },
+      });
+      await tx.postTag.create({
+        data: {
+          postId,
+          tagId: tagRecord.id,
+        },
+      });
+    }
+  });
+
+  // 7. 수정된 게시글 다시 조회 및 반환
+  const updatedPost = await PostRepository.findPostById(postId);
+  return updatedPost;
+};
+
+/**
+ * 게시글 삭제
+ */
+export const deletePostService = async (postId, userId) => {
+  return await prisma.$transaction(async (tx) => {
+    // 1. 게시글 존재 여부 확인
+    const post = await PostRepository.findPostById(postId);
+    if (!post) {
+      throw new NotFoundError("삭제할 게시글이 존재하지 않습니다.");
+    }
+
+    // 2. 작성자 본인인지 확인
+    if (post.user.id !== userId) {
+      throw new ForbiddenError("게시글 삭제 권한이 없습니다.");
+    }
+
+    // 3. 연관 데이터 삭제
+    await PostRepository.deletePostImagesByPostId(postId);
+    await PostRepository.deletePostTagsByPostId(postId);
+
+    // 4. 게시글 자체 삭제
+    await PostRepository.deletePostById(postId);
+
+    // 5. 응답
+    return postId;
+  });
+};

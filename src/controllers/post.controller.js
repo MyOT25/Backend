@@ -20,6 +20,12 @@ import { createRepostService } from "../services/post.service.js";
 //인용 게시글 등록 import
 import { CreateQuotePostDTO } from "../dtos/post.dto.js";
 import { createQuotePostService } from "../services/post.service.js";
+//게시글 수정 import
+import { UpdatePostDTO } from "../dtos/post.dto.js";
+import { updatePostService } from "../services/post.service.js";
+//게시글 삭제 import
+import { deletePostService } from "../services/post.service.js";
+
 /**
  * GET /api/posts/ticketbook
  * @desc 나의 티켓북 조회
@@ -460,6 +466,79 @@ router.post(
         postimages: result.postimages,
         createdAt: result.post.createdAt,
         message: "게시글이 성공적으로 생성되었습니다.",
+      },
+    });
+  })
+);
+
+/**
+ * 게시글 수정
+ */
+router.patch(
+  "/:postId",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const postId = parseInt(req.params.postId, 10);
+    const updatePostDto = new UpdatePostDTO(req.body);
+
+    // 필수값 검증
+    if (!postId || isNaN(postId)) {
+      return res.status(400).json({
+        resultType: "FAIL",
+        error: {
+          errorCode: "INVALID_ID",
+          reason: "유효한 게시글 ID가 아닙니다.",
+        },
+        success: null,
+      });
+    }
+
+    const updatedPost = await updatePostService(postId, userId, updatePostDto);
+
+    return res.status(200).json({
+      resultType: "SUCCESS",
+      error: null,
+      success: {
+        postId: updatedPost.id,
+        content: updatedPost.content,
+        postimages: updatedPost.postimages.map((img) => img.url),
+        updatedAt: updatedPost.updatedAt,
+        message: "게시글이 성공적으로 수정되었습니다.",
+      },
+    });
+  })
+);
+
+/**
+ * 게시글 삭제
+ */
+router.delete(
+  "/:postId",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const { postId } = req.params;
+    const userId = req.user.id;
+
+    if (!postId || isNaN(postId) || parseInt(postId) < 1) {
+      return res.status(400).json({
+        resultType: "FAIL",
+        error: {
+          errorCode: "INVALID_ID",
+          reason: "유효한 게시글 ID가 아닙니다.",
+        },
+        success: null,
+      });
+    }
+
+    const deletedPostId = await deletePostService(parseInt(postId), userId);
+
+    return res.status(200).json({
+      resultType: "SUCCESS",
+      error: null,
+      success: {
+        postId: deletedPostId,
+        message: "게시글이 성공적으로 삭제되었습니다.",
       },
     });
   })
