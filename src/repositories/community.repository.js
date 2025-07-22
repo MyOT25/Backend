@@ -32,45 +32,34 @@ export const deleteUserFromCommunity = async (userId, communityId) => {
 };
 
 // 커뮤니티 이름 중복 확인
-export const checkDuplicateCommunityName = async (name) => {
-  console.log("checking for community name:", name);
-  const exists = await prisma.community.findFirst({
-    where: {
-      name,
-    },
+export const checkDuplicateCommunityName = async (groupName) => {
+  const existing = await prisma.community.findFirst({
+    where: { groupName },
   });
-  console.log(" exists:", exists);
-  return !!exists;
+  return !!existing;
 };
 
 //  커뮤니티 신청 (등록)
 export const insertCommunityRequest = async ({
-  userId,
-  name,
-  description,
   type,
+  targetId,
+  groupName,
   musicalName,
   recentPerformanceDate,
   theaterName,
   ticketLink,
 }) => {
-  await prisma.community.create({
+  return await prisma.community.create({
     data: {
-      name,
-      description,
       type,
-      createdAt: new Date(),
+      targetId,
+      groupName,
       musicalName,
-      recentPerformanceDate: new Date(recentPerformanceDate),
+      recentPerformanceDate: recentPerformanceDate
+        ? new Date(recentPerformanceDate)
+        : null,
       theaterName,
       ticketLink,
-      userCommunities: {
-        create: {
-          user: {
-            connect: { id: userId },
-          },
-        },
-      },
     },
   });
 };
@@ -95,7 +84,7 @@ export const findUnjoinedCommunities = async (userId) => {
     },
     select: {
       id: true,
-      name: true,
+      groupName: true,
       type: true,
       createdAt: true,
     },
@@ -110,7 +99,7 @@ export const findAllCommunities = async () => {
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
-      name: true,
+      groupName: true,
       type: true,
       createdAt: true,
     },
@@ -125,7 +114,7 @@ export const findMyCommunities = async (userId) => {
       community: {
         select: {
           id: true,
-          name: true,
+          groupName: true,
           type: true,
           createdAt: true,
         },
@@ -142,13 +131,8 @@ export const findCommunityById = async (communityId) => {
     where: { id: communityId },
     select: {
       id: true,
-      name: true,
-      description: true,
+      groupName: true,
       type: true,
-      musicalName: true,
-      recentPerformanceDate: true,
-      theaterName: true,
-      ticketLink: true,
       createdAt: true,
     },
   });

@@ -1,5 +1,6 @@
 import express from "express";
 import prisma from "../config/prismaClient.js";
+import { authenticateJWT } from "../middlewares/authMiddleware.js";
 
 import {
   handleJoinOrLeaveCommunity,
@@ -30,29 +31,52 @@ router.post("/type/join", async (req, res) => {
   }
 });
 
-router.post("/type/request", async (req, res) => {
+router.post("/type/request", authenticateJWT, async (req, res) => {
   try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res
+        .status(401)
+        .json({ success: false, message: "로그인이 필요합니다." });
+    }
+
     const {
-      userId,
-      name,
-      description,
       type,
+      targetId,
+      groupName,
       musicalName,
       recentPerformanceDate,
       theaterName,
       ticketLink,
     } = req.body;
-    const message = await handleCommunityRequest({
-      userId,
-      name,
-      description,
+
+    if (!type || !["musical", "actor"].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: "유효한 커뮤니티 타입이 필요합니다.",
+      });
+    }
+    if (!groupName) {
+      return res
+        .status(400)
+        .json({ success: false, message: "커뮤니티 이름은 필수입니다." });
+    }
+
+    const community = await handleCommunityRequest({
       type,
+      targetId,
+      groupName,
       musicalName,
       recentPerformanceDate,
       theaterName,
       ticketLink,
     });
-    res.status(200).json({ success: true, message });
+
+    res.status(201).json({
+      success: true,
+      message: "커뮤니티가 성공적으로 생성되었습니다.",
+      community,
+    });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
@@ -62,11 +86,16 @@ router.post("/type/request", async (req, res) => {
 router.get("/:type/:userId", async (req, res) => {
   try {
     const userId = Number(req.params.userId);
+    if (isNaN(userId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "유효한 userId가 필요합니다." });
+    }
     const communities = await fetchAvailableCommunities(userId);
 
     const formatted = communities.map((c) => ({
       communityId: c.id,
-      communityName: c.name,
+      communityName: c.groupName,
       type: c.type,
       createdAt: c.createdAt,
     }));
@@ -83,7 +112,7 @@ router.get("/", async (req, res) => {
 
     const formatted = communities.map((c) => ({
       communityId: c.id,
-      communitiyName: c.name,
+      communitiyName: c.groupName,
       type: c.type,
       createdAt: c.createdAt,
     }));
@@ -107,7 +136,7 @@ router.get("/mine", async (req, res) => {
 
     const formatted = communities.map((c) => ({
       communityId: c.id,
-      communityName: c.name,
+      communityName: c.groupName,
       type: c.type,
       createdAt: c.createdAt,
     }));
@@ -123,6 +152,13 @@ router.get("/:type/:id", async (req, res) => {
     const communityId = Number(req.params.id);
     const { type } = req.params;
 
+    if (!["musical", "actor"].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: "유효하지 않은 커뮤니티 타입입니다.",
+      });
+    }
+
     const community = await fetchCommunityById(communityId);
     if (!community || community.type !== type) {
       return res
@@ -132,13 +168,8 @@ router.get("/:type/:id", async (req, res) => {
 
     const formatted = {
       communityId: community.id,
-      communityName: community.name,
-      description: community.description,
+      communityName: community.groupName,
       type: community.type,
-      musicalName: community.musicalName,
-      recentPerformanceDate: community.recentPerformanceDate,
-      theaterName: community.theaterName,
-      ticketLink: community.ticketLink,
       createdAt: community.createdAt,
     };
     res.status(200).json({ success: true, community: formatted });
