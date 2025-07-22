@@ -14,6 +14,7 @@ import {
   findPopularFeed,
   createCommunityProfileRepository,
   countUserProfilesInCommunity,
+  deleteCommunityProfileRepository,
 } from "../repositories/community.repository.js";
 
 // 공연 커뮤니티 가입 / 탈퇴
@@ -143,6 +144,11 @@ export const createCommunityProfileService = async ({
 // 커뮤니티 프로필 수정
 export const updateCommunityProfile = async (profileId, data) => {
   return await modifyCommunityProfile(profileId, data);
+};
+
+// 커뮤니티 프로필 삭제하기
+export const deleteCommunityProfile = async (profileId) => {
+  return await deleteCommunityProfileRepository(profileId);
 };
 
 // // 커뮤니티 내 피드 다른 커뮤니티로 인용

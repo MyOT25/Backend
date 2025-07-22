@@ -15,6 +15,7 @@ import {
   getMediaFeed,
   getPopularFeed,
   createCommunityProfileService,
+  deleteCommunityProfile,
 } from "../services/community.service.js";
 
 import { checkUserInCommunity } from "../repositories/community.repository.js";
@@ -284,6 +285,31 @@ router.patch("/profile/:id", async (req, res) => {
       success: false,
       message: err.message,
     });
+  }
+});
+
+// 커뮤니티 프로필 삭제하기
+router.delete("/profile':id", async (req, res) => {
+  try {
+    const profileId = Number(req.params.id);
+
+    if (isNaN(profileId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "유효한 프로필 ID가 필요합니다." });
+    }
+    const deletedProfile = await deleteCommunityProfile(profileId);
+
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "커뮤니티 프로필이 삭제되었습니다",
+        deletedProfile,
+      });
+  } catch (err) {
+    console.error("커뮤니티 프로필 삭제 실패:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

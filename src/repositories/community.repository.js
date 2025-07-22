@@ -175,6 +175,14 @@ export const modifyCommunityProfile = async (profileId, data) => {
   });
 };
 
+// 커뮤니티 프로필 삭제하기
+
+export const deleteCommunityProfileRepository = async (profileId) => {
+  return await prisma.multiProfile.delete({
+    where: { d: profileId },
+  });
+};
+
 // 커뮤니티 내 피드 다른 커뮤니티로 인용
 //현재 커뮤니티의 피드 중, '다른 커뮤니티의 글을 인용한 글(repost)'만 보여줌
 
