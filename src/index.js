@@ -69,7 +69,7 @@ app.use("/api/community", communityRouter);
 app.use("/api", authRouter);
 app.use("/api/communities", communityRouter);
 
-app.use("/api/posts", postRouter);
+app.use("/api/communities", postRouter);
 
 // 기본 라우트
 

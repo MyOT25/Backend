@@ -23,80 +23,81 @@ enum CommunityType {
 }
 
 model User {
-  id           Int       @id @default(autoincrement())
-  loginId      String    @unique
-  username     String?
-  password     String?
-  email        String    @unique
-  nickname     String?
-  profileImage String?
-  createdAt    DateTime?
-  updatedAt    DateTime?
-  bio          String?
-  birthDate    DateTime?
-  isSubscribed Boolean?
+  id            Int      @id @default(autoincrement())
+  loginId       String   @unique
+  username      String?
+  password      String?
+  email         String  @unique
+  nickname      String?
+  profileImage  String?
+  createdAt     DateTime?
+  updatedAt     DateTime?
+  bio           String?
+  birthDate     DateTime?
+  isSubscribed  Boolean?
 
-  setting        Setting?
-  posts          Post[]
-  reviews        Review[]
-  comments       Comment[]
-  postLikes      PostLike[]
-  bookmarks      Bookmark[]
-  questions      Question[]
-  answers        Answer[]
-  subscriptions  Subscribe[]
-  viewings       ViewingRecord[]
-  follows        Follow[]        @relation("Following")
-  followers      Follow[]        @relation("Follower")
-  questionLikes  QuestionLike[]
-  answerLikes    AnswerLike[]
-  questionTags   QuestionTag[]
-  questionImages QuestionImage[]
+  setting       Setting?
+  posts         Post[]
+  reviews       Review[]
+  postcomments  PostComment[]
+  postLikes     PostLike[]
+  postbookmarks PostBookmark[]
+  questions     Question[]
+  answers       Answer[]
+  subscriptions Subscribe[]
+  viewings      ViewingRecord[]
+  follows       Follow[] @relation("Following")
+  followers     Follow[] @relation("Follower")
+  questionLikes   QuestionLike[]      
+  answerLikes     AnswerLike[]        
+  questionTags    QuestionTag[]       
+  questionImages  QuestionImage[]     
 
-  multiProfiles   MultiProfile[]
+  multiProfiles  MultiProfile[]
   userCommunities UserCommunity[]
 
   memoryBooks MemoryBook[]
 }
 
 model Post {
-  id             Int         @id @default(autoincrement())
-  userId         Int
-  communityId    Int
-  isRepost       Boolean     @default(false)
-  repostType     RepostType? //'post', 'review'
-  repostTargetId Int?
-  title          String?
-  content        String?
-  mediaType      MediaType? //'image', 'video'
-  viewCount      Int         @default(0)
-  commentCount   Int         @default(0)
-  likeCount      Int         @default(0)
-  bookmarkCount  Int         @default(0)
-  repostCount    Int         @default(0)
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+
+  id                Int            @id @default(autoincrement())
+  userId            Int
+  communityId       Int
+  isRepost          Boolean        @default(false)       
+  repostType        RepostType?                         //'post', 'review'
+  repostTargetId    Int?                                                            
+  content           String?                             
+  hasMedia          Boolean        @default(false)
+  viewCount         Int            @default(0)           
+  commentCount      Int            @default(0)           
+  likeCount         Int            @default(0)           
+  bookmarkCount     Int            @default(0)           
+  repostCount       Int            @default(0)           
+  createdAt         DateTime       @default(now())       
+  updatedAt         DateTime       @updatedAt            
+
 
   // Relations
   user      User      @relation(fields: [userId], references: [id])
   community Community @relation(fields: [communityId], references: [id])
 
-  comments  Comment[]
-  postLikes PostLike[]
-  bookmarks Bookmark[]
-  postTags  PostTag[]
-  images    Image[]
-  reviews   Review[]
+  postcomments      PostComment[]
+  postLikes         PostLike[]
+  postbookmarks     PostBookmark[]
+  postTags          PostTag[] 
+  postimages        PostImage[]
+  reviews           Review[]
 }
 
-model Comment {
-  id        Int      @id @default(autoincrement())
-  postId    Int
-  userId    Int
-  anonymous Boolean?
-  content   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model PostComment {
+  id              Int      @id @default(autoincrement())
+  postId          Int
+  userId          Int
+  anonymous       Boolean?
+  content         String?
+  createdAt         DateTime       @default(now())       
+  updatedAt         DateTime       @updatedAt  
 
   post Post @relation(fields: [postId], references: [id])
   user User @relation(fields: [userId], references: [id])
@@ -114,15 +115,44 @@ model PostLike {
   @@unique([userId, postId]) // 같은 유저가 같은 글에 여러 번 좋아요 못 누르게
 }
 
-model Bookmark {
-  id     Int @id @default(autoincrement())
-  userId Int
-  postId Int
+model PostBookmark {
+  id      Int    @id @default(autoincrement())
+  userId  Int
+  postId  Int
 
   user User @relation(fields: [userId], references: [id])
   post Post @relation(fields: [postId], references: [id])
 
   @@unique([userId, postId]) // 중복 북마크 방지
+}
+
+//게시글 관련 태그
+model Tag_Post {
+  id     Int    @id @default(autoincrement())
+  name   String @unique
+  createdAt         DateTime       @default(now())
+
+  postTags      PostTag[]
+}
+
+model PostTag {
+  postId Int
+  tagId  Int
+  createdAt         DateTime       @default(now())
+
+  post   Post @relation(fields: [postId], references: [id])
+  tag_post    Tag_Post  @relation(fields: [tagId], references: [id])
+
+  @@id([postId, tagId]) // 복합 PK로 중복 저장 방지
+}
+
+model PostImage {
+  id     Int    @id @default(autoincrement())
+  postId    Int
+  url       String?
+  caption   String?
+
+  post      Post    @relation(fields: [postId], references: [id])
 }
 
 model Review {
@@ -181,13 +211,13 @@ model Musical {
 }
 
 model Theater {
-  id          Int       @id
-  regionId    Int
-  name        String?
-  seatCount   Int?
-  roadAddress String?
-  createdAt   DateTime?
-  updatedAt   DateTime?
+  id           Int       @id  @default(autoincrement())
+  regionId     Int
+  name         String?
+  seatCount    Int?
+  roadAddress  String?
+  createdAt    DateTime?
+  updatedAt    DateTime?
 
   region   Region    @relation(fields: [regionId], references: [id])
   musicals Musical[]
@@ -241,35 +271,6 @@ model Setting {
   allowRepost     Boolean?
 
   users User @relation(fields: [userId], references: [id])
-}
-
-//게시글 관련 태그
-model Tag {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  createdAt DateTime @default(now())
-
-  postTags PostTag[]
-}
-
-model PostTag {
-  postId    Int
-  tagId     Int
-  createdAt DateTime @default(now())
-
-  post Post @relation(fields: [postId], references: [id])
-  tag  Tag  @relation(fields: [tagId], references: [id])
-
-  @@id([postId, tagId]) // 복합 PK로 중복 저장 방지
-}
-
-model Image {
-  id      Int     @id @default(autoincrement())
-  postId  Int
-  url     String?
-  caption String?
-
-  post Post @relation(fields: [postId], references: [id])
 }
 
 model Subscribe {
