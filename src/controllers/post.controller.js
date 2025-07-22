@@ -293,7 +293,7 @@ export const getUserTicketbook = [
  *                   type: null
  */
 
-export const createPost = asyncHandler(async (req, res) => {
+export const createViewingPost = asyncHandler(async (req, res) => {
   const userId = req.user.id; // JWT로부터 유저 ID 추출
   const result = await createViewingRecord(userId, req.body);
 
@@ -303,6 +303,21 @@ export const createPost = asyncHandler(async (req, res) => {
   });
 });
 
+export const createPost = asyncHandler(async (req, res) => {
+  const userId = req.user.id; // JWT 인증 후 user.id가 존재한다고 가정
+  const createPostDto = new CreatePostDTO(req.body);
+
+  const post = await createPostService(userId, createPostDto);
+
+  res.status(201).json({
+    resultType: "SUCCESS",
+    success: {
+      id: post.id,
+      message: "게시글이 성공적으로 생성되었습니다.",
+    },
+  });
+
+});
 /**
  * 미등록 출연진 추가
  */
