@@ -68,8 +68,8 @@ app.use("/api/user", userRouter); // 필요에 따라 추가
 app.use("/api/community", communityRouter);
 app.use("/api", authRouter);
 app.use("/api/communities", communityRouter);
-
 app.use("/api/communities", postRouter);
+app.use("/api/posts", postRouter);
 
 // 기본 라우트
 
