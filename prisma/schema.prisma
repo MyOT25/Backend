@@ -7,62 +7,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum RepostType {
-  post
-  review
-}
-
-enum MediaType {
-  image
-  video
-}
-
-enum CommunityType {
-  musical
-  actor
-}
-
 model User {
-  id           Int       @id @default(autoincrement())
-  loginId      String    @unique
-  username     String?
-  password     String?
-  email        String    @unique
-  nickname     String?
-  profileImage String?
-  createdAt    DateTime?
-  updatedAt    DateTime?
-  bio          String?
-  birthDate    DateTime?
-  isSubscribed Boolean?
+  id              Int             @id @default(autoincrement())
+  loginId         String          @unique
+  username        String?
+  password        String?
+  email           String          @unique
+  nickname        String?
+  profileImage    String?
+  createdAt       DateTime?
+  updatedAt       DateTime?
+  bio             String?
+  birthDate       DateTime?
+  isSubscribed    Boolean?
 
-  setting        Setting?
-  posts          Post[]
-  reviews        Review[]
-  comments       Comment[]
-  postLikes      PostLike[]
-  bookmarks      Bookmark[]
-  questions      Question[]
-  answers        Answer[]
-  subscriptions  Subscribe[]
-  viewings       ViewingRecord[]
-  follows        Follow[]        @relation("Following")
-  followers      Follow[]        @relation("Follower")
-  questionLikes  QuestionLike[]
-  answerLikes    AnswerLike[]
-  questionTags   QuestionTag[]
-  questionImages QuestionImage[]
+  setting         Setting? 
+  posts           Post[]
+  reviews         Review[]
+  comments        Comment[]
+  bookmarks       Bookmark[]
+  questions       Question[]
+  answers         Answer[]
+  subscriptions   Subscribe[]
+  viewings        ViewingRecord[]
+  followers       Follow[]        @relation("Follower")
+  follows         Follow[]        @relation("Following")
+  answerLikes     AnswerLike[]
+  questionTags    QuestionTag[]
+  questionImages  QuestionImage[]
 
   multiProfiles   MultiProfile[]
   userCommunities UserCommunity[]
+  memoryBooks     MemoryBook[]
   
-  memoryBooks    MemoryBook[]
-
-   // ✅ 역방향 필드 추가
-  questionGoods  QuestionGood[]
-  questionImages QuestionImage[]
-  questionTags   QuestionTag[]
-
+ 
+  
+  questionGoods   QuestionGood[]
+  postLikes       PostLike[]
+  questionLikes   QuestionLike[]
+  
 }
 
 model Post {
@@ -70,11 +53,11 @@ model Post {
   userId         Int
   communityId    Int
   isRepost       Boolean     @default(false)
-  repostType     RepostType? //'post', 'review'
+  repostType     RepostType?
   repostTargetId Int?
   title          String?
   content        String?
-  mediaType      MediaType? //'image', 'video'
+  mediaType      MediaType?
   viewCount      Int         @default(0)
   commentCount   Int         @default(0)
   likeCount      Int         @default(0)
@@ -83,16 +66,18 @@ model Post {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
-  // Relations
-  user      User      @relation(fields: [userId], references: [id])
-  community Community @relation(fields: [communityId], references: [id])
+ // Relations
+  user           User        @relation(fields: [userId], references: [id])
+  community      Community   @relation(fields: [communityId], references: [id])
 
-  comments  Comment[]
-  postLikes PostLike[]
-  bookmarks Bookmark[]
-  postTags  PostTag[]
-  images    Image[]
-  reviews   Review[]
+  comments       Comment[]
+  postLikes      PostLike[]
+  bookmarks      Bookmark[]
+  postTags       PostTag[]
+  images         Image[]
+  reviews        Review[]
+
+
 }
 
 model Comment {
@@ -104,8 +89,10 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  post Post @relation(fields: [postId], references: [id])
-  user User @relation(fields: [userId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+
 }
 
 model PostLike {
@@ -114,21 +101,21 @@ model PostLike {
   userId  Int
   likedAt DateTime? @default(now())
 
-  post Post @relation(fields: [postId], references: [id])
-  user User @relation(fields: [userId], references: [id])
+  post    Post      @relation(fields: [postId], references: [id])
+  user    User      @relation(fields: [userId], references: [id])
 
-  @@unique([userId, postId]) // 같은 유저가 같은 글에 여러 번 좋아요 못 누르게
+  @@unique([userId, postId]) // 같은 유저가 같은 글에 여러 번 좋아요 누를수 x 
 }
 
 model Bookmark {
-  id     Int @id @default(autoincrement())
+  id     Int  @id @default(autoincrement())
   userId Int
   postId Int
 
-  user User @relation(fields: [userId], references: [id])
-  post Post @relation(fields: [postId], references: [id])
+  post   Post @relation(fields: [postId], references: [id])
+  user   User @relation(fields: [userId], references: [id])
 
-  @@unique([userId, postId]) // 중복 북마크 방지
+  @@unique([userId, postId])
 }
 
 model Review {
@@ -152,12 +139,14 @@ model Review {
   watchTime   DateTime?
   extraField2 String?
 
-  user User  @relation(fields: [userId], references: [id])
-  post Post? @relation(fields: [postId], references: [id], map: "review_postId_fkey")
+  user        User      @relation(fields: [userId], references: [id])
+  post        Post?     @relation(fields: [postId], references: [id], map: "review_postId_fkey")
+
+
 }
 
 model Actor {
-  id          Int     @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   userId      Int
   communityId Int
   key         Int
@@ -167,23 +156,25 @@ model Actor {
   snsLink     String?
   fk          Int?
 
-  castings Casting[]
+  castings    Casting[]
 }
 
 model Musical {
-  id        Int       @id
-  theaterId Int
-  name      String?
-  startDate DateTime?
-  endDate   DateTime?
-  poster    String?
-  createdAt DateTime?
-  updatedAt DateTime?
+  id          Int                @id
+  theaterId   Int
+  name        String?
+  startDate   DateTime?
+  endDate     DateTime?
+  poster      String?
+  createdAt   DateTime?
+  updatedAt   DateTime?
 
-  theater     Theater            @relation(fields: [theaterId], references: [id])
   castings    Casting[]
-  viewings    ViewingRecord[]
+  theater     Theater            @relation(fields: [theaterId], references: [id])
   communities MusicalCommunity[]
+  viewings    ViewingRecord[]
+
+
 }
 
 model Theater {
@@ -195,32 +186,30 @@ model Theater {
   createdAt   DateTime?
   updatedAt   DateTime?
 
-  region   Region    @relation(fields: [regionId], references: [id])
-  musicals Musical[]
-  seats    Seat[]
+  musicals    Musical[]
+  seats       Seat[]
+  region      Region    @relation(fields: [regionId], references: [id])
+
+
 }
 
 model Seat {
-  id        Int      @id @default(autoincrement())
+  id        Int             @id @default(autoincrement())
   theaterId Int
   row       String
   column    Int
   seat_type SeatType
   floor     String?
 
-  theater  Theater         @relation(fields: [theaterId], references: [id])
-  viewings ViewingRecord[] // 이 좌석을 사용한 관극기록들 
+  theater   Theater         @relation(fields: [theaterId], references: [id])
+  viewings  ViewingRecord[] // 이 좌석을 사용한 관극기록들 
 
   @@unique([theaterId, row, column])
 }
 
-enum SeatType {
-  VIP
-  일반석
-}
 
 model Community {
-  id                    Int           @id @default(autoincrement())
+  id                    Int                @id @default(autoincrement())
   type                  CommunityType
   targetId              Int?
   groupName             String
@@ -228,17 +217,16 @@ model Community {
   recentPerformanceDate DateTime?
   theaterName           String?
   ticketLink            String?
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
-
-  // Relations
-  userCommunities    UserCommunity[]
-  musicalCommunities MusicalCommunity[]
-  memoryBook         MemoryBook? // 추가: MemoryBook와 1:1 관계 
-  posts              Post[]
-  multiProfiles      MultiProfile[]
-  memoryBooks        MemoryBook[]
-
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+ 
+  
+  userCommunities       UserCommunity[]
+  musicalCommunities    MusicalCommunity[]
+  posts                 Post[]
+  multiProfiles         MultiProfile[]
+  memoryBooks           MemoryBook[] 
+  
 }
 
 model Setting {
@@ -248,16 +236,16 @@ model Setting {
   useProfilePhoto Boolean?
   allowRepost     Boolean?
 
-  users User @relation(fields: [userId], references: [id])
+  users User @relation(fields: [userId], references:[id])
 }
+// 게시물 관련 태그 
 
-//게시글 관련 태그
 model Tag {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  createdAt DateTime @default(now())
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  createdAt DateTime  @default(now())
 
-  postTags PostTag[]
+  postTags  PostTag[]
 }
 
 model PostTag {
@@ -265,10 +253,10 @@ model PostTag {
   tagId     Int
   createdAt DateTime @default(now())
 
-  post Post @relation(fields: [postId], references: [id])
-  tag  Tag  @relation(fields: [tagId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
+  tag       Tag      @relation(fields: [tagId], references: [id])
 
-  @@id([postId, tagId]) // 복합 PK로 중복 저장 방지
+  @@id([postId, tagId])
 }
 
 model Image {
@@ -277,7 +265,8 @@ model Image {
   url     String?
   caption String?
 
-  post Post @relation(fields: [postId], references: [id])
+  post    Post    @relation(fields: [postId], references: [id])
+
 }
 
 model Subscribe {
@@ -287,7 +276,8 @@ model Subscribe {
   endDate   DateTime?
   isActive  Boolean?
 
-  user User @relation(fields: [userId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+
 }
 
 model Follow {
@@ -296,67 +286,68 @@ model Follow {
   followingId Int
   createdAt   DateTime?
 
-  follower  User @relation("Follower", fields: [followerId], references: [id])
-  following User @relation("Following", fields: [followingId], references: [id])
+  follower    User      @relation("Follower", fields: [followerId], references: [id])
+  following   User      @relation("Following", fields: [followingId], references: [id])
+
 }
 
 model ViewingRecord {
-  id        Int       @id @default(autoincrement())
+  id        Int            @id @default(autoincrement())
   userId    Int
   musicalId Int
   seatId    Int? // 좌석 FK
   date      DateTime? // 관극 날짜 
   time      DateTime? // 관극 시간 
   content   String? // 관람 후기 
-  rating    Int? // ⭐️ 별점 (1~5)
+  rating    Int? // 별점 1~5
 
-  user    User           @relation(fields: [userId], references: [id])
-  musical Musical        @relation(fields: [musicalId], references: [id])
-  seat    Seat?          @relation(fields: [seatId], references: [id])
-  images  ViewingImage[] // 1:N관계 
+  images    ViewingImage[]
+  musical   Musical        @relation(fields: [musicalId], references: [id])
+  seat      Seat?          @relation(fields: [seatId], references: [id])
+  user      User           @relation(fields: [userId], references: [id])
+
 }
 
 model ViewingImage {
-  id        Int       @id @default(autoincrement())
-  viewingId Int // 관극기록 FK
-  url       String // 이미지 URL
-  createdAt DateTime? @default(now())
+  id        Int           @id @default(autoincrement())
+  viewingId Int
+  url       String
+  createdAt DateTime?     @default(now())
 
-  viewing ViewingRecord @relation(fields: [viewingId], references: [id])
+  viewing   ViewingRecord @relation(fields: [viewingId], references: [id])
+
 }
 
 model Question {
-  id          Int     @id @default(autoincrement())
-  userId      Int
-  title       String
-  content     String
-  createdAt   DateTime? @default(now())
-  updatedAt   DateTime  @updatedAt
+  id             Int             @id @default(autoincrement())
+  userId         Int
+  title          String
+  content        String
+  createdAt      DateTime?       @default(now())
+  updatedAt      DateTime        @updatedAt
 
+  answers        Answer[]
+  user           User            @relation(fields: [userId], references: [id])
+  likes          QuestionLike[]
+  images         QuestionImage[]
+  answerLikes    AnswerLike[]
 
-  user        User            @relation(fields: [userId], references: [id])
-  answers     Answer[]
-  questionGoods QuestionGood[]
-  questionImages QuestionImage[]
-  questionTags  QuestionTag[]
+  questionGoods  QuestionGood[]
+  questionTags   QuestionTag[]
 
-  likes       QuestionLike[]
-  tags        QuestionTag[]
-  images      QuestionImage[]
-  answerLikes AnswerLike[]
 }
 
 model Answer {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   questionId Int
-  userId     Int // 답변 작성자
+  userId     Int
   content    String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime  @updatedAt
 
-  question Question     @relation(fields: [questionId], references: [id])
-  user     User         @relation(fields: [userId], references: [id])
-  likes    AnswerLike[]
+  question   Question  @relation(fields: [questionId], references: [id])
+  user       User      @relation(fields: [userId], references: [id])
+  likes      AnswerLike[]
 }
 
 model QuestionLike {
@@ -385,38 +376,6 @@ model AnswerLike {
   @@unique([answerId, userId])
 }
 
-model QuestionTag {
-  id         Int      @id @default(autoincrement())
-  questionId Int
-  userId     Int
-  tagId      Int
-  createdAt  DateTime @default(now())
-
-  question Question          @relation(fields: [questionId], references: [id])
-  user     User              @relation(fields: [userId], references: [id])
-  tag      QuestionTagMaster @relation(fields: [tagId], references: [id])
-}
-
-model QuestionTagMaster {
-  id        Int      @id @default(autoincrement())
-  tagName   String   @unique
-  createdAt DateTime @default(now())
-
-  questions QuestionTag[]
-}
-
-model QuestionImage {
-  id         Int      @id @default(autoincrement())
-  questionId Int
-  userId     Int
-  imageUrl   String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  question Question @relation(fields: [questionId], references: [id])
-  user     User     @relation(fields: [userId], references: [id])
-}
-
 model Region {
   id       Int       @id @default(autoincrement())
   name     String
@@ -429,8 +388,10 @@ model Casting {
   actorId   Int
   role      String?
 
-  musical Musical @relation(fields: [musicalId], references: [id])
-  actor   Actor   @relation(fields: [actorId], references: [id])
+  actor     Actor   @relation(fields: [actorId], references: [id])
+  musical   Musical @relation(fields: [musicalId], references: [id])
+
+
 }
 
 model UserCommunity {
@@ -439,29 +400,35 @@ model UserCommunity {
   communityId Int
   joinedAt    DateTime? @default(now())
 
-  user      User      @relation(fields: [userId], references: [id])
-  community Community @relation(fields: [communityId], references: [id])
+  community   Community @relation(fields: [communityId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([communityId], map: "UserCommunity_communityId_fkey")
+  @@index([userId], map: "UserCommunity_userId_fkey")
 }
 
 model MusicalCommunity {
-  id          Int @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   musicalId   Int
   communityId Int
 
-  musical   Musical   @relation(fields: [musicalId], references: [id])
-  community Community @relation(fields: [communityId], references: [id])
+  community   Community @relation(fields: [communityId], references: [id])
+  musical     Musical   @relation(fields: [musicalId], references: [id])
+
+  
 }
 
 model MultiProfile {
-  id          Int     @id @default(autoincrement())
-  userId      Int
-  nickname    String
-  image       String?
-  bio         String?
+  id       Int     @id @default(autoincrement())
+  userId   Int
+  nickname String
+  image    String?
+  bio      String?
   communityId Int
 
-  user      User      @relation(fields: [userId], references: [id])
+  user     User    @relation(fields: [userId], references: [id])
   community Community @relation(fields: [communityId], references: [id])
+
 }
 
 model MemoryBook {
@@ -470,15 +437,78 @@ model MemoryBook {
   targetType  TargetType
   targetId    Int
   title       String
-  communityId Int
   content     Json
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  communityId Int?        @unique // 추가 : Commnity와 1:1 FK
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
-  user        User        @relation(fields: [userId], references: [id])
-  community   Community?  @relation(fields: [communityId], references: [id])
 
+  communityId Int?       @unique
+  community   Community? @relation(fields: [communityId], references: [id])
+  user        User       @relation(fields: [userId], references: [id])
+
+}
+
+model QuestionGood {
+  id         Int      @id @default(autoincrement())
+  questionId Int
+  userId     Int
+  createdAt  DateTime @default(now())
+  question   Question @relation(fields: [questionId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([questionId], map: "QuestionGood_questionId_fkey")
+  @@index([userId], map: "QuestionGood_userId_fkey")
+}
+
+model QuestionImage {
+  id         Int      @id @default(autoincrement())
+  questionId Int
+  userId     Int
+  imageUrl   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  question   Question @relation(fields: [questionId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+
+
+}
+
+model QuestionTag {
+  id         Int      @id @default(autoincrement())
+  questionId Int
+  userId     Int
+  tagId      Int
+  createdAt  DateTime @default(now())
+
+
+  question   Question @relation(fields: [questionId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+  tag        QuestionTagMaster @relation(fields: [tagId],references: [id])
+
+}
+
+model QuestionTagMaster {
+  id        Int      @id @default(autoincrement())
+  tagName   String   @unique
+  createdAt DateTime @default(now())
+
+  questions QuestionTag[]
+}
+
+enum RepostType {
+  post
+  review
+}
+
+enum MediaType {
+  image
+  video
+}
+
+enum SeatType {
+  VIP
+  일반석
 }
 
 enum TargetType {
@@ -486,36 +516,7 @@ enum TargetType {
   ACTOR
 }
 
-model QuestionGood {
-  id         Int      @id @default(autoincrement()) // Key: 질문 좋아요 아이디
-  questionId Int                               // 질문 아이디
-  userId     Int                               // 사용자 아이디
-  createdAt  DateTime @default(now())          // 생성시간
-
-  question   Question @relation(fields: [questionId], references: [id])
-  user       User     @relation(fields: [userId], references: [id])
+enum CommunityType {
+  musical
+  actor
 }
-
-model QuestionImage {
-  id         Int      @id @default(autoincrement()) // Key: 질문 이미지 ID
-  questionId Int                               // 질문 아이디
-  userId     Int                               // 사용자 아이디
-  imageUrl   String                            // 이미지 주소
-  createdAt  DateTime @default(now())          // 생성시간
-  updatedAt  DateTime @updatedAt                // 수정시간
-
-  question   Question @relation(fields: [questionId], references: [id])
-  user       User     @relation(fields: [userId], references: [id])
-}
-
-model QuestionTag {
-  id         Int      @id @default(autoincrement()) // Key: 질문 태그 아이디
-  questionId Int                               // 질문 아이디
-  userId     Int                               // 사용자 아이디
-  tagName    String                            // 태그 이름
-  createdAt  DateTime @default(now())          // 태그 생성시간
-
-  question   Question @relation(fields: [questionId], references: [id])
-  user       User     @relation(fields: [userId], references: [id])
-}
-

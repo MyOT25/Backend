@@ -296,16 +296,16 @@ export const getUserTicketbook = [
  *                   type: null
  */
 
-/*export const createPost = asyncHandler(async (req, res) => {
-  const userId = req.user.id; // JWT로부터 유저 ID 추출
-  const result = await createViewingRecord(userId, req.body);
+// export const createPost = asyncHandler(async (req, res) => {
+//   const userId = req.user.id; // JWT로부터 유저 ID 추출
+//   const result = await createViewingRecord(userId, req.body);
 
-  res.success({
-    message: "관극 기록이 성공적으로 등록되었습니다.",
-    data: result,
-  });
-});
-*/
+//   res.success({
+//     message: "관극 기록이 성공적으로 등록되었습니다.",
+//     data: result,
+//   });
+// });
+
 export const createPost = asyncHandler(async (req, res) => {
   const userId = req.user.id; // JWT 인증 후 user.id가 존재한다고 가정
   const createPostDto = new CreatePostDTO(req.body);

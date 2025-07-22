@@ -21,15 +21,15 @@ import { addMemoryBook,
   getMemoryBook,
 updateMemoryBook } from "./controllers/memorybook.controller.js";
 import { authenticateJWT } from "./middlewares/authMiddleware.js";
-// 임시로
-// import "./config/passport.js"; // Passport JWT 설정
+import { getMusicalCastings } from "./controllers/casting.controller.js";
+
+import { s3Uploader,uploadToS3 } from "./middlewares/s3Uploader.js";
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// 공통 응답 헬퍼 등록
 
 // ✅ 공통 응답 헬퍼 등록
 app.use((req, res, next) => {
@@ -79,17 +79,17 @@ app.post("/api/posts/musical/castings", authenticateJWT, addCasting);
 app.post("/api/posts/memorybooks", authenticateJWT,addMemoryBook);
 app.get("/api/posts/memorybooks",authenticateJWT,getMemoryBook);
 app.put("/api/posts/memorybooks",authenticateJWT,updateMemoryBook);
+app.get("/api/posts/musical/castings", getMusicalCastings);
 
 
 app.get("/", (req, res) => {
   res.send("Hello MyOT!");
 });
 
+
 // 공통 예외 처리 미들웨어
 app.use(errorHandler);
 
-// 전역 오류 처리 미들웨어
-app.use(errorHandler);
 
 // ✅ 서버 실행
 app.listen(port,'0.0.0.0', () => {
