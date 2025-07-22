@@ -285,3 +285,10 @@ export const findMultiProfile = async (communityId, userId) => {
     where: { communityId, userId },
   });
 };
+
+// 현재 등록된 내 프로필 개수 확인
+export const countMyProfile = async (userId) => {
+  return await prisma.multiProfile.count({
+    where: { userId },
+  });
+};

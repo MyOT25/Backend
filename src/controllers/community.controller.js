@@ -18,6 +18,7 @@ import {
   deleteCommunityProfile,
   getMyCommunityProfile,
   getOtherUserProfile,
+  getMyProfileCount,
 } from "../services/community.service.js";
 
 import { checkUserInCommunity } from "../repositories/community.repository.js";
@@ -168,6 +169,29 @@ router.get("/mine", authenticateJWT, async (req, res) => {
       createdAt: c.createdAt,
     }));
     res.status(200).json({ success: true, communities: formatted });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// 현재 등록된 내 프로필 개수 확인
+router.get("/profile/my/count", authenticateJWT, async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res
+        .status(400)
+        .json({ success: false, message: "토큰이 없습니다." });
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const userId = decoded.id || decoded.userId;
+    if (!userId) {
+      return res.status(400)({ success: false, message: "유효하지 않습니다." });
+    }
+    const count = await getMyProfileCount(userId);
+    res.status(200).json({ success: true, count });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }

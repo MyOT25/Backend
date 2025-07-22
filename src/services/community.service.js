@@ -17,6 +17,7 @@ import {
   deleteCommunityProfileRepository,
   findMyProfileInCommunityRepository,
   findMultiProfile,
+  countMyProfile,
 } from "../repositories/community.repository.js";
 
 // 공연 커뮤니티 가입 / 탈퇴
@@ -178,4 +179,9 @@ export const getMyCommunityProfile = async (userId, communityId) => {
 // 특정 유저의 해당 커뮤니티 프로필 조회
 export const getOtherUserProfile = async (communityId, userId) => {
   return await findMultiProfile(communityId, userId);
+};
+
+// 현재 등록된 내 프로필 개수 확인
+export const getMyProfileCount = async (userId) => {
+  return await countMyProfile(userId);
 };
