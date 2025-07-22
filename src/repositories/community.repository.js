@@ -168,30 +168,11 @@ export const countUserProfilesInCommunity = async (userId) => {
   });
 };
 // 커뮤니티 프로필 수정하기
-export const modifyCommunityProfile = async (communityId, data) => {
-  let parsedDate = null;
-  if (data.recentPerformanceDate) {
-    parsedDate = new Date(data.recentPerformanceDate);
-    if (isNaN(parsedDate.getTime())) {
-      throw new Error("유효하지 않은 날짜 형식입니다.");
-    }
-  }
-
-  const updated = await prisma.community.update({
-    where: { id: communityId },
-    data: {
-      name: data.name,
-      type: data.type,
-      description: data.description,
-      profileImage: data.profileImage,
-      ticketLink: data.ticketLink,
-      musicalName: data.musicalName,
-      theaterName: data.theaterName,
-      recentPerformanceDate: parsedDate,
-    },
+export const modifyCommunityProfile = async (profileId, data) => {
+  return await prisma.multiProfile.update({
+    where: { id: profileId },
+    data,
   });
-
-  return updated;
 };
 
 // 커뮤니티 내 피드 다른 커뮤니티로 인용

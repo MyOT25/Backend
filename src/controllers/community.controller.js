@@ -257,42 +257,32 @@ router.post("/profile", async (req, res) => {
 });
 
 // 커뮤니티 프로필 수정하기
-router.put("/profile/:id", async (req, res) => {
+router.patch("/profile/:id", async (req, res) => {
   try {
-    const communityId = Number(req.params.id);
-    const {
-      name,
-      type,
-      description,
-      profileImage,
-      ticketLink,
-      musicalName,
-      theaterName,
-      recentPerformanceDate,
-    } = req.body;
+    const profileId = Number(req.params.id);
+    const { nickname, image, bio } = req.body;
 
-    const profileData = {
-      name,
-      type,
-      description,
-      profileImage,
-      ticketLink,
-      musicalName,
-      theaterName,
-      recentPerformanceDate,
-    };
+    if (!nickname) {
+      return res
+        .status(400)
+        .json({ success: false, message: "닉네임은 필수입니다." });
+    }
 
-    const updated = await updateCommunityProfile(communityId, profileData);
+    const updatedProfile = await updateCommunityProfile(profileId, {
+      nickname,
+      image,
+      bio,
+    });
     res.status(200).json({
       success: true,
-      communityId: updated.id,
+      communityId: updatedProfile.id,
       message: "커뮤니티 프로필이 수정되었습니다.",
     });
   } catch (err) {
     console.error("커뮤니티 프로필 수정 실패:", err);
     res.status(500).json({
       success: false,
-      message: "커뮤니티 프로필 수정 중 오류가 발생했습니다.",
+      message: err.message,
     });
   }
 });

@@ -141,8 +141,8 @@ export const createCommunityProfileService = async ({
 };
 
 // 커뮤니티 프로필 수정
-export const updateCommunityProfile = async (communityId, profileDate) => {
-  return await modifyCommunityProfile(communityId, profileDate);
+export const updateCommunityProfile = async (profileId, data) => {
+  return await modifyCommunityProfile(profileId, data);
 };
 
 // // 커뮤니티 내 피드 다른 커뮤니티로 인용
