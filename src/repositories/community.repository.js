@@ -262,3 +262,10 @@ export const findPopularFeed = async (communityId) => {
     },
   });
 };
+
+// 해당 커뮤니티에 설정한 내 프로필 조회
+export const findMyCommunityProfile = async (userId, communityId) => {
+  return await prisma.multiProfile.findFirst({
+    where: { userId, communityId },
+  });
+};

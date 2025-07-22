@@ -16,6 +16,7 @@ import {
   getPopularFeed,
   createCommunityProfileService,
   deleteCommunityProfile,
+  getMyCommunityProfile,
 } from "../services/community.service.js";
 
 import { checkUserInCommunity } from "../repositories/community.repository.js";
@@ -300,13 +301,11 @@ router.delete("/profile':id", async (req, res) => {
     }
     const deletedProfile = await deleteCommunityProfile(profileId);
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "커뮤니티 프로필이 삭제되었습니다",
-        deletedProfile,
-      });
+    res.status(200).json({
+      success: true,
+      message: "커뮤니티 프로필이 삭제되었습니다",
+      deletedProfile,
+    });
   } catch (err) {
     console.error("커뮤니티 프로필 삭제 실패:", err);
     res.status(500).json({ success: false, message: err.message });
@@ -344,6 +343,24 @@ router.get("/:id/feed/popular", async (req, res) => {
     res.status(200).json({ success: true, feed });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// 해당 커뮤니티에 설정한 내 프로필 조회
+router.get("/profile/:communityId", authenticateJWT, async (req, res) => {
+  try {
+    const communityId = Number(req.params.communityId);
+    const userId = req.user?.id;
+
+    if (!userId || isNaN(communityId)) {
+      return res
+        .status(400)
+        .json({ success: false, messgae: "유효한 요청입니다." });
+    }
+    const profile = await getMyCommunityProfile(userId, communityId);
+    res.status(200).json({ success: true, profile });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
