@@ -22,11 +22,12 @@ const storage = multer.memoryStorage();
  * @param {Object} options
  * @param {Number} [options.maxSizeMB] - 최대 파일 크기(MB)
  */
+// 여러 이미지 파일 업로드 지원 
 export const s3Uploader = ({ maxSizeMB = 20 } = {}) =>
   multer({
     storage,
     limits: { fileSize: maxSizeMB * 1024 * 1024 }, // MB → Byte
-  }).single("image");
+  }).array("imageFiles");
 
 // 실제 S3 업로드 함수
 export const uploadToS3 = async (fileBuffer, originalName, mimeType) => {
