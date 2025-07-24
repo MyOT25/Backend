@@ -13,6 +13,9 @@ import communityRouter from "./controllers/community.controller.js";
 import postRouter, { createViewingPost } from "./controllers/post.controller.js";
 import { createPost, addCasting } from "./controllers/post.controller.js";
 import authRouter from "./controllers/auth.controller.js";
+import questionRouter from "./controllers/question.controller.js";
+import answerRouter from './controllers/answer.controller.js';
+import questionTagRouter from './controllers/questionTag.controller.js';
 
 import "./config/passport.js"; // passport 설정
 
@@ -65,6 +68,10 @@ app.use("/api", authRouter);
 app.use("/api/communities", communityRouter);
 app.use("/api/communities", postRouter);
 app.use("/api/posts", postRouter);
+app.use("/api/questions", questionRouter);
+app.use('/api/answers', answerRouter);
+app.use('/api/questions', questionTagRouter);
+
 
 // 기본 라우트
 
