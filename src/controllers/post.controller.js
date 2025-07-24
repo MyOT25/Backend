@@ -10,6 +10,7 @@ import { getPostByActorName } from "../services/post.service.js";
 import { authenticateJWT } from "../middlewares/authMiddleware.js";
 import firebaseAdmin from "firebase-admin";
 const { messaging } = firebaseAdmin;
+import { uploadToS3 } from "../middlewares/s3Uploader.js";
 
 //일반 게시글 등록 import
 import { CreatePostDTO } from "../dtos/post.dto.js";
@@ -20,6 +21,13 @@ import { createRepostService } from "../services/post.service.js";
 //인용 게시글 등록 import
 import { CreateQuotePostDTO } from "../dtos/post.dto.js";
 import { createQuotePostService } from "../services/post.service.js";
+//게시글 수정 import
+import { UpdatePostDTO } from "../dtos/post.dto.js";
+import { updatePostService } from "../services/post.service.js";
+//게시글 삭제 import
+import { deletePostService } from "../services/post.service.js";
+// 오늘의 관극 등록 import 
+import { createViewingRecord } from "../services/post.service.js";
 /**
  * GET /api/posts/ticketbook
  * @desc 나의 티켓북 조회
@@ -176,11 +184,13 @@ export const getUserTicketbook = [
  *     tags:
  *       - ViewingRecord
  *     summary: 오늘의 관극 기록 등록
- *     description: 관극 기록(관람일, 좌석, 배우, 사진 등)을 등록하는 API입니다.
+ *     description: 관극 기록(관람일, 좌석, 배우, 사진 등)을 등록하는 API입니다. 이미지 파일은 multipart/form-data 형식으로 업로드합니다.
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
@@ -195,47 +205,24 @@ export const getUserTicketbook = [
  *                 type: string
  *                 example: "19:30"
  *               seat:
- *                 type: object
- *                 properties:
- *                   locationId:
- *                     type: integer
- *                     example: 1
- *                   row:
- *                     type: string
- *                     example: "A"
- *                   column:
- *                     type: integer
- *                     example: 1
- *                   seatType:
- *                     type: string
- *                     enum: [VIP, 일반석]
- *                     example: "VIP"
+ *                 type: string
+ *                 example: '{"locationId":1,"row":"A","column":1,"seatType":"VIP"}'
  *               casts:
- *                 type: array
- *                 items:
- *                   type: object
- *                   properties:
- *                     actorId:
- *                       type: integer
- *                       example: 1
- *                     role:
- *                       type: string
- *                       example: "엘리자벳"
+ *                 type: string
+ *                 example: '[{"actorId":1,"role":"루케니"},{"actorId":2,"role":"엘리자벳"}]'
  *               content:
  *                 type: string
- *                 example: "인생 뮤지컬.. 감동!"
+ *                 example: "또봤다!"
  *               rating:
  *                 type: number
  *                 format: float
- *                 example: 4.5
- *               imageUrls:
+ *                 example: 5
+ *               imageFiles:
  *                 type: array
  *                 items:
  *                   type: string
- *                   format: url
- *                 example:
- *                   - "https://your-bucket.s3.amazonaws.com/image1.jpg"
- *                   - "https://your-bucket.s3.amazonaws.com/image2.jpg"
+ *                   format: binary
+ *                 description: 여러 이미지 파일 첨부
  *     responses:
  *       200:
  *         description: 등록 성공
@@ -247,6 +234,10 @@ export const getUserTicketbook = [
  *                 resultType:
  *                   type: string
  *                   example: SUCCESS
+ *                 error:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
  *                 success:
  *                   type: object
  *                   properties:
@@ -256,7 +247,7 @@ export const getUserTicketbook = [
  *                     data:
  *                       type: object
  *                       properties:
- *                         viewingRecord:
+ *                         id:
  *                           type: integer
  *                           example: 1
  *                         userId:
@@ -278,25 +269,85 @@ export const getUserTicketbook = [
  *                           example: "19:30"
  *                         content:
  *                           type: string
- *                           example: "인생 뮤지컬.. 감동!"
+ *                           example: "또봤다!"
  *                         rating:
  *                           type: number
  *                           format: float
- *                           example: 4.5
- *                 error:
- *                   type: null
+ *                           example: 5
+ *                         images:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                             format: url
+ *                           example:
+ *                             - "https://bucket.s3.amazonaws.com/img1.jpg"
+ *                             - "https://bucket.s3.amazonaws.com/img2.jpg"
  */
 
-export const createPost = asyncHandler(async (req, res) => {
+export const createViewingPost = asyncHandler(async (req, res) => {
   const userId = req.user.id; // JWT로부터 유저 ID 추출
-  const result = await createViewingRecord(userId, req.body);
+
+  // ✅ multer로 업로드된 이미지 파일들
+  const imageFiles = req.files; // 배열 형태
+
+  // ✅ S3 업로드
+  let imageUrls = [];
+
+  if (imageFiles && imageFiles.length > 0) {
+    imageUrls = await Promise.all(
+      imageFiles.map((file) => uploadToS3(file.buffer, 
+        file.originalname, file.mimetype))
+    );
+  }
+
+  // ✅ body에서 다른 데이터 추출
+  const {
+    musicalId,
+    watchDate,
+    watchTime,
+    seat,
+    casts,
+    content,
+    rating,
+  } = req.body;
+
+  // ✅ JSON 문자열 데이터 파싱
+  const parsedSeat = JSON.parse(seat);
+  const parsedCasts = JSON.parse(casts);
+
+  const result = await createViewingRecord(userId, {
+    musicalId: parseInt(musicalId),
+    watchDate,
+    watchTime,
+    seat: parsedSeat,
+    casts: parsedCasts,
+    content,
+    rating: parseFloat(rating),
+    imageUrls, // S3 업로드된 URL 배열
+  });
 
   res.success({
     message: "관극 기록이 성공적으로 등록되었습니다.",
     data: result,
   });
+  
 });
 
+export const createPost = asyncHandler(async (req, res) => {
+  const userId = req.user.id; // JWT 인증 후 user.id가 존재한다고 가정
+  const createPostDto = new CreatePostDTO(req.body);
+
+  const post = await createPostService(userId, createPostDto);
+
+  res.status(201).json({
+    resultType: "SUCCESS",
+    success: {
+      id: post.id,
+      message: "게시글이 성공적으로 생성되었습니다.",
+    },
+  });
+
+});
 /**
  * 미등록 출연진 추가
  */
@@ -460,6 +511,79 @@ router.post(
         postimages: result.postimages,
         createdAt: result.post.createdAt,
         message: "게시글이 성공적으로 생성되었습니다.",
+      },
+    });
+  })
+);
+
+/**
+ * 게시글 수정
+ */
+router.patch(
+  "/:postId",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const postId = parseInt(req.params.postId, 10);
+    const updatePostDto = new UpdatePostDTO(req.body);
+
+    // 필수값 검증
+    if (!postId || isNaN(postId)) {
+      return res.status(400).json({
+        resultType: "FAIL",
+        error: {
+          errorCode: "INVALID_ID",
+          reason: "유효한 게시글 ID가 아닙니다.",
+        },
+        success: null,
+      });
+    }
+
+    const updatedPost = await updatePostService(postId, userId, updatePostDto);
+
+    return res.status(200).json({
+      resultType: "SUCCESS",
+      error: null,
+      success: {
+        postId: updatedPost.id,
+        content: updatedPost.content,
+        postimages: updatedPost.postimages.map((img) => img.url),
+        updatedAt: updatedPost.updatedAt,
+        message: "게시글이 성공적으로 수정되었습니다.",
+      },
+    });
+  })
+);
+
+/**
+ * 게시글 삭제
+ */
+router.delete(
+  "/:postId",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const { postId } = req.params;
+    const userId = req.user.id;
+
+    if (!postId || isNaN(postId) || parseInt(postId) < 1) {
+      return res.status(400).json({
+        resultType: "FAIL",
+        error: {
+          errorCode: "INVALID_ID",
+          reason: "유효한 게시글 ID가 아닙니다.",
+        },
+        success: null,
+      });
+    }
+
+    const deletedPostId = await deletePostService(parseInt(postId), userId);
+
+    return res.status(200).json({
+      resultType: "SUCCESS",
+      error: null,
+      success: {
+        postId: deletedPostId,
+        message: "게시글이 성공적으로 삭제되었습니다.",
       },
     });
   })

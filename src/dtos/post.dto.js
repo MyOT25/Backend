@@ -37,7 +37,7 @@ export class CreateRepostDTO {
   }
 }
 
-//게시물 인용 DTO (quote)
+//게시글 인용 DTO (quote)
 export class CreateQuotePostDTO {
   constructor({ repostType, content, postimages = [], hasMedia, communityId }) {
     this.repostType = repostType; // "post" 또는 "review"
@@ -52,3 +52,18 @@ export class CreateQuotePostDTO {
     return matched.map((tag) => tag.replace("#", ""));
   }
 }
+
+//게시글 수정 DTO
+export class UpdatePostDTO {
+  constructor({ content, postimages }) {
+    this.content = content;
+    this.postimages = Array.isArray(postimages) ? postimages : [postimages];
+  }
+
+  extractHashtags() {
+    const matched = this.content?.match(/#[^\s#]+/g) || [];
+    return matched.map((tag) => tag.replace("#", ""));
+  }
+}
+
+//게시글 삭제 DTO는 필요 X
