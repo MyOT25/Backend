@@ -74,7 +74,7 @@ app.use(passport.initialize()); // JWT 인증 활성화
 
 app.get("/api/posts/ticketbook", authenticateJWT, getUserTicketbook);
 app.get("/api/posts/monthly-summary", authenticateJWT, getMonthlySummary);
-app.post("/api/posts/musical", authenticateJWT, createViewingPost);
+app.post("/api/posts/musical", authenticateJWT, s3Uploader(),createViewingPost);
 app.post("/api/posts/musical/castings", authenticateJWT, addCasting);
 app.post("/api/posts/memorybooks", authenticateJWT,addMemoryBook);
 app.get("/api/posts/memorybooks",authenticateJWT,getMemoryBook);
