@@ -1,13 +1,41 @@
-name: deploy-main  # 파이프라인 이름은 자유롭게 지어주세요
+name: deploy-main
 
 on:
   push:
     branches:
-      - main  # main 브랜치에 새로운 커밋이 올라왔을 떄 실행되도록 합니다
-  workflow_dispatch:  # 필요한 경우 수동으로 실행할 수도 있도록 합니다
+      - main
+  workflow_dispatch:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest  # CI/CD 파이프라인이 실행될 운영체제 환경을 지정합니다
+    runs-on: ubuntu-latest
+
     steps:
-      - TODO
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "$EC2_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          cat >>~/.ssh/config <<END
+          Host my-server
+            HostName $EC2_HOST
+            User $EC2_USER
+            IdentityFile ~/.ssh/id_rsa
+            StrictHostKeyChecking no
+          END
+        env:
+          EC2_USER: ubuntu
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Deploy to EC2
+        run: |
+          ssh my-server '
+            cd ~/Backend &&
+            git pull origin main &&
+            npm install &&
+            pm2 restart backend || pm2 start npm --name backend -- run dev
+          '
