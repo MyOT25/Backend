@@ -1,4 +1,4 @@
-import prisma from "../config/prismaClient.js";
+import prisma from '../config/prismaClient.js';
 
 class PostRepository {
   async findViewingRecordsByMonth(userId, year, month) {
@@ -88,14 +88,7 @@ class PostRepository {
   }
 
   // 인용 게시글 생성
-  async createQuotePost({
-    userId,
-    communityId,
-    repostType,
-    repostTargetId,
-    content,
-    hasMedia,
-  }) {
+  async createQuotePost({ userId, communityId, repostType, repostTargetId, content, hasMedia }) {
     return prisma.post.create({
       data: {
         userId,
@@ -162,6 +155,30 @@ class PostRepository {
   async deletePostById(postId) {
     return prisma.post.delete({
       where: { id: postId },
+    });
+  }
+
+  // 전체 게시글 조회
+  async getAllPosts() {
+    return prisma.post.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        musical: true,
+        seat: true,
+        postimages: true,
+      },
+    });
+  }
+
+  // 미디어 포함 게시물 조회
+  async findMediaPosts() {
+    return await prisma.post.findMany({
+      where: {
+        hasMedia: true, // 또는 1 (boolean인지 int인지 스키마에 따라)
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
   }
 }

@@ -1,8 +1,9 @@
-import prisma from "../config/prismaClient.js";
-import { UnauthorizedError } from "../middlewares/CustomError.js";
-import PostRepository from "../repositories/post.repository.js";
+import prisma from '../config/prismaClient.js';
+import { NotFoundError, UnauthorizedError } from '../middlewares/CustomError.js';
+import PostRepository from '../repositories/post.repository.js';
 /** */
-import { findPostsByActorName } from "../repositories/post.repositories.js";
+import { findPostsByActorName } from '../repositories/post.repositories.js';
+import { formatPostResponse } from '../dtos/post.dto.js';
 
 /* 티켓북 조회 */
 export const getTicketbook = async (userId) => {
@@ -20,11 +21,11 @@ export const getTicketbook = async (userId) => {
         },
       },
     },
-    orderBy: { date: "desc" },
+    orderBy: { date: 'desc' },
   });
 
   if (!viewings || viewings.length === 0) {
-    throw new UnauthorizedError("티켓북에 기록이 없습니다.", 404);
+    throw new UnauthorizedError('티켓북에 기록이 없습니다.', 404);
   }
 
   return viewings.map((v) => ({
@@ -43,14 +44,10 @@ export const getTicketbook = async (userId) => {
  * 신규 월별 정산판 조회 (함수 방식으로 추가)
  */
 export const getMonthlySummary = async (userId, year, month) => {
-  const viewings = await PostRepository.findViewingRecordsByMonth(
-    userId,
-    year,
-    month
-  );
+  const viewings = await PostRepository.findViewingRecordsByMonth(userId, year, month);
 
   if (!viewings || viewings.length === 0) {
-    throw new UnauthorizedError("해당 월에 관람 기록이 없습니다.", 404);
+    throw new UnauthorizedError('해당 월에 관람 기록이 없습니다.', 404);
   }
 
   return viewings.map((v) => ({
@@ -73,16 +70,7 @@ export const getMonthlySummary = async (userId, year, month) => {
 /* 오늘의 관극 등록
  */
 export const createViewingRecord = async (userId, body) => {
-  const {
-    musicalId,
-    watchDate,
-    watchTime,
-    seat,
-    casts,
-    content,
-    rating,
-    imageUrls,
-  } = body;
+  const { musicalId, watchDate, watchTime, seat, casts, content, rating, imageUrls } = body;
 
   // 좌석 upsert
   const seatRecord = await prisma.seat.upsert({
@@ -141,7 +129,7 @@ export const createViewingRecord = async (userId, body) => {
 
 // 배우 이름으로 후기 필터링
 export const getPostByActorName = async (actorName) => {
-  if (!actorName) throw new Error("배우 이름이 필요합니다.");
+  if (!actorName) throw new Error('배우 이름이 필요합니다.');
   const posts = await findPostsByActorName(actorName);
   return posts;
 };
@@ -152,12 +140,9 @@ export const createPostService = async (userId, dto) => {
   const { communityId, content, hasMedia, postimages } = dto;
 
   // 커뮤니티 가입 여부 확인
-  const membership = await PostRepository.findUserCommunity(
-    userId,
-    communityId
-  );
+  const membership = await PostRepository.findUserCommunity(userId, communityId);
   if (!membership) {
-    throw new Error("해당 커뮤니티에 가입된 사용자만 글을 작성할 수 있습니다.");
+    throw new Error('해당 커뮤니티에 가입된 사용자만 글을 작성할 수 있습니다.');
   }
 
   // 트랜잭션 시작
@@ -218,19 +203,11 @@ export const createPostService = async (userId, dto) => {
 };
 
 /*재게시용 게시글 생성 */
-export const createRepostService = async (
-  userId,
-  communityId,
-  postId,
-  createRepostDto
-) => {
+export const createRepostService = async (userId, communityId, postId, createRepostDto) => {
   // 커뮤니티 가입 여부 확인
-  const membership = await PostRepository.findUserCommunity(
-    userId,
-    communityId
-  );
+  const membership = await PostRepository.findUserCommunity(userId, communityId);
   if (!membership) {
-    throw new Error("해당 커뮤니티에 가입된 사용자만 재게시할 수 있습니다.");
+    throw new Error('해당 커뮤니티에 가입된 사용자만 재게시할 수 있습니다.');
   }
 
   const repost = await PostRepository.createRepost({
@@ -248,23 +225,13 @@ export const createRepostService = async (
 /**
  * 인용 게시글 생성
  */
-export const createQuotePostService = async (
-  userId,
-  communityId,
-  postId,
-  dto
-) => {
+export const createQuotePostService = async (userId, communityId, postId, dto) => {
   const { repostType, content, postimages, hasMedia } = dto;
 
   // 커뮤니티 가입 여부 확인
-  const membership = await PostRepository.findUserCommunity(
-    userId,
-    communityId
-  );
+  const membership = await PostRepository.findUserCommunity(userId, communityId);
   if (!membership) {
-    throw new Error(
-      "해당 커뮤니티에 가입된 사용자만 인용 게시글을 작성할 수 있습니다."
-    );
+    throw new Error('해당 커뮤니티에 가입된 사용자만 인용 게시글을 작성할 수 있습니다.');
   }
 
   const result = await prisma.$transaction(async (tx) => {
@@ -338,10 +305,10 @@ export const updatePostService = async (postId, userId, updatePostDto) => {
   // 1. 게시글 존재 및 작성자 확인
   const post = await PostRepository.findPostById(postId);
   if (!post) {
-    throw new NotFoundError("게시글이 존재하지 않습니다.");
+    throw new NotFoundError('게시글이 존재하지 않습니다.');
   }
   if (post.user.id !== userId) {
-    throw new ForbiddenError("게시글 수정 권한이 없습니다.");
+    throw new ForbiddenError('게시글 수정 권한이 없습니다.');
   }
 
   // 2. hasMedia 판단
@@ -398,12 +365,12 @@ export const deletePostService = async (postId, userId) => {
     // 1. 게시글 존재 여부 확인
     const post = await PostRepository.findPostById(postId);
     if (!post) {
-      throw new NotFoundError("삭제할 게시글이 존재하지 않습니다.");
+      throw new NotFoundError('삭제할 게시글이 존재하지 않습니다.');
     }
 
     // 2. 작성자 본인인지 확인
     if (post.user.id !== userId) {
-      throw new ForbiddenError("게시글 삭제 권한이 없습니다.");
+      throw new ForbiddenError('게시글 삭제 권한이 없습니다.');
     }
 
     // 3. 연관 데이터 삭제
