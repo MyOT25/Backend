@@ -384,3 +384,11 @@ export const deletePostService = async (postId, userId) => {
     return postId;
   });
 };
+
+// 전체 게시물 받아오는 함수
+export const getAllPostService = {
+  async getAllPosts() {
+    const posts = await PostRepository.getAllPosts();
+    return posts.map((post) => formatPostResponse(post));
+  },
+};
