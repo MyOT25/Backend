@@ -102,8 +102,8 @@ export const fetchAvailableCommunities = async (userId) => {
 };
 
 // 모든 커뮤니티 목록 보기
-export const fetchAllCommunities = async () => {
-  return await findAllCommunities();
+export const fetchAllCommunities = async (type = null) => {
+  return await findAllCommunities(type);
 };
 
 // 내가 가입한 커뮤니티 목록 조회

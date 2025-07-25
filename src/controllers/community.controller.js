@@ -27,6 +27,55 @@ const router = express.Router();
 
 /**
  * @swagger
+ * /api/community/:
+ *   get:
+ *     summary: 전체 커뮤니티 목록 조회
+ *     tags:
+ *       - Community
+ *     responses:
+ *       200:
+ *         description: 커뮤니티 목록 반환
+ *       400:
+ *         description: 조회 실패
+ */
+
+// 모든 커뮤니티 목록 보기
+// 모든 커뮤니티 목록 보기
+router.get("/", async (req, res) => {
+  try {
+    let { type } = req.query;
+    type = type?.toLowerCase();
+
+    // 1️⃣ type이 undefined이거나 빈 문자열일 경우 null 처리
+    if (!type || typeof type !== "string" || type.trim() === "") {
+      type = null;
+    } else {
+      type = type.toUpperCase(); // 2️⃣ 대소문자 정리
+    }
+
+    // 3️⃣ enum 값으로 유효하지 않으면 type을 null 처리
+    const allowedTypes = ["musical", "actor"];
+    if (!allowedTypes.includes(type)) {
+      type = null;
+    }
+
+    const communities = await fetchAllCommunities(type);
+
+    const formatted = communities.map((c) => ({
+      communityId: c.id,
+      communityName: c.groupName,
+      type: c.type,
+      createdAt: c.createdAt,
+    }));
+
+    res.status(200).json({ success: true, communities: formatted });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+/**
+ * @swagger
  * /api/community/type/join:
  *   post:
  *     summary: 커뮤니티 가입 또는 탈퇴
@@ -223,46 +272,14 @@ router.get("/type/:type/:userId", async (req, res) => {
 
     const normalizedType = type.toLowerCase();
 
-    const communities = await fetchAvailableCommunities(
+    const community = await fetchAvailableCommunities(
       normalizedType,
       Number(userId)
     );
 
-    const formatted = communities.map((c) => ({
+    const formatted = community.map((c) => ({
       communityId: c.id,
       communityName: c.groupName,
-      type: c.type,
-      createdAt: c.createdAt,
-    }));
-
-    res.status(200).json({ success: true, communities: formatted });
-  } catch (err) {
-    res.status(400).json({ success: false, message: err.message });
-  }
-});
-
-/**
- * @swagger
- * /api/community/:
- *   get:
- *     summary: 전체 커뮤니티 목록 조회
- *     tags:
- *       - Community
- *     responses:
- *       200:
- *         description: 커뮤니티 목록 반환
- *       400:
- *         description: 조회 실패
- */
-
-// 모든 커뮤니티 목록 보기
-router.get("/", async (req, res) => {
-  try {
-    const communities = await fetchAllCommunities();
-
-    const formatted = communities.map((c) => ({
-      communityId: c.id,
-      communitiyName: c.groupName,
       type: c.type,
       createdAt: c.createdAt,
     }));
