@@ -4,13 +4,20 @@ import {
   insertUserToCommunity,
   deleteUserFromCommunity,
   checkDuplicateCommunityName,
-  insertCommunityRequest,
   findUnjoinedCommunities,
   findAllCommunities,
   findMyCommunities,
   findCommunityById,
-  createCommunityProfile,
   modifyCommunityProfile,
+  findRepostFeed,
+  findMediaFeed,
+  findPopularFeed,
+  createCommunityProfileRepository,
+  countUserProfilesInCommunity,
+  deleteCommunityProfileRepository,
+  findMyProfileInCommunityRepository,
+  findMultiProfile,
+  countMyProfile,
 } from "../repositories/community.repository.js";
 
 // 공연 커뮤니티 가입 / 탈퇴
@@ -37,13 +44,56 @@ export const handleJoinOrLeaveCommunity = async (
 };
 
 // 커뮤니티 신청
-export const handleCommunityRequest = async ({ type, targetId, groupName }) => {
-  const exists = await checkDuplicateCommunityName(groupName);
-  if (exists) {
-    throw new Error("이미 존재하는 커뮤니티 이름입니다.");
-  }
+export const handleCommunityRequest = async ({
+  userId,
+  type,
+  targetId,
+  groupName,
+}) => {
+  return await insertCommunityRequest({
+    userId,
+    type,
+    targetId,
+    groupName,
+    musicalName: null,
+    recentPerformanceDate: null,
+    theaterName: null,
+    ticketLink: null,
+  });
+};
 
-  return await insertCommunityRequest({ type, targetId, groupName });
+export const insertCommunityRequest = async ({
+  userId,
+  type,
+  targetId,
+  groupName,
+  musicalName,
+  recentPerformanceDate,
+  theaterName,
+  ticketLink,
+}) => {
+  return await prisma.community.create({
+    data: {
+      type,
+      targetId,
+      groupName,
+      musicalName,
+      recentPerformanceDate: recentPerformanceDate
+        ? new Date(recentPerformanceDate)
+        : null,
+      theaterName,
+      ticketLink,
+      createdAt: new Date(),
+
+      userCommunities: {
+        create: {
+          user: {
+            connect: { id: userId },
+          },
+        },
+      },
+    },
+  });
 };
 
 // 가입 가능한 커뮤니티 탐색하기
@@ -67,11 +117,71 @@ export const fetchCommunityById = async (communityId) => {
 };
 
 // 커뮤니티 프로필 추가
-export const addCommunityProfile = async (profileDate) => {
-  return await createCommunityProfile(profileDate);
+const MAX_FREE_PROFILES = 5;
+
+export const createCommunityProfileService = async ({
+  userId,
+  communityId,
+  nickname,
+  image,
+  bio,
+}) => {
+  const currentCount = await countUserProfilesInCommunity(userId);
+
+  if (currentCount >= MAX_FREE_PROFILES) {
+    throw new Error(
+      "무료 회원은 최대 5개의 커뮤니티 프로필만 생성할 수 있습니다."
+    );
+  }
+  const profile = await createCommunityProfileRepository({
+    userId,
+    communityId,
+    nickname,
+    image,
+    bio,
+  });
+
+  return profile;
 };
 
 // 커뮤니티 프로필 수정
-export const updateCommunityProfile = async (communityId, profileDate) => {
-  return await modifyCommunityProfile(communityId, profileDate);
+export const updateCommunityProfile = async (profileId, data) => {
+  return await modifyCommunityProfile(profileId, data);
+};
+
+// 커뮤니티 프로필 삭제하기
+export const deleteCommunityProfile = async (profileId) => {
+  return await deleteCommunityProfileRepository(profileId);
+};
+
+// // 커뮤니티 내 피드 다른 커뮤니티로 인용
+//현재 커뮤니티의 피드 중, '다른 커뮤니티의 글을 인용한 글(repost)'만 보여줌
+export const getRepostFeed = async (communityId) => {
+  return await findRepostFeed(communityId);
+};
+
+// 커뮤니티 내 미디어가 있는 피드만 필터링 할 수 있는 탭
+export const getMediaFeed = async (communityId) => {
+  return await findMediaFeed(communityId);
+};
+
+// 요즘 인기글만 볼 수 있는 피드
+export const getPopularFeed = async (communityId) => {
+  return await findPopularFeed(communityId);
+};
+
+// 해당 커뮤니티에 설정한 내 프로필 조회
+
+export const getMyCommunityProfile = async (userId, communityId) => {
+  return await findMyProfileInCommunityRepository(userId, communityId);
+};
+
+// 특정 유저의 해당 커뮤니티 프로필 조회
+export const getOtherUserProfile = async (communityId, userId) => {
+  return await findMultiProfile(communityId, userId);
+};
+
+// 현재 등록된 내 프로필 개수 확인
+export const getMyProfileCount = async (userId) => {
+  return await countMyProfile(userId);
 };

@@ -133,66 +133,162 @@ export const findCommunityById = async (communityId) => {
       id: true,
       groupName: true,
       type: true,
+      targetId: true,
+      musicalName: true,
+      recentPerformanceDate: true,
+      theaterName: true,
+      ticketLink: true,
       createdAt: true,
     },
   });
 };
 
 // 커뮤니티 프로필 추가
-export const createCommunityProfile = async (data) => {
-  const inputDate = data.recentPerformanceDate;
-
-  console.log(" 받은 날짜 값:", inputDate);
-  console.log(" typeof:", typeof inputDate);
-
-  // 문자열인지 먼저 확인
-  if (typeof inputDate !== "string" || inputDate.trim() === "") {
-    throw new Error("날짜가 누락되었거나 잘못된 형식입니다.");
-  }
-
-  const parsedDate = new Date(inputDate);
-
-  if (isNaN(parsedDate.getTime())) {
-    throw new Error("유효하지 않은 날짜 형식입니다.");
-  }
-
-  return await prisma.community.create({
+export const createCommunityProfileRepository = async ({
+  userId,
+  communityId,
+  nickname,
+  image,
+  bio,
+}) => {
+  return await prisma.multiProfile.create({
     data: {
-      name: data.name,
-      type: data.type,
-      description: data.description,
-      profileImage: data.profileImage,
-      ticketLink: data.ticketLink,
-      musicalName: data.musicalName,
-      theaterName: data.theaterName,
-      recentPerformanceDate: parsedDate,
+      userId,
+      communityId,
+      nickname,
+      image,
+      bio,
     },
   });
 };
 
+export const countUserProfilesInCommunity = async (userId) => {
+  return await prisma.multiProfile.count({
+    where: { userId },
+  });
+};
 // 커뮤니티 프로필 수정하기
-export const modifyCommunityProfile = async (communityId, data) => {
-  let parsedDate = null;
-  if (data.recentPerformanceDate) {
-    parsedDate = new Date(data.recentPerformanceDate);
-    if (isNaN(parsedDate.getTime())) {
-      throw new Error("유효하지 않은 날짜 형식입니다.");
-    }
-  }
+export const modifyCommunityProfile = async (profileId, data) => {
+  return await prisma.multiProfile.update({
+    where: { id: profileId },
+    data,
+  });
+};
 
-  const updated = await prisma.community.update({
-    where: { id: communityId },
-    data: {
-      name: data.name,
-      type: data.type,
-      description: data.description,
-      profileImage: data.profileImage,
-      ticketLink: data.ticketLink,
-      musicalName: data.musicalName,
-      theaterName: data.theaterName,
-      recentPerformanceDate: parsedDate,
+// 커뮤니티 프로필 삭제하기
+
+export const deleteCommunityProfileRepository = async (profileId) => {
+  return await prisma.multiProfile.delete({
+    where: { id: profileId },
+  });
+};
+
+// 커뮤니티 내 피드 다른 커뮤니티로 인용
+//현재 커뮤니티의 피드 중, '다른 커뮤니티의 글을 인용한 글(repost)'만 보여줌
+
+export const findRepostFeed = async (communityId) => {
+  const posts = await prisma.post.findMany({
+    where: {
+      communityId, // 현재 커뮤니티에서 작성된 글
+      isRepost: true,
+      repostTargetId: { not: null },
+    },
+    include: {
+      repostTarget: {
+        include: {
+          community: true,
+        },
+      },
+      user: { select: { nickname: true, profileImage: true } },
+      community: { select: { groupName: true } },
+      postTags: { include: { tag: true } },
     },
   });
 
-  return updated;
+  // 인용 대상이 다른 커뮤니티 글인지 필터링
+  return posts.filter((post) => post.repostTarget?.communityId !== communityId);
+};
+
+// 커뮤니티 내 미디어가 있는 피드만 필터링 할 수 있는 탭
+export const findMediaFeed = async (communityId) => {
+  return await prisma.post.findMany({
+    where: {
+      communityId,
+      mediaType: {
+        in: ["image", "video"],
+      },
+    },
+    include: {
+      user: { select: { nickname: true, profileImage: true } },
+      community: { select: { groupName: true } },
+      postTags: { include: { tag: true } },
+      images: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+};
+
+// 요즘 인기글만 볼 수 있는 피드
+export const findPopularFeed = async (communityId) => {
+  return await prisma.post.findMany({
+    where: {
+      communityId,
+      likeCount: {
+        gte: 3,
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    select: {
+      id: true,
+      title: true,
+      content: true,
+      likeCount: true,
+      viewCount: true,
+      createdAt: true,
+      user: {
+        select: {
+          nickname: true,
+        },
+      },
+      community: {
+        select: {
+          groupName: true,
+        },
+      },
+    },
+  });
+};
+
+// 해당 커뮤니티에 설정한 내 프로필 조회
+export const findMyProfileInCommunityRepository = async (
+  userId,
+  communityId
+) => {
+  console.log("🌐 userId in repo:", userId);
+  console.log("🌐 communityId in repo:", communityId);
+
+  return await prisma.multiProfile.findFirst({
+    where: {
+      userId: Number(userId),
+      communityId: Number(communityId),
+    },
+  });
+};
+
+// 특정 유저의 해당 커뮤니티 프로필 조회
+export const findMultiProfile = async (communityId, userId) => {
+  return await prisma.multiProfile.findFirst({
+    where: { communityId, userId },
+  });
+};
+
+// 현재 등록된 내 프로필 개수 확인
+export const countMyProfile = async (userId) => {
+  return await prisma.multiProfile.count({
+    where: { userId },
+  });
 };
