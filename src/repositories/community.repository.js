@@ -65,7 +65,7 @@ export const insertCommunityRequest = async ({
 };
 
 //  가입하지 않은 커뮤니티 목록 조회
-export const findUnjoinedCommunities = async (userId) => {
+export const findUnjoinedCommunities = async (type, userId) => {
   const joined = await prisma.userCommunity.findMany({
     where: { userId },
     select: { communityId: true },
@@ -78,6 +78,7 @@ export const findUnjoinedCommunities = async (userId) => {
       id: {
         notIn: joinedIds,
       },
+      type: type, // enum 'ACTOR' 또는 'MUSICAL'
     },
     orderBy: {
       createdAt: "desc",

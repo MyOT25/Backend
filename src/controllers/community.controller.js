@@ -211,15 +211,22 @@ router.post("/type/request", async (req, res) => {
  */
 
 // 가입 가능한 커뮤니티 탐색(로그인 유저 전용)
-router.get("/:type/:userId", async (req, res) => {
+// 가입 가능한 커뮤니티 탐색(로그인 유저 전용)
+router.get("/type/:type/:userId", async (req, res) => {
   try {
-    const userId = Number(req.params.userId);
-    if (isNaN(userId)) {
+    const { type, userId } = req.params;
+    if (isNaN(Number(userId))) {
       return res
         .status(400)
         .json({ success: false, message: "유효한 userId가 필요합니다." });
     }
-    const communities = await fetchAvailableCommunities(userId);
+
+    const normalizedType = type.toLowerCase();
+
+    const communities = await fetchAvailableCommunities(
+      normalizedType,
+      Number(userId)
+    );
 
     const formatted = communities.map((c) => ({
       communityId: c.id,
@@ -227,11 +234,13 @@ router.get("/:type/:userId", async (req, res) => {
       type: c.type,
       createdAt: c.createdAt,
     }));
+
     res.status(200).json({ success: true, communities: formatted });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
 });
+
 /**
  * @swagger
  * /api/community/:
