@@ -273,7 +273,7 @@ export const findMyProfileInCommunityRepository = async (
   console.log("🌐 userId in repo:", userId);
   console.log("🌐 communityId in repo:", communityId);
 
-  return await prisma.multiProfile.findFirst({
+  return await prisma.MultiProfile.findFirst({
     where: {
       userId: Number(userId),
       communityId: Number(communityId),
