@@ -448,3 +448,24 @@ export const postLikeService = async (postId, userId) => {
     };
   }
 };
+
+/**
+ * 좋아요 누른 유저 목록 조회
+ */
+export const getPostLikedUsersService = async (postId, page, limit) => {
+  const skip = (page - 1) * limit;
+
+  const [users, total] = await Promise.all([
+    PostRepository.findUsersWhoLikedPost(postId, skip, limit),
+    PostRepository.countUsersWhoLikedPost(postId),
+  ]);
+
+  const userList = users.map((like) => like.user);
+
+  return {
+    total,
+    page,
+    limit,
+    users: userList,
+  };
+};

@@ -218,6 +218,32 @@ class PostRepository {
       },
     });
   }
+
+  // 좋아요 누른 유저 목록 조회 (페이징)
+  async findUsersWhoLikedPost(postId, skip = 0, take = 10) {
+    return prisma.postLike.findMany({
+      where: { postId: Number(postId) },
+      skip,
+      take,
+      orderBy: { likedAt: "desc" },
+      include: {
+        user: {
+          select: {
+            id: true,
+            nickname: true,
+            profileImage: true,
+          },
+        },
+      },
+    });
+  }
+
+  //게시글의 총 좋아요 수 조회
+  async countUsersWhoLikedPost(postId) {
+    return prisma.postLike.count({
+      where: { postId: Number(postId) },
+    });
+  }
 }
 
 export default new PostRepository();

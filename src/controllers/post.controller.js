@@ -30,6 +30,8 @@ import { deletePostService } from "../services/post.service.js";
 import { createViewingRecord } from "../services/post.service.js";
 //게시글 좋아요 등록/해제 import
 import { postLikeService } from "../services/post.service.js";
+//게시글 좋아요 목록 조회 import
+import { getPostLikedUsersService } from "../services/post.service.js";
 /**
  * GET /api/posts/ticketbook
  * @desc 나의 티켓북 조회
@@ -614,6 +616,41 @@ router.post(
         postId,
         isLiked,
         message,
+      },
+    });
+  })
+);
+
+/**
+ * 게시글 좋아요 목록 조회
+ */
+router.get(
+  "/:postId/likes",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const postId = parseInt(req.params.postId, 10);
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+
+    if (isNaN(postId)) {
+      return res.status(400).json({
+        resultType: "FAIL",
+        error: {
+          errorCode: "INVALID_ID",
+          reason: "유효한 게시글 ID가 아닙니다.",
+        },
+        success: null,
+      });
+    }
+
+    const result = await getPostLikedUsersService(postId, page, limit);
+
+    return res.status(200).json({
+      resultType: "SUCCESS",
+      error: null,
+      success: {
+        message: "좋아요 누른 유저 목록 조회 성공",
+        ...result,
       },
     });
   })
