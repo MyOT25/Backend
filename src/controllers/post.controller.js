@@ -26,10 +26,10 @@ import { UpdatePostDTO } from '../dtos/post.dto.js';
 import { updatePostService } from '../services/post.service.js';
 //게시글 삭제 import
 import { deletePostService } from '../services/post.service.js';
-// 전체 게시물 조회
-import { getAllPostService } from '../services/post.service.js';
-// 미디어 게시물 조회
-import { getMediaPostsService } from '../services/post.service.js';
+// // 전체 게시물 조회
+// import { getAllPostService } from '../services/post.service.js';
+// // 미디어 게시물 조회
+// import { getMediaPostsService } from '../services/post.service.js';
 // 댓글 관련 import
 import {
   createCommentService,
@@ -38,7 +38,6 @@ import {
   deleteCommentService,
 } from '../services/post.service.js';
 
-import { deletePostService } from '../services/post.service.js';
 // 오늘의 관극 등록 import
 import { createViewingRecord } from '../services/post.service.js';
 /**
@@ -583,6 +582,78 @@ router.delete(
         postId: deletedPostId,
         message: '게시글이 성공적으로 삭제되었습니다.',
       },
+    });
+  })
+);
+
+// 댓글 등록
+router.post(
+  '/:postId/comments',
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const { postId } = req.params;
+    const { content } = req.body;
+    const userId = req.user.userId;
+
+    const comment = await createCommentService(userId, Number(postId), content);
+
+    return res.status(201).json({
+      resultType: 'SUCCESS',
+      error: null,
+      success: comment,
+    });
+  })
+);
+
+// 댓글 목록 조회
+router.get(
+  '/:postId/comments',
+  asyncHandler(async (req, res) => {
+    const { postId } = req.params;
+
+    const comments = await getCommentsService(Number(postId));
+
+    return res.status(200).json({
+      resultType: 'SUCCESS',
+      error: null,
+      success: comments,
+    });
+  })
+);
+
+// 댓글 수정
+router.patch(
+  '/:postId/comments/:commentId',
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const { commentId } = req.params;
+    const { content } = req.body;
+    const userId = req.user.userId;
+
+    const updated = await updateCommentService(userId, Number(commentId), content);
+
+    return res.status(200).json({
+      resultType: 'SUCCESS',
+      error: null,
+      success: updated,
+    });
+  })
+);
+
+// 댓글 삭제
+router.delete(
+  '/:postId/comments/:commentId',
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const { commentId } = req.params;
+    const userId = req.user.userId;
+
+    await deleteCommentService(userId, Number(commentId));
+
+    return res.status(200).json({
+      resultType: 'SUCCESS',
+      error: null,
+      success: '댓글 삭제 완료',
     });
   })
 );
