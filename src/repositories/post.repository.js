@@ -181,6 +181,85 @@ class PostRepository {
       },
     });
   }
+  // 특정 게시글에 좋아요가 눌러져 있는지 확인
+  async findPostLike(userId, postId) {
+    return prisma.postLike.findUnique({
+      where: {
+        userId_postId: {
+          userId,
+          postId,
+        },
+      },
+    });
+  }
+
+  // 게시글 좋아요 생성
+  async createPostLike(userId, postId) {
+    //PostLike 테이블에 데이터 생성
+    await prisma.postLike.create({
+      data: {
+        userId,
+        postId,
+      },
+    });
+    //Post 좋아요 수 증가시킴
+    await prisma.post.update({
+      where: { id: postId },
+      data: {
+        likeCount: {
+          increment: 1,
+        },
+      },
+    });
+  }
+
+  // 게시글 좋아요 삭제
+  async deletePostLike(userId, postId) {
+    //PostLike 테이블에 데이터 삭제
+    await prisma.postLike.delete({
+      where: {
+        userId_postId: {
+          userId,
+          postId,
+        },
+      },
+    });
+    //Post 좋아요 수 감소시킴
+    await prisma.post.update({
+      where: { id: postId },
+      data: {
+        likeCount: {
+          decrement: 1,
+        },
+      },
+    });
+  }
+
+  // 좋아요 누른 유저 목록 조회 (페이징)
+  async findUsersWhoLikedPost(postId, skip = 0, take = 10) {
+    return prisma.postLike.findMany({
+      where: { postId: Number(postId) },
+      skip,
+      take,
+      orderBy: { likedAt: 'desc' },
+      include: {
+        user: {
+          select: {
+            id: true,
+            nickname: true,
+            profileImage: true,
+          },
+        },
+      },
+    });
+  }
+
+  //게시글의 총 좋아요 수 조회
+  async countUsersWhoLikedPost(postId) {
+    return prisma.postLike.count({
+      where: { postId: Number(postId) },
+    });
+  }
 }
 
 export default new PostRepository();
