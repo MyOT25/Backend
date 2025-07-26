@@ -1,0 +1,41 @@
+name: deploy-main
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "$EC2_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          cat >>~/.ssh/config <<END
+          Host my-server
+            HostName $EC2_HOST
+            User $EC2_USER
+            IdentityFile ~/.ssh/id_rsa
+            StrictHostKeyChecking no
+          END
+        env:
+          EC2_USER: ubuntu
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Deploy to EC2
+        run: |
+          ssh my-server '
+            cd ~/Backend &&
+            git pull origin main &&
+            npm install &&
+            pm2 restart backend || pm2 start npm --name backend -- run dev
+          '
