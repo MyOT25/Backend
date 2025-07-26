@@ -28,9 +28,6 @@ import { updatePostService } from '../services/post.service.js';
 import { deletePostService } from '../services/post.service.js';
 // 오늘의 관극 등록 import
 import { createViewingRecord } from '../services/post.service.js';
-import { deletePostService } from '../services/post.service.js';
-// 오늘의 관극 등록 import
-import { createViewingRecord } from '../services/post.service.js';
 //게시글 좋아요 등록/해제 import
 import { postLikeService } from '../services/post.service.js';
 //게시글 좋아요 목록 조회 import
