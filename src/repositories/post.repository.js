@@ -181,6 +181,32 @@ class PostRepository {
       },
     });
   }
+
+  // 인용한 게시물 찾는 함수
+  async findQuotedPost(postId) {
+    const post = await prisma.post.findUnique({
+      where: { id: Number(postId) },
+    });
+
+    if (!post?.repostTargetId || post.repostType !== 'POST') {
+      return null; // 인용이 아님
+    }
+
+    // 인용 대상 게시글 가져오기
+    const quoted = await prisma.post.findUnique({
+      where: { id: post.repostTargetId },
+      include: {
+        postimages: true,
+      },
+    });
+
+    if (!quoted) return null;
+
+    return {
+      content: quoted.content,
+      media: quoted.postimages.map((img) => ({ url: img.url })),
+    };
+  }
 }
 
 export default new PostRepository();

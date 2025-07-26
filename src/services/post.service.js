@@ -384,3 +384,14 @@ export const deletePostService = async (postId, userId) => {
     return postId;
   });
 };
+
+// 인용한 게시물 정보 받아옴
+export const getQuotedPostService = async (postId) => {
+  const quoted = await PostRepository.findQuotedPost(postId);
+
+  if (!quoted) {
+    throw new NotFoundError('해당 게시글은 인용한 게시글이 없습니다.');
+  }
+
+  return quoted;
+};
