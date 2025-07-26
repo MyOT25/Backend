@@ -164,6 +164,60 @@ class PostRepository {
       where: { id: postId },
     });
   }
+
+  // 특정 게시글에 좋아요가 눌러져 있는지 확인
+  async findPostLike(userId, postId) {
+    return prisma.postLike.findUnique({
+      where: {
+        userId_postId: {
+          userId,
+          postId,
+        },
+      },
+    });
+  }
+
+  // 게시글 좋아요 생성
+  async createPostLike(userId, postId) {
+    //PostLike 테이블에 데이터 생성
+    await prisma.postLike.create({
+      data: {
+        userId,
+        postId,
+      },
+    });
+    //Post 좋아요 수 증가시킴
+    await prisma.post.update({
+      where: { id: postId },
+      data: {
+        likeCount: {
+          increment: 1,
+        },
+      },
+    });
+  }
+
+  // 게시글 좋아요 삭제
+  async deletePostLike(userId, postId) {
+    //PostLike 테이블에 데이터 삭제
+    await prisma.postLike.delete({
+      where: {
+        userId_postId: {
+          userId,
+          postId,
+        },
+      },
+    });
+    //Post 좋아요 수 감소시킴
+    await prisma.post.update({
+      where: { id: postId },
+      data: {
+        likeCount: {
+          decrement: 1,
+        },
+      },
+    });
+  }
 }
 
 export default new PostRepository();

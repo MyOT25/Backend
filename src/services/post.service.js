@@ -417,3 +417,34 @@ export const deletePostService = async (postId, userId) => {
     return postId;
   });
 };
+
+/**
+ * 좋아요 등록/해제 (토글 방식)
+ */
+export const postLikeService = async (postId, userId) => {
+  // 1. 게시글 존재 여부 확인
+  const post = await PostRepository.findPostById(postId);
+  if (!post) {
+    throw new NotFoundError("게시글이 존재하지 않습니다.");
+  }
+
+  // 2. 유저가 이미 좋아요 했는지 확인
+  const existingLike = await PostRepository.findPostLike(userId, postId);
+
+  // 3. 토글 처리
+  if (existingLike) {
+    // 좋아요 취소
+    await PostRepository.deletePostLike(userId, postId);
+    return {
+      message: "좋아요 취소 완료",
+      isLiked: false,
+    };
+  } else {
+    // 좋아요 등록
+    await PostRepository.createPostLike(userId, postId);
+    return {
+      message: "좋아요 등록 완료",
+      isLiked: true,
+    };
+  }
+};
