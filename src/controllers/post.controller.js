@@ -26,19 +26,6 @@ import { UpdatePostDTO } from '../dtos/post.dto.js';
 import { updatePostService } from '../services/post.service.js';
 //게시글 삭제 import
 import { deletePostService } from '../services/post.service.js';
-// 전체 게시물 조회
-import { getAllPostService } from '../services/post.service.js';
-// 미디어 게시물 조회
-import { getMediaPostsService } from '../services/post.service.js';
-// 댓글 관련 import
-import {
-  createCommentService,
-  getCommentsService,
-  updateCommentService,
-  deleteCommentService,
-} from '../services/post.service.js';
-
-import { deletePostService } from '../services/post.service.js';
 // 오늘의 관극 등록 import
 import { createViewingRecord } from '../services/post.service.js';
 /**
