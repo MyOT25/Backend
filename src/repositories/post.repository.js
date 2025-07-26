@@ -181,6 +181,25 @@ class PostRepository {
       },
     });
   }
+
+  // 재게기한 유저 목록 조회
+  async findUsersWhoReposted(postId) {
+    const reposts = await prisma.post.findMany({
+      where: {
+        isRepost: true,
+        repostTargetId: Number(postId),
+        repostType: 'POST', // 필요 시 조건 추가
+      },
+      include: {
+        user: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return reposts.map((post) => post.user);
+  }
 }
 
 export default new PostRepository();

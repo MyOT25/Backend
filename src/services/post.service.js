@@ -384,3 +384,8 @@ export const deletePostService = async (postId, userId) => {
     return postId;
   });
 };
+
+// 재게시한 유저 목록 받아오는 함수
+export const getRepostedUsersService = async (postId) => {
+  return await PostRepository.findUsersWhoReposted(postId);
+};
