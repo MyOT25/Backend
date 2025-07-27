@@ -582,7 +582,7 @@ router.post(
   '/:postId/bookmarks',
   authenticateJWT,
   asyncHandler(async (req, res) => {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const { postId } = req.params;
 
     await addBookmarkService(userId, Number(postId));
@@ -600,7 +600,7 @@ router.delete(
   '/:postId/bookmarks',
   authenticateJWT,
   asyncHandler(async (req, res) => {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const { postId } = req.params;
 
     await removeBookmarkService(userId, Number(postId));

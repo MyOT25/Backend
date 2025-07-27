@@ -1,19 +1,9 @@
 export const formatPostResponse = (post) => ({
   postId: post.id,
-  musicalId: post.musical.id,
-  musicalTitle: post.musical.title,
   watchDate: post.watch_date,
   watchTime: post.watch_time,
-  seat: {
-    locationId: post.seat.location_id,
-    row: post.seat.row,
-    column: post.seat.column,
-    seatType: post.seat.seat_type,
-  },
-  content: post.content,
   imageUrls: post.postimages.map((img) => img.url),
 });
-
 //일반 게시물 등록 DTO (리포스트X)
 export class CreatePostDTO {
   constructor({ content, postimages = [], hasMedia, communityId }) {
@@ -25,7 +15,7 @@ export class CreatePostDTO {
 
   extractHashtags() {
     const matched = this.content?.match(/#[^\s#]+/g) || [];
-    return matched.map((tag) => tag.replace("#", ""));
+    return matched.map((tag) => tag.replace('#', ''));
   }
 }
 
@@ -49,7 +39,7 @@ export class CreateQuotePostDTO {
 
   extractHashtags() {
     const matched = this.content?.match(/#[^\s#]+/g) || [];
-    return matched.map((tag) => tag.replace("#", ""));
+    return matched.map((tag) => tag.replace('#', ''));
   }
 }
 
@@ -62,7 +52,7 @@ export class UpdatePostDTO {
 
   extractHashtags() {
     const matched = this.content?.match(/#[^\s#]+/g) || [];
-    return matched.map((tag) => tag.replace("#", ""));
+    return matched.map((tag) => tag.replace('#', ''));
   }
 }
 
