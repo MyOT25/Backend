@@ -35,3 +35,11 @@ export default class CustomError {
   static UnauthorizedError = UnauthorizedError;
   static BadRequestError = BadRequestError;
 }
+
+export class NotFoundError extends Error {
+  constructor(message = "Not Found") {
+    super(message);
+    this.name = "NotFoundError";
+    this.statusCode = 404;
+  }
+}

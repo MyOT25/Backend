@@ -1,5 +1,6 @@
 import prisma from "../config/prismaClient.js";
 import { UnauthorizedError } from "../middlewares/CustomError.js";
+import { NotFoundError } from "../middlewares/CustomError.js";
 import PostRepository from "../repositories/post.repository.js";
 /** */
 import { findPostsByActorName } from "../repositories/post.repositories.js";
