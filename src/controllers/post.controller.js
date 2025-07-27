@@ -676,4 +676,19 @@ router.get(
   })
 );
 
+// 미디어 게시글만 조회
+router.get(
+  '/media',
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const posts = await getMediaPostsService();
+
+    return res.status(200).json({
+      resultType: 'SUCCESS',
+      error: null,
+      success: posts,
+    });
+  })
+);
+
 export default router;
