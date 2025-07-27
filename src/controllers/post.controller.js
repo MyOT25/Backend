@@ -28,6 +28,8 @@ import { updatePostService } from '../services/post.service.js';
 import { deletePostService } from '../services/post.service.js';
 // 오늘의 관극 등록 import
 import { createViewingRecord } from '../services/post.service.js';
+// 인용한 게시물 import
+import { getQuotedPostService } from '../services/post.service.js';
 /**
  * GET /api/posts/ticketbook
  * @desc 나의 티켓북 조회
