@@ -47,6 +47,8 @@ import {
 } from '../services/post.service.js';
 // 재게시 관련 import
 import { getRepostedUsersService } from '../services/post.service.js';
+// 인용한 게시물 import
+import { getQuotedPostService } from '../services/post.service.js';
 /**
  * GET /api/posts/ticketbook
  * @desc 나의 티켓북 조회
@@ -815,6 +817,21 @@ router.get(
       resultType: 'SUCCESS',
       error: null,
       success: users,
+    });
+  })
+);
+
+router.get(
+  '/:postId/quoted',
+  asyncHandler(async (req, res) => {
+    const { postId } = req.params;
+
+    const quotedPost = await getQuotedPostService(Number(postId));
+
+    return res.status(200).json({
+      resultType: 'SUCCESS',
+      error: null,
+      success: quotedPost,
     });
   })
 );
