@@ -163,8 +163,6 @@ class PostRepository {
     return prisma.post.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
-        musical: true,
-        seat: true,
         postimages: true,
       },
     });
