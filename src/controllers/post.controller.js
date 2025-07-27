@@ -26,17 +26,8 @@ import { UpdatePostDTO } from '../dtos/post.dto.js';
 import { updatePostService } from '../services/post.service.js';
 //게시글 삭제 import
 import { deletePostService } from '../services/post.service.js';
-// 전체 게시물 조회
-import { getAllPostService } from '../services/post.service.js';
-// 미디어 게시물 조회
-import { getMediaPostsService } from '../services/post.service.js';
-// 댓글 관련 import
-import {
-  createCommentService,
-  getCommentsService,
-  updateCommentService,
-  deleteCommentService,
-} from '../services/post.service.js';
+// 북마크 관련 import
+import { addBookmarkService, removeBookmarkService } from '../services/bookmark.service.js';
 
 // 오늘의 관극 등록 import
 import { createViewingRecord } from '../services/post.service.js';
@@ -759,6 +750,42 @@ router.delete(
       resultType: 'SUCCESS',
       error: null,
       success: '댓글 삭제 완료',
+    });
+  })
+);
+
+// 북마크 등록
+router.post(
+  '/:postId/bookmarks',
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const { postId } = req.params;
+
+    await addBookmarkService(userId, Number(postId));
+
+    return res.status(201).json({
+      resultType: 'SUCCESS',
+      error: null,
+      success: '북마크 등록 완료',
+    });
+  })
+);
+
+// 북마크 해제
+router.delete(
+  '/:postId/bookmarks',
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const { postId } = req.params;
+
+    await removeBookmarkService(userId, Number(postId));
+
+    return res.status(200).json({
+      resultType: 'SUCCESS',
+      error: null,
+      success: '북마크 해제 완료',
     });
   })
 );

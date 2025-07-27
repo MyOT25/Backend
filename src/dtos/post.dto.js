@@ -5,7 +5,6 @@ export const formatPostResponse = (post) => ({
   content: post.content,
   imageUrls: post.postimages.map((img) => img.url),
 });
-
 //일반 게시물 등록 DTO (리포스트X)
 export class CreatePostDTO {
   constructor({ content, postimages = [], hasMedia, communityId }) {
