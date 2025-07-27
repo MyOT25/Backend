@@ -3,6 +3,7 @@ import { NotFoundError, UnauthorizedError } from '../middlewares/CustomError.js'
 import PostRepository from '../repositories/post.repository.js';
 /** */
 import { findPostsByActorName } from '../repositories/post.repositories.js';
+import CommentRepository from '../repositories/comment.repository.js';
 import { formatPostResponse } from '../dtos/post.dto.js';
 
 /* 티켓북 조회 */
@@ -449,4 +450,33 @@ export const getAllPostService = {
 export const getMediaPostsService = async () => {
   const mediaPosts = await PostRepository.findMediaPosts();
   return mediaPosts;
+};
+
+// 댓글 등록
+export const createCommentService = async (userId, postId, content) => {
+  return await CommentRepository.createComment(userId, postId, content);
+};
+
+// 댓글 조회
+export const getCommentsService = async (postId) => {
+  return await CommentRepository.getCommentsByPostId(postId);
+};
+
+// 댓글 수정
+export const updateCommentService = async (userId, commentId, content) => {
+  const comment = await CommentRepository.findCommentById(commentId);
+  if (!comment) throw new NotFoundError('댓글이 존재하지 않습니다.');
+  console.log(userId, comment.userId);
+  if (comment.userId !== userId) throw new UnauthorizedError('수정 권한이 없습니다.');
+
+  return await CommentRepository.updateComment(commentId, content);
+};
+
+// 댓글 삭제
+export const deleteCommentService = async (userId, commentId) => {
+  const comment = await CommentRepository.findCommentById(commentId);
+  if (!comment) throw new NotFoundError('댓글이 존재하지 않습니다.');
+  if (comment.userId !== userId) throw new UnauthorizedError('삭제 권한이 없습니다.');
+
+  return await CommentRepository.deleteComment(commentId);
 };
