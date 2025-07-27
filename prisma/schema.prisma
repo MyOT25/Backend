@@ -76,15 +76,16 @@ model Post {
   community      Community   @relation(fields: [communityId], references: [id])
 
 
-  postcomments      PostComment[]
-  postLikes         PostLike[]
-  postbookmarks     PostBookmark[]
-  postTags          PostTag[] 
-  postimages        PostImage[]
-  reviews           Review[]
+  comments  Comment[]
+  postLikes PostLike[]
+  bookmarks Bookmark[]
+  postTags  PostTag[]
+  images    Image[]
+  reviews   Review[]
   images            Image[]
 
 }
+
 
 model PostComment {
   id              Int      @id @default(autoincrement())

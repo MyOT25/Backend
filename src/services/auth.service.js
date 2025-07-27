@@ -21,6 +21,7 @@ export const loginService = async ({ loginId, password }) => {
   if (!isMatch) {
     throw new UnauthorizedError("비밀번호가 일치하지 않습니다.");
   }
+  console.log("🪪 로그인 시 JWT_SECRET:", process.env.JWT_SECRET);
 
   const accessToken = jwt.sign(
     { userId: user.id, loginId: user.loginId },
