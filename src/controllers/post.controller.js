@@ -593,7 +593,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const { postId } = req.params;
     const { content } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const comment = await createCommentService(userId, Number(postId), content);
 
@@ -628,7 +628,7 @@ router.patch(
   asyncHandler(async (req, res) => {
     const { commentId } = req.params;
     const { content } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const updated = await updateCommentService(userId, Number(commentId), content);
 
@@ -646,7 +646,7 @@ router.delete(
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const { commentId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     await deleteCommentService(userId, Number(commentId));
 

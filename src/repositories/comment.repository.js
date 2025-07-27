@@ -1,13 +1,17 @@
-comment.repository.js;
 import prisma from '../config/prismaClient.js';
 
 class CommentRepository {
   async createComment(userId, postId, content) {
+    console.log(userId);
     return await prisma.postComment.create({
       data: {
-        userId,
-        postId,
         content,
+        user: {
+          connect: { id: userId },
+        },
+        post: {
+          connect: { id: postId },
+        },
       },
     });
   }
