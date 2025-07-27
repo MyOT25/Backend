@@ -1,5 +1,6 @@
 import prisma from '../config/prismaClient.js';
 import { NotFoundError, UnauthorizedError } from '../middlewares/CustomError.js';
+import { UnauthorizedError } from '../middlewares/CustomError.js';
 import PostRepository from '../repositories/post.repository.js';
 /** */
 import { findPostsByActorName } from '../repositories/post.repositories.js';
@@ -392,7 +393,7 @@ export const postLikeService = async (postId, userId) => {
   // 1. 게시글 존재 여부 확인
   const post = await PostRepository.findPostById(postId);
   if (!post) {
-    throw new NotFoundError("게시글이 존재하지 않습니다.");
+    throw new NotFoundError('게시글이 존재하지 않습니다.');
   }
 
   // 2. 유저가 이미 좋아요 했는지 확인
@@ -403,14 +404,14 @@ export const postLikeService = async (postId, userId) => {
     // 좋아요 취소
     await PostRepository.deletePostLike(userId, postId);
     return {
-      message: "좋아요 취소 완료",
+      message: '좋아요 취소 완료',
       isLiked: false,
     };
   } else {
     // 좋아요 등록
     await PostRepository.createPostLike(userId, postId);
     return {
-      message: "좋아요 등록 완료",
+      message: '좋아요 등록 완료',
       isLiked: true,
     };
   }
