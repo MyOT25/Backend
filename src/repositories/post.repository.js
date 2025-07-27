@@ -258,6 +258,25 @@ class PostRepository {
       where: { postId: Number(postId) },
     });
   }
+
+  // 재게시한 유저 목록 조회
+  async findUsersWhoReposted(postId) {
+    const reposts = await prisma.post.findMany({
+      where: {
+        isRepost: true,
+        repostTargetId: Number(postId),
+        repostType: 'post', // ✅ enum 값에 맞게 소문자로!
+      },
+      include: {
+        user: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return reposts;
+  }
 }
 
 export default new PostRepository();

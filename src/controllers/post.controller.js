@@ -28,7 +28,8 @@ import { updatePostService } from '../services/post.service.js';
 import { deletePostService } from '../services/post.service.js';
 // 북마크 관련 import
 import { addBookmarkService, removeBookmarkService } from '../services/bookmark.service.js';
-
+// 재게시 관련 import
+import { getRepostedUsersService } from '../services/post.service.js';
 // 오늘의 관극 등록 import
 import { createViewingRecord } from '../services/post.service.js';
 //게시글 좋아요 등록/해제 import
@@ -786,6 +787,23 @@ router.delete(
       resultType: 'SUCCESS',
       error: null,
       success: '북마크 해제 완료',
+    });
+  })
+);
+
+//재게시한 유저 목록
+router.get(
+  '/:postId/reposted-users',
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const { postId } = req.params;
+
+    const users = await getRepostedUsersService(Number(postId));
+
+    return res.status(200).json({
+      resultType: 'SUCCESS',
+      error: null,
+      success: users,
     });
   })
 );
