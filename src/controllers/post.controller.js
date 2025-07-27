@@ -650,6 +650,7 @@ router.get(
     });
   })
 );
+
 // 전체 게시글 조회
 router.get(
   '/',
@@ -660,10 +661,7 @@ router.get(
     return res.status(200).json({
       resultType: 'SUCCESS',
       error: null,
-      success: {
-        message: '좋아요 누른 유저 목록 조회 성공',
-        ...result,
-      },
+      success: posts,
     });
   })
 );
