@@ -26,8 +26,12 @@ import { UpdatePostDTO } from "../dtos/post.dto.js";
 import { updatePostService } from "../services/post.service.js";
 //게시글 삭제 import
 import { deletePostService } from "../services/post.service.js";
-// 오늘의 관극 등록 import 
+// 오늘의 관극 등록 import
 import { createViewingRecord } from "../services/post.service.js";
+//게시글 좋아요 등록/해제 import
+import { postLikeService } from "../services/post.service.js";
+//게시글 좋아요 목록 조회 import
+import { getPostLikedUsersService } from "../services/post.service.js";
 /**
  * GET /api/posts/ticketbook
  * @desc 나의 티켓북 조회
@@ -295,21 +299,15 @@ export const createViewingPost = asyncHandler(async (req, res) => {
 
   if (imageFiles && imageFiles.length > 0) {
     imageUrls = await Promise.all(
-      imageFiles.map((file) => uploadToS3(file.buffer, 
-        file.originalname, file.mimetype))
+      imageFiles.map((file) =>
+        uploadToS3(file.buffer, file.originalname, file.mimetype)
+      )
     );
   }
 
   // ✅ body에서 다른 데이터 추출
-  const {
-    musicalId,
-    watchDate,
-    watchTime,
-    seat,
-    casts,
-    content,
-    rating,
-  } = req.body;
+  const { musicalId, watchDate, watchTime, seat, casts, content, rating } =
+    req.body;
 
   // ✅ JSON 문자열 데이터 파싱
   const parsedSeat = JSON.parse(seat);
@@ -330,7 +328,6 @@ export const createViewingPost = asyncHandler(async (req, res) => {
     message: "관극 기록이 성공적으로 등록되었습니다.",
     data: result,
   });
-  
 });
 
 export const createPost = asyncHandler(async (req, res) => {
@@ -346,7 +343,6 @@ export const createPost = asyncHandler(async (req, res) => {
       message: "게시글이 성공적으로 생성되었습니다.",
     },
   });
-
 });
 /**
  * 미등록 출연진 추가
@@ -584,6 +580,77 @@ router.delete(
       success: {
         postId: deletedPostId,
         message: "게시글이 성공적으로 삭제되었습니다.",
+      },
+    });
+  })
+);
+
+/**
+ * 좋아요 등록/해제
+ */
+router.post(
+  "/:postId/like",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const postId = parseInt(req.params.postId, 10);
+    const userId = req.user.id;
+
+    if (!postId || isNaN(postId)) {
+      return res.status(400).json({
+        resultType: "FAIL",
+        error: {
+          errorCode: "INVALID_ID",
+          reason: "유효한 게시글 ID가 아닙니다.",
+        },
+        success: null,
+      });
+    }
+
+    const { message, isLiked } = await postLikeService(postId, userId);
+
+    return res.status(200).json({
+      resultType: "SUCCESS",
+      error: null,
+      success: {
+        userId,
+        postId,
+        isLiked,
+        message,
+      },
+    });
+  })
+);
+
+/**
+ * 게시글 좋아요 목록 조회
+ */
+router.get(
+  "/:postId/likes",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const postId = parseInt(req.params.postId, 10);
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+
+    if (isNaN(postId)) {
+      return res.status(400).json({
+        resultType: "FAIL",
+        error: {
+          errorCode: "INVALID_ID",
+          reason: "유효한 게시글 ID가 아닙니다.",
+        },
+        success: null,
+      });
+    }
+
+    const result = await getPostLikedUsersService(postId, page, limit);
+
+    return res.status(200).json({
+      resultType: "SUCCESS",
+      error: null,
+      success: {
+        message: "좋아요 누른 유저 목록 조회 성공",
+        ...result,
       },
     });
   })

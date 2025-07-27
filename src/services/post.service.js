@@ -1,5 +1,6 @@
 import prisma from "../config/prismaClient.js";
 import { UnauthorizedError } from "../middlewares/CustomError.js";
+import { NotFoundError } from "../middlewares/CustomError.js";
 import PostRepository from "../repositories/post.repository.js";
 /** */
 import { findPostsByActorName } from "../repositories/post.repositories.js";
@@ -416,4 +417,56 @@ export const deletePostService = async (postId, userId) => {
     // 5. 응답
     return postId;
   });
+};
+
+/**
+ * 좋아요 등록/해제 (토글 방식)
+ */
+export const postLikeService = async (postId, userId) => {
+  // 1. 게시글 존재 여부 확인
+  const post = await PostRepository.findPostById(postId);
+  if (!post) {
+    throw new NotFoundError("게시글이 존재하지 않습니다.");
+  }
+
+  // 2. 유저가 이미 좋아요 했는지 확인
+  const existingLike = await PostRepository.findPostLike(userId, postId);
+
+  // 3. 토글 처리
+  if (existingLike) {
+    // 좋아요 취소
+    await PostRepository.deletePostLike(userId, postId);
+    return {
+      message: "좋아요 취소 완료",
+      isLiked: false,
+    };
+  } else {
+    // 좋아요 등록
+    await PostRepository.createPostLike(userId, postId);
+    return {
+      message: "좋아요 등록 완료",
+      isLiked: true,
+    };
+  }
+};
+
+/**
+ * 좋아요 누른 유저 목록 조회
+ */
+export const getPostLikedUsersService = async (postId, page, limit) => {
+  const skip = (page - 1) * limit;
+
+  const [users, total] = await Promise.all([
+    PostRepository.findUsersWhoLikedPost(postId, skip, limit),
+    PostRepository.countUsersWhoLikedPost(postId),
+  ]);
+
+  const userList = users.map((like) => like.user);
+
+  return {
+    total,
+    page,
+    limit,
+    users: userList,
+  };
 };

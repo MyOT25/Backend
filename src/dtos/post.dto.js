@@ -65,5 +65,3 @@ export class UpdatePostDTO {
     return matched.map((tag) => tag.replace("#", ""));
   }
 }
-
-//게시글 삭제 DTO는 필요 X
