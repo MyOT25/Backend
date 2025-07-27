@@ -385,6 +385,7 @@ export const deletePostService = async (postId, userId) => {
   });
 };
 
+<<<<<<< HEAD
 /**
  * 좋아요 등록/해제 (토글 방식)
  */
@@ -442,4 +443,10 @@ export const getAllPostService = {
     const posts = await PostRepository.getAllPosts();
     return posts.map((post) => formatPostResponse(post));
   },
+=======
+// 미디어 게시물 받아오는 함수
+export const getMediaPostsService = async () => {
+  const mediaPosts = await PostRepository.findMediaPosts();
+  return mediaPosts;
+>>>>>>> feat/#40
 };
