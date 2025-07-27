@@ -26,6 +26,8 @@ import { UpdatePostDTO } from '../dtos/post.dto.js';
 import { updatePostService } from '../services/post.service.js';
 //게시글 삭제 import
 import { deletePostService } from '../services/post.service.js';
+// 전체 게시물 조회
+import { getAllPostService } from '../services/post.service.js';
 // 오늘의 관극 등록 import
 import { createViewingRecord } from '../services/post.service.js';
 //게시글 좋아요 등록/해제 import
@@ -637,6 +639,23 @@ router.get(
     }
 
     const result = await getPostLikedUsersService(postId, page, limit);
+
+    return res.status(200).json({
+      resultType: 'SUCCESS',
+      error: null,
+      success: {
+        message: '좋아요 누른 유저 목록 조회 성공',
+        ...result,
+      },
+    });
+  })
+);
+// 전체 게시글 조회
+router.get(
+  '/',
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const posts = await getAllPostService.getAllPosts();
 
     return res.status(200).json({
       resultType: 'SUCCESS',

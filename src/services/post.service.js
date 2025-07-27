@@ -1,6 +1,5 @@
 import prisma from '../config/prismaClient.js';
 import { NotFoundError, UnauthorizedError } from '../middlewares/CustomError.js';
-import { UnauthorizedError } from '../middlewares/CustomError.js';
 import PostRepository from '../repositories/post.repository.js';
 /** */
 import { findPostsByActorName } from '../repositories/post.repositories.js';
@@ -436,4 +435,11 @@ export const getPostLikedUsersService = async (postId, page, limit) => {
     limit,
     users: userList,
   };
+};
+// 전체 게시물 받아오는 함수
+export const getAllPostService = {
+  async getAllPosts() {
+    const posts = await PostRepository.getAllPosts();
+    return posts.map((post) => formatPostResponse(post));
+  },
 };
