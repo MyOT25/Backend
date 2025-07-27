@@ -1,10 +1,13 @@
-import prisma from '../config/prismaClient.js';
-import { NotFoundError, UnauthorizedError } from '../middlewares/CustomError.js';
-import PostRepository from '../repositories/post.repository.js';
+import prisma from "../config/prismaClient.js";
+import {
+  NotFoundError,
+  UnauthorizedError,
+} from "../middlewares/CustomError.js";
+import PostRepository from "../repositories/post.repository.js";
 /** */
-import { findPostsByActorName } from '../repositories/post.repositories.js';
-import CommentRepository from '../repositories/comment.repository.js';
-import { formatPostResponse } from '../dtos/post.dto.js';
+import { findPostsByActorName } from "../repositories/post.repositories.js";
+import CommentRepository from "../repositories/comment.repository.js";
+import { formatPostResponse } from "../dtos/post.dto.js";
 
 /* 티켓북 조회 */
 export const getTicketbook = async (userId) => {
@@ -22,11 +25,11 @@ export const getTicketbook = async (userId) => {
         },
       },
     },
-    orderBy: { date: 'desc' },
+    orderBy: { date: "desc" },
   });
 
   if (!viewings || viewings.length === 0) {
-    throw new UnauthorizedError('티켓북에 기록이 없습니다.', 404);
+    throw new UnauthorizedError("티켓북에 기록이 없습니다.", 404);
   }
 
   return viewings.map((v) => ({
@@ -45,10 +48,14 @@ export const getTicketbook = async (userId) => {
  * 신규 월별 정산판 조회 (함수 방식으로 추가)
  */
 export const getMonthlySummary = async (userId, year, month) => {
-  const viewings = await PostRepository.findViewingRecordsByMonth(userId, year, month);
+  const viewings = await PostRepository.findViewingRecordsByMonth(
+    userId,
+    year,
+    month
+  );
 
   if (!viewings || viewings.length === 0) {
-    throw new UnauthorizedError('해당 월에 관람 기록이 없습니다.', 404);
+    throw new UnauthorizedError("해당 월에 관람 기록이 없습니다.", 404);
   }
 
   return viewings.map((v) => ({
@@ -71,7 +78,16 @@ export const getMonthlySummary = async (userId, year, month) => {
 /* 오늘의 관극 등록
  */
 export const createViewingRecord = async (userId, body) => {
-  const { musicalId, watchDate, watchTime, seat, casts, content, rating, imageUrls } = body;
+  const {
+    musicalId,
+    watchDate,
+    watchTime,
+    seat,
+    casts,
+    content,
+    rating,
+    imageUrls,
+  } = body;
 
   // 좌석 upsert
   const seatRecord = await prisma.seat.upsert({
@@ -130,7 +146,7 @@ export const createViewingRecord = async (userId, body) => {
 
 // 배우 이름으로 후기 필터링
 export const getPostByActorName = async (actorName) => {
-  if (!actorName) throw new Error('배우 이름이 필요합니다.');
+  if (!actorName) throw new Error("배우 이름이 필요합니다.");
   const posts = await findPostsByActorName(actorName);
   return posts;
 };
@@ -141,9 +157,12 @@ export const createPostService = async (userId, dto) => {
   const { communityId, content, hasMedia, postimages } = dto;
 
   // 커뮤니티 가입 여부 확인
-  const membership = await PostRepository.findUserCommunity(userId, communityId);
+  const membership = await PostRepository.findUserCommunity(
+    userId,
+    communityId
+  );
   if (!membership) {
-    throw new Error('해당 커뮤니티에 가입된 사용자만 글을 작성할 수 있습니다.');
+    throw new Error("해당 커뮤니티에 가입된 사용자만 글을 작성할 수 있습니다.");
   }
 
   // 트랜잭션 시작
@@ -204,11 +223,19 @@ export const createPostService = async (userId, dto) => {
 };
 
 /*재게시용 게시글 생성 */
-export const createRepostService = async (userId, communityId, postId, createRepostDto) => {
+export const createRepostService = async (
+  userId,
+  communityId,
+  postId,
+  createRepostDto
+) => {
   // 커뮤니티 가입 여부 확인
-  const membership = await PostRepository.findUserCommunity(userId, communityId);
+  const membership = await PostRepository.findUserCommunity(
+    userId,
+    communityId
+  );
   if (!membership) {
-    throw new Error('해당 커뮤니티에 가입된 사용자만 재게시할 수 있습니다.');
+    throw new Error("해당 커뮤니티에 가입된 사용자만 재게시할 수 있습니다.");
   }
 
   const repost = await PostRepository.createRepost({
@@ -226,13 +253,23 @@ export const createRepostService = async (userId, communityId, postId, createRep
 /**
  * 인용 게시글 생성
  */
-export const createQuotePostService = async (userId, communityId, postId, dto) => {
+export const createQuotePostService = async (
+  userId,
+  communityId,
+  postId,
+  dto
+) => {
   const { repostType, content, postimages, hasMedia } = dto;
 
   // 커뮤니티 가입 여부 확인
-  const membership = await PostRepository.findUserCommunity(userId, communityId);
+  const membership = await PostRepository.findUserCommunity(
+    userId,
+    communityId
+  );
   if (!membership) {
-    throw new Error('해당 커뮤니티에 가입된 사용자만 인용 게시글을 작성할 수 있습니다.');
+    throw new Error(
+      "해당 커뮤니티에 가입된 사용자만 인용 게시글을 작성할 수 있습니다."
+    );
   }
 
   const result = await prisma.$transaction(async (tx) => {
@@ -306,10 +343,10 @@ export const updatePostService = async (postId, userId, updatePostDto) => {
   // 1. 게시글 존재 및 작성자 확인
   const post = await PostRepository.findPostById(postId);
   if (!post) {
-    throw new NotFoundError('게시글이 존재하지 않습니다.');
+    throw new NotFoundError("게시글이 존재하지 않습니다.");
   }
   if (post.user.id !== userId) {
-    throw new ForbiddenError('게시글 수정 권한이 없습니다.');
+    throw new ForbiddenError("게시글 수정 권한이 없습니다.");
   }
 
   // 2. hasMedia 판단
@@ -366,22 +403,34 @@ export const deletePostService = async (postId, userId) => {
     // 1. 게시글 존재 여부 확인
     const post = await PostRepository.findPostById(postId);
     if (!post) {
-      throw new NotFoundError('삭제할 게시글이 존재하지 않습니다.');
+      throw new NotFoundError("삭제할 게시글이 존재하지 않습니다.");
     }
 
     // 2. 작성자 본인인지 확인
     if (post.user.id !== userId) {
-      throw new ForbiddenError('게시글 삭제 권한이 없습니다.');
+      throw new ForbiddenError("게시글 삭제 권한이 없습니다.");
     }
 
-    // 3. 연관 데이터 삭제
+    // 3. 리포스트 게시글이라면, 원본의 repostCound 감소
+    if (post.isRepost && post.repostTargetId) {
+      await tx.post.update({
+        where: { id: post.repostTargetId },
+        data: {
+          repostCount: {
+            decrement: 1,
+          },
+        },
+      });
+    }
+
+    // 4. 연관 데이터 삭제
     await PostRepository.deletePostImagesByPostId(postId);
     await PostRepository.deletePostTagsByPostId(postId);
 
-    // 4. 게시글 자체 삭제
+    // 5. 게시글 자체 삭제
     await PostRepository.deletePostById(postId);
 
-    // 5. 응답
+    // 6. 응답
     return postId;
   });
 };
@@ -393,7 +442,7 @@ export const postLikeService = async (postId, userId) => {
   // 1. 게시글 존재 여부 확인
   const post = await PostRepository.findPostById(postId);
   if (!post) {
-    throw new NotFoundError('게시글이 존재하지 않습니다.');
+    throw new NotFoundError("게시글이 존재하지 않습니다.");
   }
 
   // 2. 유저가 이미 좋아요 했는지 확인
@@ -404,14 +453,14 @@ export const postLikeService = async (postId, userId) => {
     // 좋아요 취소
     await PostRepository.deletePostLike(userId, postId);
     return {
-      message: '좋아요 취소 완료',
+      message: "좋아요 취소 완료",
       isLiked: false,
     };
   } else {
     // 좋아요 등록
     await PostRepository.createPostLike(userId, postId);
     return {
-      message: '좋아요 등록 완료',
+      message: "좋아요 등록 완료",
       isLiked: true,
     };
   }
@@ -465,9 +514,10 @@ export const getCommentsService = async (postId) => {
 // 댓글 수정
 export const updateCommentService = async (userId, commentId, content) => {
   const comment = await CommentRepository.findCommentById(commentId);
-  if (!comment) throw new NotFoundError('댓글이 존재하지 않습니다.');
+  if (!comment) throw new NotFoundError("댓글이 존재하지 않습니다.");
   console.log(userId, comment.userId);
-  if (comment.userId !== userId) throw new UnauthorizedError('수정 권한이 없습니다.');
+  if (comment.userId !== userId)
+    throw new UnauthorizedError("수정 권한이 없습니다.");
 
   return await CommentRepository.updateComment(commentId, content);
 };
@@ -475,8 +525,9 @@ export const updateCommentService = async (userId, commentId, content) => {
 // 댓글 삭제
 export const deleteCommentService = async (userId, commentId) => {
   const comment = await CommentRepository.findCommentById(commentId);
-  if (!comment) throw new NotFoundError('댓글이 존재하지 않습니다.');
-  if (comment.userId !== userId) throw new UnauthorizedError('삭제 권한이 없습니다.');
+  if (!comment) throw new NotFoundError("댓글이 존재하지 않습니다.");
+  if (comment.userId !== userId)
+    throw new UnauthorizedError("삭제 권한이 없습니다.");
 
   return await CommentRepository.deleteComment(commentId);
 };
@@ -491,7 +542,7 @@ export const getQuotedPostService = async (postId) => {
   const quoted = await PostRepository.findQuotedPost(postId);
 
   if (!quoted) {
-    throw new NotFoundError('해당 게시글은 인용한 게시글이 없습니다.');
+    throw new NotFoundError("해당 게시글은 인용한 게시글이 없습니다.");
   }
 
   return quoted;
