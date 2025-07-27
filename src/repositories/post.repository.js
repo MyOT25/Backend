@@ -188,7 +188,7 @@ class PostRepository {
       where: {
         isRepost: true,
         repostTargetId: Number(postId),
-        repostType: 'POST', // 필요 시 조건 추가
+        repostType: 'post', // ✅ enum 값에 맞게 소문자로!
       },
       include: {
         user: true,
@@ -198,7 +198,7 @@ class PostRepository {
       },
     });
 
-    return reposts.map((post) => post.user);
+    return reposts;
   }
 }
 
