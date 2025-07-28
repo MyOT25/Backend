@@ -12,9 +12,11 @@ const swaggerDefinition = {
       url: "http://localhost:3000",
       description: "로컬 개발 서버",
     },
-  ],components: {
+  ],
+  components: {
     securitySchemes: {
-      bearerAuth: {         // 이름은 bearerAuth로 지정
+      bearerAuth: {
+        // 이름은 bearerAuth로 지정
         type: "http",
         scheme: "bearer",
         bearerFormat: "JWT", // 옵션 (UI에 표시)
@@ -23,14 +25,14 @@ const swaggerDefinition = {
   },
   security: [
     {
-      bearerAuth: [],       // 모든 API에 기본 적용
+      bearerAuth: [], // 모든 API에 기본 적용
     },
   ],
 };
 
 const options = {
   swaggerDefinition,
-  apis: ["./src/controllers/*.js"], // 주석으로 API 문서 작성할 경로
+  apis: ["./src/controllers/**/*.js"], // 주석으로 API 문서 작성할 경로
 };
 
 const swaggerSpec = swaggerJSDoc(options);
