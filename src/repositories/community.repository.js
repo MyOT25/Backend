@@ -141,6 +141,7 @@ export const findCommunityById = async (communityId) => {
       theaterName: true,
       ticketLink: true,
       createdAt: true,
+      coverImage: true,
     },
   });
 };

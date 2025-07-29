@@ -779,6 +779,10 @@ router.get("/profile/my/:communityId", authenticateJWT, async (req, res) => {
  *                       type: string
  *                       format: date-time
  *                       example: "2025-07-20T15:00:00.000Z"
+ *                     coverImage:
+                        type: string
+                        example: "https://yourcdn.com/images/cover.jpg"
+
  *       400:
  *         description: 잘못된 타입 등 유효하지 않은 요청
  *         content:
@@ -836,6 +840,7 @@ router.get("/:type/:id", async (req, res) => {
       theaterName: community.theaterName,
       ticketLink: community.ticketLink,
       createdAt: community.createdAt,
+      coverImage: community.coverImage,
     };
 
     res.status(200).json({ success: true, community: formatted });

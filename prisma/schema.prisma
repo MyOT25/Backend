@@ -74,7 +74,6 @@ model Post {
   @@index([userId], map: "Post_userId_fkey")
 }
 
-
 model PostComment {
   id        Int      @id @default(autoincrement())
   postId    Int
@@ -213,7 +212,7 @@ model Seat {
   theaterId Int
   row       String
   column    Int
-  seat_type SeatType
+  seat_type Seat_seat_type
   floor     String?
   theater   Theater         @relation(fields: [theaterId], references: [id])
   viewings  ViewingRecord[]
@@ -232,6 +231,7 @@ model Community {
   ticketLink            String?
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
+  coverImage            String?            @db.VarChar(255)
   memoryBooks           MemoryBook?
   multiProfiles         MultiProfile[]
   musicalCommunities    MusicalCommunity[]
@@ -520,11 +520,6 @@ enum MediaType {
   video
 }
 
-enum SeatType {
-  VIP
-  // 일반석
-}
-
 enum TargetType {
   MUSICAL
   ACTOR
@@ -533,4 +528,9 @@ enum TargetType {
 enum CommunityType {
   musical
   actor
+}
+
+enum Seat_seat_type {
+  VIP
+  // 일반석 @map("일반석")
 }
