@@ -780,9 +780,8 @@ router.get("/profile/my/:communityId", authenticateJWT, async (req, res) => {
  *                       format: date-time
  *                       example: "2025-07-20T15:00:00.000Z"
  *                     coverImage:
-                        type: string
-                        example: "https://yourcdn.com/images/cover.jpg"
-
+ *                       type: string
+ *                       example: "https://yourcdn.com/images/cover.jpg"
  *       400:
  *         description: 잘못된 타입 등 유효하지 않은 요청
  *         content:
@@ -795,7 +794,7 @@ router.get("/profile/my/:communityId", authenticateJWT, async (req, res) => {
  *                   example: false
  *                 message:
  *                   type: string
- *                   example: 유효하지 않은 커뮤니티 타입입니다.
+ *                   example: "유효하지 않은 커뮤니티 타입입니다."
  *       404:
  *         description: 커뮤니티를 찾을 수 없음
  *         content:
@@ -808,7 +807,7 @@ router.get("/profile/my/:communityId", authenticateJWT, async (req, res) => {
  *                   example: false
  *                 message:
  *                   type: string
- *                   example: 커뮤니티를 찾을 수 없습니다.
+ *                   example: "커뮤니티를 찾을 수 없습니다."
  */
 
 router.get("/:type/:id", async (req, res) => {
@@ -1052,7 +1051,7 @@ router.post("/profile", async (req, res) => {
  *                   example: false
  *                 message:
  *                   type: string
- *                   example: 커뮤니티 프로필 수정 실패: DB 연결 오류
+ *                   example: 커뮤니티 프로필 수정 실패
  */
 
 // 커뮤니티 프로필 수정하기
@@ -1162,7 +1161,7 @@ router.patch("/profile/:id", async (req, res) => {
  *                   example: false
  *                 message:
  *                   type: string
- *                   example: 커뮤니티 프로필 삭제 실패: DB 오류
+ *                   example: 커뮤니티 프로필 삭제 실패
  */
 
 // 커뮤니티 프로필 삭제하기
@@ -1350,7 +1349,7 @@ router.get("/:id/feed/media", async (req, res) => {
  * /api/community/{id}/feed/popular:
  *   get:
  *     summary: 커뮤니티 인기 피드 조회
- *     description: 해당 커뮤니티에서 최근 인기 있는 게시글(예: 좋아요 수 기준)을 조회합니다.
+ *     description: 해당 커뮤니티에서 최근 인기 있는 게시글(좋아요 수 기준)을 조회합니다.
  *     tags:
  *       - Community
  *     parameters:
