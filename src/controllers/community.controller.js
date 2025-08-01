@@ -834,13 +834,18 @@ router.get("/:type/:id", async (req, res) => {
       groupName: community.groupName,
       type: community.type,
       targetId: community.targetId,
-      musicalName: community.musicalName,
       recentPerformanceDate: community.recentPerformanceDate,
       theaterName: community.theaterName,
       ticketLink: community.ticketLink,
       createdAt: community.createdAt,
       coverImage: community.coverImage,
     };
+
+    if (community.type === "musical") {
+      formatted.musicalName = community.musicalName;
+    } else if (community.type === "actor") {
+      formatted.actorName = community.actorName || community.groupName;
+    }
 
     res.status(200).json({ success: true, community: formatted });
   } catch (err) {
