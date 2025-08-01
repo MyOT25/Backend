@@ -831,7 +831,6 @@ router.get("/:type/:id", async (req, res) => {
 
     const formatted = {
       communityId: community.id,
-      groupName: community.groupName,
       type: community.type,
       targetId: community.targetId,
       recentPerformanceDate: community.recentPerformanceDate,
