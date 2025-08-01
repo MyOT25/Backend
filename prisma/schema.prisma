@@ -15,20 +15,18 @@ model User {
   email           String          @unique
   nickname        String?
   profileImage    String?
-  createdAt       DateTime?
-  updatedAt       DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
   bio             String?
   birthDate       DateTime?
   isSubscribed    Boolean?
   answers         Answer[]
   answerLikes     AnswerLike[]
-  followers       Follow[]        @relation("Follower")
-  follows         Follow[]        @relation("Following")
   memoryBooks     MemoryBook[]
   multiProfiles   MultiProfile[]
   posts           Post[]
-  postbookmarks   PostBookmark[]
-  postcomments    PostComment[]
+  postBookmarks   PostBookmark[]
+  postComments    PostComment[]
   postLikes       PostLike[]
   questions       Question[]
   questionGoods   QuestionGood[]
@@ -40,6 +38,9 @@ model User {
   subscriptions   Subscribe[]
   userCommunities UserCommunity[]
   viewings        ViewingRecord[]
+
+  followers       Follow[]        @relation("Follower")
+  followings      Follow[]        @relation("Following")
 }
 
 model Post {
@@ -49,9 +50,9 @@ model Post {
   isRepost       Boolean        @default(false)
   repostType     RepostType?
   repostTargetId Int?
-  title          String?
   content        String?
   mediaType      MediaType?
+  hasMedia       Boolean        @default(false)
   viewCount      Int            @default(0)
   commentCount   Int            @default(0)
   likeCount      Int            @default(0)
@@ -59,19 +60,50 @@ model Post {
   repostCount    Int            @default(0)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
-  hasMedia       Boolean        @default(false)
-  Image          Image[]
-  community      Community      @relation(fields: [communityId], references: [id])
-  user           User           @relation(fields: [userId], references: [id])
+  
   postBookmarks  PostBookmark[]
   postComments   PostComment[]
-  postimages     PostImage[]
+  postImages     PostImage[]
   postLikes      PostLike[]
   postTags       PostTag[]
   reviews        Review[]
 
+  community      Community      @relation(fields: [communityId], references: [id])
+  user           User           @relation(fields: [userId], references: [id])
+
   @@index([communityId], map: "Post_communityId_fkey")
   @@index([userId], map: "Post_userId_fkey")
+}
+
+model PostImage {
+  id      Int     @id @default(autoincrement())
+  postId  Int
+  url     String?
+  caption String?
+  post    Post    @relation(fields: [postId], references: [id])
+
+  @@index([postId], map: "PostImage_postId_fkey")
+}
+
+model Tag_Post {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  postTags  PostTag[]
+}
+
+model PostTag {
+  postId    Int
+  tagId     Int
+  tagPostId Int?
+  createdAt DateTime  @default(now())
+  post      Post      @relation(fields: [postId], references: [id])
+  tag       Tag       @relation(fields: [tagId], references: [id])
+  tagPost   Tag_Post? @relation(fields: [tagPostId], references: [id])
+
+  @@id([postId, tagId])
+  @@index([tagId], map: "PostTag_tagId_fkey")
+  @@index([tagPostId], map: "PostTag_tagPostId_fkey")
 }
 
 model PostComment {
@@ -101,12 +133,6 @@ model PostLike {
   @@index([postId], map: "PostLike_postId_fkey")
 }
 
-model Bookmark {
-  id     Int @id @default(autoincrement())
-  userId Int
-  postId Int
-}
-
 model PostBookmark {
   id     Int  @id @default(autoincrement())
   userId Int
@@ -118,21 +144,10 @@ model PostBookmark {
   @@index([postId], map: "PostBookmark_postId_fkey")
 }
 
-model Tag_Post {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique
-  createdAt DateTime  @default(now())
-  postTags  PostTag[]
-}
-
-model PostImage {
-  id      Int     @id @default(autoincrement())
-  postId  Int
-  url     String?
-  caption String?
-  post    Post    @relation(fields: [postId], references: [id])
-
-  @@index([postId], map: "PostImage_postId_fkey")
+model Bookmark {
+  id     Int @id @default(autoincrement())
+  userId Int
+  postId Int
 }
 
 model Review {
@@ -176,7 +191,7 @@ model Actor {
 }
 
 model Musical {
-  id          Int                @id
+  id          Int                @id @default(autoincrement())
   theaterId   Int
   name        String?
   startDate   DateTime?
@@ -255,32 +270,8 @@ model Tag {
   postTags  PostTag[]
 }
 
-model PostTag {
-  postId    Int
-  tagId     Int
-  tagPostId Int?
-  createdAt DateTime  @default(now())
-  post      Post      @relation(fields: [postId], references: [id])
-  tag       Tag       @relation(fields: [tagId], references: [id])
-  tagPost   Tag_Post? @relation(fields: [tagPostId], references: [id])
-
-  @@id([postId, tagId])
-  @@index([tagId], map: "PostTag_tagId_fkey")
-  @@index([tagPostId], map: "PostTag_tagPostId_fkey")
-}
-
-model Image {
-  id      Int     @id @default(autoincrement())
-  postId  Int
-  url     String?
-  caption String?
-  post    Post    @relation(fields: [postId], references: [id])
-
-  @@index([postId], map: "Image_postId_fkey")
-}
-
 model Subscribe {
-  id        Int       @id
+  id        Int       @id @default(autoincrement())
   userId    Int
   startDate DateTime?
   endDate   DateTime?
@@ -291,13 +282,15 @@ model Subscribe {
 }
 
 model Follow {
-  id          Int       @id
+  id          Int       @id @default(autoincrement())
   followerId  Int
   followingId Int
-  createdAt   DateTime?
+  createdAt   DateTime  @default(now())
+  
   follower    User      @relation("Follower", fields: [followerId], references: [id])
   following   User      @relation("Following", fields: [followingId], references: [id])
 
+  @@unique([followerId, followingId])
   @@index([followerId], map: "Follow_followerId_fkey")
   @@index([followingId], map: "Follow_followingId_fkey")
 }
@@ -532,5 +525,4 @@ enum CommunityType {
 
 enum Seat_seat_type {
   VIP
-  // 일반석 @map("일반석")
 }
