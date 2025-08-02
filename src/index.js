@@ -32,6 +32,7 @@ import {
 } from "./controllers/memorybook.controller.js";
 import { authenticateJWT } from "./middlewares/authMiddleware.js";
 import { getMusicalCastings } from "./controllers/casting.controller.js";
+import { getTicketBookDetail } from "./controllers/ticektbook.controller.js";
 
 import { s3Uploader, uploadToS3 } from "./middlewares/s3Uploader.js";
 
@@ -97,6 +98,7 @@ app.post("/api/posts/memorybooks", authenticateJWT, addMemoryBook);
 app.get("/api/posts/memorybooks", authenticateJWT, getMemoryBook);
 app.put("/api/posts/memorybooks", authenticateJWT, updateMemoryBook);
 app.get("/api/posts/musical/castings", getMusicalCastings);
+app.get("/api/ticketbook/:musicalId", authenticateJWT,getTicketBookDetail);
 
 app.get("/", (req, res) => {
   res.send("Hello MyOT!");

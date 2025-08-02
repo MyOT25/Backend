@@ -31,9 +31,10 @@ export class BadRequestError extends Error {
 }
 
 export class NotFoundError extends Error {
-  errorCode = 'N001';
 
-  constructor(reason = '요청한 리소스를 찾을 수 없습니다', data = null) {
+  errorCode = "N001";
+
+  constructor(reason = "요청한 리소스를 찾을 수 없습니다", data = null) {
     super(reason);
     this.reason = reason;
     this.data = data;
@@ -47,3 +48,4 @@ export default class CustomError {
   static BadRequestError = BadRequestError;
   static NotFoundError = NotFoundError;
 }
+

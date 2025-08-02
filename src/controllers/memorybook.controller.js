@@ -121,6 +121,85 @@ export const addMemoryBook = asyncHandler(async (req, res) => {
  * GET /api/posts/memorybooks
  * 메모리북 상세 조회 
  */
+/**
+ * @swagger
+ * /api/posts/memorybooks:
+ *   get:
+ *     summary: 메모리북 단건 조회
+ *     description: 특정 유저가 작성한 메모리북을 조회합니다.
+ *     tags:
+ *       - MemoryBook
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: targetType
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [MUSICAL, ACTOR]
+ *         description: 메모리북 대상 유형
+ *       - in: query
+ *         name: targetId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 대상 ID
+ *     responses:
+ *       200:
+ *         description: 메모리북 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                 error:
+ *                   type: object
+ *                   nullable: true
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         memoryBookId:
+ *                           type: integer
+ *                         title:
+ *                           type: string
+ *                         content:
+ *                           type: object
+ *                         targetType:
+ *                           type: string
+ *                         targetId:
+ *                           type: integer
+ *                         createdAt:
+ *                           type: string
+ *                           format: date-time
+ *                         updatedAt:
+ *                           type: string
+ *                           format: date-time
+ *             example:
+ *               resultType: SUCCESS
+ *               error: null
+ *               success:
+ *                 message: "메모리북 조회 성공"
+ *                 data:
+ *                   memoryBookId: 5
+ *                   title: "엘리자벳 후기"
+ *                   content:
+ *                     paragraphs:
+ *                       - "정말 인생 뮤지컬이었습니다."
+ *                     images:
+ *                       - "https://your-bucket.s3.amazonaws.com/memory1.jpg"
+ *                   targetType: "MUSICAL"
+ *                   targetId: 1
+ *                   createdAt: "2025-07-18T12:34:56.000Z"
+ *                   updatedAt: "2025-07-25T08:00:00.000Z"
+ */
 
 export const getMemoryBook = async (req, res, next) => {
   try {
@@ -164,6 +243,90 @@ export const getMemoryBook = async (req, res, next) => {
 /**
  * PUT /api/posts/memorybooks
  * 메모리북 수정  
+ */
+/**
+ * @swagger
+ * /api/posts/memorybooks:
+ *   put:
+ *     summary: 메모리북 수정
+ *     description: 기존에 작성한 메모리북을 수정합니다.
+ *     tags:
+ *       - MemoryBook
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               targetType:
+ *                 type: string
+ *                 enum: [MUSICAL, ACTOR]
+ *               targetId:
+ *                 type: integer
+ *               title:
+ *                 type: string
+ *               content:
+ *                 type: object
+ *             required:
+ *               - targetType
+ *               - targetId
+ *               - title
+ *               - content
+ *           example:
+ *             targetType: MUSICAL
+ *             targetId: 1
+ *             title: "엘리자벳 후기 - 수정본"
+ *             content:
+ *               paragraphs:
+ *                 - "2번째 봤는데도 감동이었습니다."
+ *               images:
+ *                 - "https://your-bucket.s3.amazonaws.com/memory_updated.jpg"
+ *     responses:
+ *       200:
+ *         description: 메모리북 수정 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                 error:
+ *                   type: object
+ *                   nullable: true
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         memoryBookId:
+ *                           type: integer
+ *                         title:
+ *                           type: string
+ *                         targetType:
+ *                           type: string
+ *                         targetId:
+ *                           type: integer
+ *                         updatedAt:
+ *                           type: string
+ *                           format: date-time
+ *             example:
+ *               resultType: SUCCESS
+ *               error: null
+ *               success:
+ *                 message: "메모리북이 성공적으로 수정되었습니다."
+ *                 data:
+ *                   memoryBookId: 5
+ *                   title: "엘리자벳 후기 - 수정본"
+ *                   targetType: "MUSICAL"
+ *                   targetId: 1
+ *                   updatedAt: "2025-07-25T08:05:00.000Z"
  */
 export const updateMemoryBook = async (req, res, next) => {
   try {

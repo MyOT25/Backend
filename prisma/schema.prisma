@@ -30,6 +30,8 @@ model User {
   postLikes       PostLike[]
   questions       Question[]
   questionGoods   QuestionGood[]
+
+
   questionImages  QuestionImage[]
   questionLikes   QuestionLike[]
   questionTags    QuestionTag[]
@@ -41,6 +43,9 @@ model User {
 
   followers       Follow[]        @relation("Follower")
   followings      Follow[]        @relation("Following")
+  userSeats       UserSeat[]
+ 
+
 }
 
 model Post {
@@ -225,16 +230,32 @@ model Theater {
 model Seat {
   id        Int             @id @default(autoincrement())
   theaterId Int
-  row       String
-  column    Int
-  seat_type Seat_seat_type
-  floor     String?
-  theater   Theater         @relation(fields: [theaterId], references: [id])
-  viewings  ViewingRecord[]
+  floor     Int
+  zone      String
+  blockNumber Int
+  rowNumber Int
+  seatIndex Int
+  
 
-  @@unique([theaterId, row, column])
+  theater   Theater         @relation(fields: [theaterId], references: [id])
+  viewings  ViewingRecord[] // 이 좌석을 사용한 관극기록들 
+  userSeats UserSeat[] //좌석에 연결된 사용자 관계 
+  
 }
 
+model UserSeat {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  seatId          Int
+  numberOfSittings Int     @default(1) // 사용자가 해당 좌석에 앉은 횟수
+
+  user            User     @relation(fields: [userId], references: [id])
+  seat            Seat     @relation(fields: [seatId], references: [id])
+
+  @@unique([userId, seatId]) // 한 좌석당 한 유저 데이터만 존재하게
+}
+
+>>>>>>> main
 model Community {
   id                    Int                @id @default(autoincrement())
   type                  CommunityType
