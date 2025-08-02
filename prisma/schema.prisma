@@ -75,6 +75,8 @@ model Post {
 
   community      Community      @relation(fields: [communityId], references: [id])
   user           User           @relation(fields: [userId], references: [id])
+  repostTarget   Post?          @relation("Reposts", fields: [repostTargetId], references: [id])
+  reposts        Post[]         @relation("Reposts")
 
   @@index([communityId], map: "Post_communityId_fkey")
   @@index([userId], map: "Post_userId_fkey")
@@ -255,7 +257,6 @@ model UserSeat {
   @@unique([userId, seatId]) // 한 좌석당 한 유저 데이터만 존재하게
 }
 
->>>>>>> main
 model Community {
   id                    Int                @id @default(autoincrement())
   type                  CommunityType

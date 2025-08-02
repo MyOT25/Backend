@@ -18,6 +18,7 @@ import authRouter from "./controllers/auth.controller.js";
 import questionRouter from "./controllers/question.controller.js";
 import answerRouter from "./controllers/answer.controller.js";
 import questionTagRouter from "./controllers/questionTag.controller.js";
+import homeFeedRouter from "./controllers/homeFeed.controller.js";
 
 import "./config/passport.js"; // passport 설정
 
@@ -78,6 +79,7 @@ app.use("/api/posts", postRouter);
 app.use("/api/questions", questionRouter);
 app.use("/api/answers", answerRouter);
 app.use("/api/questions", questionTagRouter);
+app.use("/api/homefeed", homeFeedRouter);
 
 // 기본 라우트
 
@@ -98,7 +100,7 @@ app.post("/api/posts/memorybooks", authenticateJWT, addMemoryBook);
 app.get("/api/posts/memorybooks", authenticateJWT, getMemoryBook);
 app.put("/api/posts/memorybooks", authenticateJWT, updateMemoryBook);
 app.get("/api/posts/musical/castings", getMusicalCastings);
-app.get("/api/ticketbook/:musicalId", authenticateJWT,getTicketBookDetail);
+app.get("/api/ticketbook/:musicalId", authenticateJWT, getTicketBookDetail);
 
 app.get("/", (req, res) => {
   res.send("Hello MyOT!");
