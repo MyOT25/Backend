@@ -68,7 +68,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // 라우터 연결 (controllers에서 라우터 export하는 구조)
 app.use("/api/test", testRouter);
-app.use("/api/user", userRouter); // 필요에 따라 추가
+app.use("/api/users", userRouter); // 필요에 따라 추가
 app.use("/api/community", communityRouter);
 app.use("/api", authRouter);
 //app.use("/api/communities", communityRouter);
