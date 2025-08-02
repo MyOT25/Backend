@@ -175,12 +175,23 @@ CREATE TABLE `Theater` (
 CREATE TABLE `Seat` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `theaterId` INTEGER NOT NULL,
-    `row` VARCHAR(191) NOT NULL,
-    `column` INTEGER NOT NULL,
-    `seat_type` ENUM('VIP', '일반석') NOT NULL,
-    `floor` VARCHAR(191) NULL,
+    `floor` INTEGER NOT NULL,
+    `zone` VARCHAR(191) NOT NULL,
+    `blockNumber` INTEGER NOT NULL,
+    `rowNumber` INTEGER NOT NULL,
+    `seatIndex` INTEGER NOT NULL,
 
-    UNIQUE INDEX `Seat_theaterId_row_column_key`(`theaterId`, `row`, `column`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `UserSeat` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `userId` INTEGER NOT NULL,
+    `seatId` INTEGER NOT NULL,
+    `numberOfSittings` INTEGER NOT NULL DEFAULT 1,
+
+    UNIQUE INDEX `UserSeat_userId_seatId_key`(`userId`, `seatId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -487,6 +498,12 @@ ALTER TABLE `Theater` ADD CONSTRAINT `Theater_regionId_fkey` FOREIGN KEY (`regio
 
 -- AddForeignKey
 ALTER TABLE `Seat` ADD CONSTRAINT `Seat_theaterId_fkey` FOREIGN KEY (`theaterId`) REFERENCES `Theater`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `UserSeat` ADD CONSTRAINT `UserSeat_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `UserSeat` ADD CONSTRAINT `UserSeat_seatId_fkey` FOREIGN KEY (`seatId`) REFERENCES `Seat`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Setting` ADD CONSTRAINT `Setting_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
