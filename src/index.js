@@ -18,6 +18,7 @@ import authRouter from "./controllers/auth.controller.js";
 import questionRouter from "./controllers/question.controller.js";
 import answerRouter from "./controllers/answer.controller.js";
 import questionTagRouter from "./controllers/questionTag.controller.js";
+import homeFeedRouter from "./controllers/homeFeed.controller.js";
 
 import "./config/passport.js"; // passport 설정
 
@@ -32,6 +33,7 @@ import {
 } from "./controllers/memorybook.controller.js";
 import { authenticateJWT } from "./middlewares/authMiddleware.js";
 import { getMusicalCastings } from "./controllers/casting.controller.js";
+import { getTicketBookDetail } from "./controllers/ticektbook.controller.js";
 
 import { s3Uploader, uploadToS3 } from "./middlewares/s3Uploader.js";
 
@@ -68,7 +70,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // 라우터 연결 (controllers에서 라우터 export하는 구조)
 app.use("/api/test", testRouter);
-app.use("/api/user", userRouter); // 필요에 따라 추가
+app.use("/api/users", userRouter); // 필요에 따라 추가
 app.use("/api/community", communityRouter);
 app.use("/api", authRouter);
 //app.use("/api/communities", communityRouter);
@@ -77,6 +79,7 @@ app.use("/api/posts", postRouter);
 app.use("/api/questions", questionRouter);
 app.use("/api/answers", answerRouter);
 app.use("/api/questions", questionTagRouter);
+app.use("/api/homefeed", homeFeedRouter);
 
 // 기본 라우트
 
@@ -97,6 +100,7 @@ app.post("/api/posts/memorybooks", authenticateJWT, addMemoryBook);
 app.get("/api/posts/memorybooks", authenticateJWT, getMemoryBook);
 app.put("/api/posts/memorybooks", authenticateJWT, updateMemoryBook);
 app.get("/api/posts/musical/castings", getMusicalCastings);
+app.get("/api/ticketbook/:musicalId", authenticateJWT, getTicketBookDetail);
 
 app.get("/", (req, res) => {
   res.send("Hello MyOT!");
