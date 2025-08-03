@@ -831,6 +831,7 @@ router.get("/:type/:id", async (req, res) => {
 
     const formatted = {
       communityId: community.id,
+      groupName: community.groupName,
       type: community.type,
       targetId: community.targetId,
       recentPerformanceDate: community.recentPerformanceDate,
@@ -840,11 +841,13 @@ router.get("/:type/:id", async (req, res) => {
       coverImage: community.coverImage,
     };
 
+    /*
     if (community.type === "musical") {
       formatted.musicalName = community.musicalName;
     } else if (community.type === "actor") {
       formatted.actorName = community.actorName || community.groupName;
     }
+      */
 
     res.status(200).json({ success: true, community: formatted });
   } catch (err) {
