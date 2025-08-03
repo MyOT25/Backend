@@ -78,7 +78,7 @@ app.use("/api/communities", postRouter);
 app.use("/api/posts", postRouter);
 app.use("/api/questions", questionRouter);
 app.use("/api/answers", answerRouter);
-app.use("/api/questions", questionTagRouter);
+app.use('/api', questionTagRouter);
 app.use("/api/homefeed", homeFeedRouter);
 
 // 기본 라우트
