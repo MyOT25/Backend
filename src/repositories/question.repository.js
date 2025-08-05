@@ -5,20 +5,42 @@ const prisma = new PrismaClient();
 // 질문 생성
 export const createQuestion = async ({ userId, title, content }) => {
   return await prisma.question.create({
-    data: { userId, title, content },
+    data: { userId, title, content,},
   });
 };
 
-// 태그 연결
-export const createQuestionTags = async (questionId, userId, tagIds) => {
-  return await prisma.questionTag.createMany({
-    data: tagIds.map((tagId) => ({
+// 질문 이미지 여러 개 저장
+export const createQuestionImages = async (questionId, userId, imageUrls) => {
+  return await prisma.questionImage.createMany({
+    data: imageUrls.map((url) => ({
       questionId,
       userId,
-      tagId,
+      imageUrl: url,
     })),
   });
 };
+
+
+// 태그 연결
+export const createQuestionTags = async (questionId, userId, tagIds) => {
+  return await Promise.all(
+    tagIds.map((tagId) =>
+      prisma.questionTag.create({
+        data: {
+          question: { connect: { id: questionId } },
+          user: { connect: { id: userId } },
+          tag: { connect: { id: tagId } },
+        },
+        include: {
+          tag: true,
+        },
+      })
+    )
+  );
+};
+
+
+
 
 // 질문 목록 조회
 export const getAllQuestions = async () => {
@@ -35,6 +57,7 @@ export const getAllQuestions = async () => {
       questionTags: {
         include: { tag: true }, // ← 관계 이름 문제 발생 시 여기서 에러남
       },
+      images: true,
     },
   });
 };
@@ -65,9 +88,11 @@ export const getQuestionDetail = async (questionId) => {
       questionTags: {
         include: { tag: true },
       },
+      images: true, // ✅ 요거 추가!
     },
   });
 };
+
 
 // 질문 단건 조회 (내부용)
 export const getQuestionById = async (id) => {
@@ -86,7 +111,7 @@ export const createAnswer = async (questionId, userId, content) => {
 };
 
 // 좋아요 기능
-export const hasLikedQuestion = async (questionId, userId) => {
+export const findQuestionLike = async (questionId, userId) => {
   return await prisma.questionLike.findUnique({
     where: {
       questionId_userId: {
@@ -122,5 +147,25 @@ export const getQuestionLikeCount = async (questionId) => {
 };
 
 export const deleteQuestion = async (questionId) => {
-  return await prisma.question.delete({ where: { id: questionId } });
+  // 1. 답변 삭제
+  await prisma.answer.deleteMany({
+    where: { questionId },
+  });
+
+  // 2. 좋아요 삭제
+  await prisma.questionLike.deleteMany({
+    where: { questionId },
+  });
+
+  // 3. 태그 연결 삭제
+  await prisma.questionTag.deleteMany({
+    where: { questionId },
+  });
+
+  // 4. 질문 삭제
+  return await prisma.question.delete({
+    where: { id: questionId },
+  });
 };
+
+
