@@ -19,6 +19,7 @@ import questionRouter from "./controllers/question.controller.js";
 import answerRouter from "./controllers/answer.controller.js";
 import questionTagRouter from "./controllers/questionTag.controller.js";
 import homeFeedRouter from "./controllers/homeFeed.controller.js";
+import profileFeedRouter from "./controllers/profileFeed.controller.js";
 
 import "./config/passport.js"; // passport 설정
 
@@ -78,8 +79,9 @@ app.use("/api/communities", postRouter);
 app.use("/api/posts", postRouter);
 app.use("/api/questions", questionRouter);
 app.use("/api/answers", answerRouter);
-app.use('/api', questionTagRouter);
+app.use("/api", questionTagRouter);
 app.use("/api/homefeed", homeFeedRouter);
+app.use("/api/users/:userId/profilefeed", profileFeedRouter);
 
 // 기본 라우트
 
