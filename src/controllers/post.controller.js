@@ -52,6 +52,9 @@ import {
 import { getRepostedUsersService } from "../services/post.service.js";
 // 인용한 게시물 import
 import { getQuotedPostService } from "../services/post.service.js";
+// 게시글 상세 조회 import
+import { getPostDetail } from "../services/post.service.js";
+
 /**
  * GET /api/posts/ticketbook
  * @desc 나의 티켓북 조회
@@ -1872,6 +1875,147 @@ router.get(
       resultType: "SUCCESS",
       error: null,
       success: quotedPost,
+    });
+  })
+);
+
+/**
+ * @swagger
+ * /api/post/{postId}:
+ *   get:
+ *     summary: 게시글 상세 조회
+ *     description: 하나의 게시글 상세 내용을 조회합니다. 리포스트인 경우 원본 게시글의 간소화된 정보도 반환합니다.
+ *     tags:
+ *       - Posts
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 조회할 게시글의 ID
+ *     responses:
+ *       200:
+ *         description: 게시글 상세 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *                     content:
+ *                       type: string
+ *                       example: "오늘 날씨가 좋네요"
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2025-08-09T12:00:00.000Z"
+ *                     commentCount:
+ *                       type: integer
+ *                       example: 3
+ *                     likeCount:
+ *                       type: integer
+ *                       example: 5
+ *                     repostCount:
+ *                       type: integer
+ *                       example: 2
+ *                     bookmarkCount:
+ *                       type: integer
+ *                       example: 1
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                           example: 10
+ *                         nickname:
+ *                           type: string
+ *                           example: "유저1"
+ *                         profileImage:
+ *                           type: string
+ *                           example: "https://example.com/profile.jpg"
+ *                     postImages:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           url:
+ *                             type: string
+ *                             example: "https://example.com/image.jpg"
+ *                     community:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                           example: 3
+ *                         type:
+ *                           type: string
+ *                           example: "musical"
+ *                         coverImage:
+ *                           type: string
+ *                           example: "https://example.com/community.jpg"
+ *                     postLikes:
+ *                       type: array
+ *                       description: 현재 유저가 좋아요를 눌렀는지 여부 (배열 길이로 판단)
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                             example: 12
+ *                     postBookmarks:
+ *                       type: array
+ *                       description: 현재 유저가 북마크 했는지 여부 (배열 길이로 판단)
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                             example: 7
+ *                     repostTarget:
+ *                       type: object
+ *                       nullable: true
+ *                       example:
+ *                         id: 2
+ *                         content: "원본 게시글 내용"
+ *                         createdAt: "2025-08-02T15:00:00.000Z"
+ *                         user:
+ *                           id: 6
+ *                           nickname: "유저2"
+ *                           profileImage: "https://example.com/profile2.jpg"
+ *                         postImages:
+ *                           - url: "https://example.com/image2.jpg"
+ *                         community:
+ *                           id: 2
+ *                           type: "actor"
+ *                           coverImage: "https://example.com/community2.jpg"
+ *       404:
+ *         description: 게시글이 존재하지 않음
+ *       401:
+ *         description: 인증 실패
+ */
+router.get(
+  "/:postId",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const { postId } = req.params;
+    const userId = req.user.id;
+
+    const result = await getPostDetail(Number(postId), userId);
+
+    res.status(200).json({
+      resultType: "SUCCESS",
+      data: result,
     });
   })
 );

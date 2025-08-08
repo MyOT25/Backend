@@ -547,3 +547,26 @@ export const getQuotedPostService = async (postId) => {
 
   return quoted;
 };
+
+/**
+ * 게시글 상세 조회
+ */
+export const getPostDetail = async (postId, userId) => {
+  const post = await PostRepository.getOnePostById(postId, userId);
+
+  if (!post) {
+    throw new NotFoundError("게시글을 찾을 수 없습니다.");
+  }
+
+  // isRepost가 true인데 원본이 없는 경우
+  if (post.isRepost) {
+    if (!post.repostTarget) {
+      post.repostTarget = { message: "삭제된 게시글입니다." };
+    }
+  } else {
+    // 리포스트가 아니면 null로 설정
+    post.repostTarget = null;
+  }
+
+  return post;
+};

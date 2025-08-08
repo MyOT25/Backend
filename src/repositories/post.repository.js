@@ -1,4 +1,4 @@
-import prisma from '../config/prismaClient.js';
+import prisma from "../config/prismaClient.js";
 
 class PostRepository {
   async findViewingRecordsByMonth(userId, year, month) {
@@ -88,7 +88,14 @@ class PostRepository {
   }
 
   // 인용 게시글 생성
-  async createQuotePost({ userId, communityId, repostType, repostTargetId, content, hasMedia }) {
+  async createQuotePost({
+    userId,
+    communityId,
+    repostType,
+    repostTargetId,
+    content,
+    hasMedia,
+  }) {
     return prisma.post.create({
       data: {
         userId,
@@ -161,7 +168,7 @@ class PostRepository {
   // 전체 게시글 조회
   async getAllPosts() {
     return prisma.post.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         postimages: true,
       },
@@ -175,7 +182,7 @@ class PostRepository {
         hasMedia: true, // 또는 1 (boolean인지 int인지 스키마에 따라)
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
   }
@@ -239,7 +246,7 @@ class PostRepository {
       where: { postId: Number(postId) },
       skip,
       take,
-      orderBy: { likedAt: 'desc' },
+      orderBy: { likedAt: "desc" },
       include: {
         user: {
           select: {
@@ -265,13 +272,13 @@ class PostRepository {
       where: {
         isRepost: true,
         repostTargetId: Number(postId),
-        repostType: 'post', // ✅ enum 값에 맞게 소문자로!
+        repostType: "post", // ✅ enum 값에 맞게 소문자로!
       },
       include: {
         user: true,
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
 
@@ -283,7 +290,7 @@ class PostRepository {
       where: { id: Number(postId) },
     });
 
-    if (!post?.repostTargetId || post.repostType !== 'POST') {
+    if (!post?.repostTargetId || post.repostType !== "POST") {
       return null; // 인용이 아님
     }
 
@@ -301,6 +308,50 @@ class PostRepository {
       content: quoted.content,
       media: quoted.postimages.map((img) => ({ url: img.url })),
     };
+  }
+
+  //게시글 상세 조회
+  async getOnePostById(postId, userId) {
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+        commentCount: true,
+        likeCount: true,
+        repostCount: true,
+        bookmarkCount: true,
+        user: { select: { id: true, nickname: true, profileImage: true } },
+        postImages: { select: { url: true } },
+        community: { select: { id: true, type: true, coverImage: true } },
+        postLikes: { where: { userId }, select: { id: true } },
+        postBookmarks: { where: { userId }, select: { id: true } },
+        isRepost: true,
+        repostTarget: {
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                nickname: true,
+                profileImage: true,
+              },
+            },
+            postImages: {
+              select: { url: true },
+            },
+            community: {
+              select: { id: true, type: true, coverImage: true },
+            },
+          },
+        },
+      },
+    });
+
+    return post;
   }
 }
 
