@@ -8,29 +8,30 @@ datasource db {
 }
 
 model User {
-  id              Int             @id @default(autoincrement())
-  loginId         String          @unique
-  username        String?
-  password        String?
-  email           String          @unique
-  nickname        String?
-  profileImage    String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  bio             String?
-  birthDate       DateTime?
-  isSubscribed    Boolean?
-  answers         Answer[]
-  answerLikes     AnswerLike[]
-  memoryBooks     MemoryBook[]
-  multiProfiles   MultiProfile[]
-  posts           Post[]
-  postBookmarks   PostBookmark[]
-  postComments    PostComment[]
-  postLikes       PostLike[]
-  questions       Question[]
-  questionGoods   QuestionGood[]
-
+  id               Int               @id @default(autoincrement())
+  loginId          String            @unique
+  username         String?
+  password         String?
+  email            String            @unique
+  nickname         String?
+  profileImage     String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  bio              String?
+  birthDate        DateTime?
+  isSubscribed     Boolean?
+  answers          Answer[]
+  answerLikes      AnswerLike[]
+  memoryBooks      MemoryBook[]
+  multiProfiles    MultiProfile[]
+  posts            Post[]
+  postBookmarks    PostBookmark[]
+  postComments     PostComment[]
+  postLikes        PostLike[]
+  questions        Question[]
+  questionGoods    QuestionGood[]
+  questionComments QuestionComment[] @relation("UserToQuestionComments")
+  answerComments   AnswerComment[]   @relation("UserToAnswerComments")
 
   questionImages  QuestionImage[]
   questionLikes   QuestionLike[]
@@ -41,42 +42,40 @@ model User {
   userCommunities UserCommunity[]
   viewings        ViewingRecord[]
 
-  followers       Follow[]        @relation("Follower")
-  followings      Follow[]        @relation("Following")
-  userSeats       UserSeat[]
- 
-
+  followers  Follow[]   @relation("Follower")
+  followings Follow[]   @relation("Following")
+  userSeats  UserSeat[]
 }
 
 model Post {
-  id             Int            @id @default(autoincrement())
+  id             Int         @id @default(autoincrement())
   userId         Int
   communityId    Int
-  isRepost       Boolean        @default(false)
+  isRepost       Boolean     @default(false)
   repostType     RepostType?
   repostTargetId Int?
   content        String?
   mediaType      MediaType?
-  hasMedia       Boolean        @default(false)
-  viewCount      Int            @default(0)
-  commentCount   Int            @default(0)
-  likeCount      Int            @default(0)
-  bookmarkCount  Int            @default(0)
-  repostCount    Int            @default(0)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  
-  postBookmarks  PostBookmark[]
-  postComments   PostComment[]
-  postImages     PostImage[]
-  postLikes      PostLike[]
-  postTags       PostTag[]
-  reviews        Review[]
+  hasMedia       Boolean     @default(false)
+  viewCount      Int         @default(0)
+  commentCount   Int         @default(0)
+  likeCount      Int         @default(0)
+  bookmarkCount  Int         @default(0)
+  repostCount    Int         @default(0)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
-  community      Community      @relation(fields: [communityId], references: [id])
-  user           User           @relation(fields: [userId], references: [id])
-  repostTarget   Post?          @relation("Reposts", fields: [repostTargetId], references: [id])
-  reposts        Post[]         @relation("Reposts")
+  postBookmarks PostBookmark[]
+  postComments  PostComment[]
+  postImages    PostImage[]
+  postLikes     PostLike[]
+  postTags      PostTag[]
+  reviews       Review[]
+
+  community    Community @relation(fields: [communityId], references: [id])
+  user         User      @relation(fields: [userId], references: [id])
+  repostTarget Post?     @relation("Reposts", fields: [repostTargetId], references: [id])
+  reposts      Post[]    @relation("Reposts")
 
   @@index([communityId], map: "Post_communityId_fkey")
   @@index([userId], map: "Post_userId_fkey")
@@ -230,29 +229,27 @@ model Theater {
 }
 
 model Seat {
-  id        Int             @id @default(autoincrement())
-  theaterId Int
-  floor     Int
-  zone      String
+  id          Int    @id @default(autoincrement())
+  theaterId   Int
+  floor       Int
+  zone        String
   blockNumber Int
-  rowNumber Int
-  seatIndex Int
-  
+  rowNumber   Int
+  seatIndex   Int
 
   theater   Theater         @relation(fields: [theaterId], references: [id])
   viewings  ViewingRecord[] // 이 좌석을 사용한 관극기록들 
   userSeats UserSeat[] //좌석에 연결된 사용자 관계 
-  
 }
 
 model UserSeat {
-  id              Int      @id @default(autoincrement())
-  userId          Int
-  seatId          Int
-  numberOfSittings Int     @default(1) // 사용자가 해당 좌석에 앉은 횟수
+  id               Int @id @default(autoincrement())
+  userId           Int
+  seatId           Int
+  numberOfSittings Int @default(1) // 사용자가 해당 좌석에 앉은 횟수
 
-  user            User     @relation(fields: [userId], references: [id])
-  seat            Seat     @relation(fields: [seatId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+  seat Seat @relation(fields: [seatId], references: [id])
 
   @@unique([userId, seatId]) // 한 좌석당 한 유저 데이터만 존재하게
 }
@@ -304,13 +301,13 @@ model Subscribe {
 }
 
 model Follow {
-  id          Int       @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   followerId  Int
   followingId Int
-  createdAt   DateTime  @default(now())
-  
-  follower    User      @relation("Follower", fields: [followerId], references: [id])
-  following   User      @relation("Following", fields: [followingId], references: [id])
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Follower", fields: [followerId], references: [id])
+  following User @relation("Following", fields: [followingId], references: [id])
 
   @@unique([followerId, followingId])
   @@index([followerId], map: "Follow_followerId_fkey")
@@ -347,33 +344,37 @@ model ViewingImage {
 }
 
 model Question {
-  id            Int             @id @default(autoincrement())
+  id            Int               @id @default(autoincrement())
   userId        Int
   title         String
   content       String
-  createdAt     DateTime?       @default(now())
-  updatedAt     DateTime        @updatedAt
+  isAnonymous   Boolean           @default(false)
+  createdAt     DateTime?         @default(now())
+  updatedAt     DateTime          @updatedAt
   answers       Answer[]
   answerLikes   AnswerLike[]
-  user          User            @relation(fields: [userId], references: [id])
+  user          User              @relation(fields: [userId], references: [id])
   questionGoods QuestionGood[]
   images        QuestionImage[]
   likes         QuestionLike[]
   questionTags  QuestionTag[]
+  comments      QuestionComment[] @relation("QuestionToQuestionComments")
 
   @@index([userId], map: "Question_userId_fkey")
 }
 
 model Answer {
-  id         Int          @id @default(autoincrement())
-  questionId Int
-  userId     Int
-  content    String
-  createdAt  DateTime?    @default(now())
-  updatedAt  DateTime     @updatedAt
-  question   Question     @relation(fields: [questionId], references: [id])
-  user       User         @relation(fields: [userId], references: [id])
-  likes      AnswerLike[]
+  id          Int             @id @default(autoincrement())
+  questionId  Int
+  userId      Int
+  content     String
+  isAnonymous Boolean         @default(false)
+  createdAt   DateTime?       @default(now())
+  updatedAt   DateTime        @updatedAt
+  question    Question        @relation(fields: [questionId], references: [id])
+  user        User            @relation(fields: [userId], references: [id])
+  likes       AnswerLike[]
+  comments    AnswerComment[] @relation("AnswerToAnswerComments")
 
   @@index([questionId], map: "Answer_questionId_fkey")
   @@index([userId], map: "Answer_userId_fkey")
@@ -404,6 +405,38 @@ model AnswerLike {
   @@unique([answerId, userId])
   @@index([questionId], map: "AnswerLike_questionId_fkey")
   @@index([userId], map: "AnswerLike_userId_fkey")
+}
+
+model QuestionComment {
+  id          Int      @id @default(autoincrement())
+  questionId  Int
+  userId      Int
+  content     String   @db.Text
+  isAnonymous Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  question Question @relation("QuestionToQuestionComments", fields: [questionId], references: [id], onDelete: Cascade)
+  user     User     @relation("UserToQuestionComments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@index([userId])
+}
+
+model AnswerComment {
+  id          Int      @id @default(autoincrement())
+  answerId    Int
+  userId      Int
+  content     String   @db.Text
+  isAnonymous Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  answer Answer @relation("AnswerToAnswerComments", fields: [answerId], references: [id], onDelete: Cascade)
+  user   User   @relation("UserToAnswerComments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([answerId])
+  @@index([userId])
 }
 
 model Region {
