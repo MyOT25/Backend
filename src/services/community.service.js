@@ -20,27 +20,139 @@ import {
   countMyProfile,
 } from "../repositories/community.repository.js";
 
+// === helpers (service 내부 최상단 근처) ===
+const FREE_LIMIT = 5;
+
+// 무료/유료에 따른 멀티프로필 생성 가능 여부
+const canCreateAnotherMulti = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isSubscribed: true },
+  });
+  if (user?.isSubscribed) return true; // 유료 무제한
+  const used = await countMyProfile(userId); // 전체 멀티 수
+  return used < FREE_LIMIT; // 무료는 5개 제한
+};
+
 // 공연 커뮤니티 가입 / 탈퇴
 export const handleJoinOrLeaveCommunity = async (
   userId,
   communityId,
-  action
+  action,
+  profileType,
+  multi
 ) => {
   const isJoined = await checkUserInCommunity(userId, communityId);
 
   if (action === "join") {
     if (isJoined) throw new Error("이미 가입된 커뮤니티입니다.");
-    await insertUserToCommunity(userId, communityId);
+    // 트랜잭션: 가입 + (필요 시) 멀티 생성
+    await prisma.$transaction(async (tx) => {
+      await insertUserToCommunity(userId, communityId, tx);
+      if (profileType === "MULTI") {
+        const dup = await findMultiProfile(communityId, userId, tx);
+        if (dup) throw new Error("이미 해당 커뮤니티에 멀티프로필이 있습니다.");
+        const ok = await canCreateAnotherMulti(userId);
+        if (!ok)
+          throw new Error(
+            "무료 회원은 멀티프로필을 5개까지 생성할 수 있습니다."
+          );
+        await createCommunityProfileRepository(
+          {
+            userId,
+            communityId,
+            nickname: multi?.nickname ?? "",
+            image: multi?.image ?? null,
+            bio: multi?.bio ?? null,
+          },
+          tx
+        );
+      }
+    });
     return "커뮤니티 가입 완료";
   }
 
   if (action === "leave") {
     if (!isJoined) throw new Error("가입되지 않은 커뮤니티입니다.");
-    await deleteUserFromCommunity(userId, communityId);
+    // 규칙: 멀티 사용 중이면 자동 삭제
+    await prisma.$transaction(async (tx) => {
+      const mp = await findMultiProfile(communityId, userId, tx);
+      if (mp) await deleteCommunityProfileRepository(mp.id, tx);
+      await deleteUserFromCommunity(userId, communityId, tx);
+    });
     return "커뮤니티 탈퇴 완료";
   }
 
   throw new Error("유효하지 않은 요청입니다.");
+};
+
+// 커뮤니티별 프로필 타입 전환
+export const switchCommunityProfileType = async ({
+  userId,
+  communityId,
+  profileType, // "BASIC" | "MULTI"
+  multi, // MULTI 전환 시 {nickname, image, bio}
+}) => {
+  return await prisma.$transaction(async (tx) => {
+    const current = await findMultiProfile(communityId, userId, tx);
+    const isMulti = !!current;
+
+    if (profileType === "BASIC") {
+      // 멀티 → 기본 : 기존 멀티 자동삭제
+      if (isMulti) await deleteCommunityProfileRepository(current.id, tx);
+      return { changedTo: "BASIC" };
+    }
+
+    if (profileType === "MULTI") {
+      // 기본 → 멀티 : 한도 체크 + 생성 (이미 있으면 에러)
+      if (isMulti) throw new Error("이미 멀티프로필을 사용 중입니다.");
+      const ok = await canCreateAnotherMulti(userId);
+      if (!ok)
+        throw new Error("무료 회원은 멀티프로필을 5개까지 생성할 수 있습니다.");
+      const created = await createCommunityProfileRepository(
+        {
+          userId,
+          communityId,
+          nickname: multi?.nickname ?? "",
+          image: multi?.image ?? null,
+          bio: multi?.bio ?? null,
+        },
+        tx
+      );
+      return { changedTo: "MULTI", profile: created };
+    }
+
+    throw new Error("profileType은 BASIC 또는 MULTI여야 합니다.");
+  });
+};
+
+// 커뮤니티 프로필 내용만 수정하기
+export const editMyCommunityProfile = async ({
+  userId,
+  communityId,
+  patch, // { nickname?, image?, bio? }
+}) => {
+  const mp = await findMultiProfile(communityId, userId);
+  if (mp) {
+    // 멀티 사용 중이면 멀티 레코드 수정
+    return await modifyCommunityProfile(mp.id, patch);
+  }
+  // 기본 사용 중이면 User의 기본 프로필 수정
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      nickname: patch.nickname ?? undefined,
+      profileImage: patch.image ?? undefined,
+      bio: patch.bio ?? undefined,
+    },
+    select: { id: true, nickname: true, profileImage: true, bio: true },
+  });
+  return {
+    id: updated.id,
+    nickname: updated.nickname,
+    image: updated.profileImage,
+    bio: updated.bio,
+  };
 };
 
 // 커뮤니티 신청
@@ -104,8 +216,8 @@ export const insertCommunityRequest = async ({
 };
 
 // 가입 가능한 커뮤니티 탐색하기
-export const fetchAvailableCommunities = async (userId) => {
-  return await findUnjoinedCommunities(userId);
+export const fetchAvailableCommunities = async (type, userId) => {
+  return await findUnjoinedCommunities(type, userId);
 };
 
 // 모든 커뮤니티 목록 보기
@@ -133,6 +245,7 @@ export const createCommunityProfileService = async ({
   image,
   bio,
 }) => {
+  // 전역 개수 기준 체크 (countUserProfilesInCommunity도 전역 카운트지만, 이름이 헷갈릴 수 있음)
   const currentCount = await countUserProfilesInCommunity(userId);
 
   if (currentCount >= MAX_FREE_PROFILES) {
@@ -178,9 +291,39 @@ export const getPopularFeed = async (communityId) => {
 };
 
 // 해당 커뮤니티에 설정한 내 프로필 조회
-
 export const getMyCommunityProfile = async (userId, communityId) => {
-  return await findMyProfileInCommunityRepository(userId, communityId);
+  const mp = await findMyProfileInCommunityRepository(userId, communityId);
+  if (mp) {
+    return {
+      profileType: "MULTI",
+      profile: {
+        id: mp.id,
+        userId: mp.userId,
+        communityId: mp.communityId,
+        nickname: mp.nickname,
+        image: mp.image,
+        bio: mp.bio,
+      },
+    };
+  }
+
+  // 멀티 없으면 기본(User) 값으로 조립
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { nickname: true, profileImage: true, bio: true },
+  });
+
+  return {
+    profileType: "BASIC",
+    profile: {
+      id: userId, // 기본 프로필에는 별도 id가 없으니 userId로 표기
+      userId,
+      communityId,
+      nickname: user?.nickname ?? null,
+      image: user?.profileImage ?? null,
+      bio: user?.bio ?? null,
+    },
+  };
 };
 
 // 특정 유저의 해당 커뮤니티 프로필 조회

@@ -20,6 +20,7 @@ import {
   getMyCommunityProfile,
   getOtherUserProfile,
   getMyProfileCount,
+  switchCommunityProfileType,
 } from "../services/community.service.js";
 
 import { checkUserInCommunity } from "../repositories/community.repository.js";
@@ -178,7 +179,7 @@ router.get("/", async (req, res) => {
 router.post("/type/join", authenticateJWT, async (req, res) => {
   try {
     const userId = req.user?.id;
-    const { communityId, action } = req.body;
+    const { communityId, action, profileType, multi } = req.body;
     if (!userId || !communityId || !["join", "leave"].includes(action)) {
       return res.status(400).json({
         success: false,
@@ -187,12 +188,95 @@ router.post("/type/join", authenticateJWT, async (req, res) => {
     }
     const message = await handleJoinOrLeaveCommunity(
       userId,
-      communityId,
-      action
+      Number(communityId),
+      action,
+      profileType,
+      multi
     );
     res.status(200).json({ success: true, message });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+// 커뮤니티 가입 후 타입 전환/자동삭제 (커뮤니티별 프로필 타입 전환)
+// 타입 전환: BASIC ⇄ MULTI
+router.patch(
+  "/profile/type/:communityId",
+  authenticateJWT,
+  async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const communityId = Number(req.params.communityId);
+
+      // 1) 바디 안전 분해
+      const { profileType, multi } = req.body ?? {};
+
+      // 2) 검증 (대소문자 무관)
+      const normalized =
+        typeof profileType === "string" ? profileType.toUpperCase() : undefined;
+
+      if (!["BASIC", "MULTI"].includes(normalized)) {
+        return res.status(400).json({
+          success: false,
+          message: "profileType must be BASIC or MULTI",
+        });
+      }
+      if (!userId || Number.isNaN(communityId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "유효하지 않은 요청입니다." });
+      }
+
+      // 3) 서비스 호출
+      const result = await switchCommunityProfileType({
+        userId,
+        communityId,
+        profileType: normalized,
+        multi, // { nickname, image, bio } | undefined
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "프로필 타입이 변경되었습니다.",
+        ...result,
+      });
+    } catch (err) {
+      console.error("switch type error:", err);
+      return res
+        .status(400)
+        .json({ success: false, message: err?.message ?? "변경 실패" });
+    }
+  }
+);
+
+// 현재 선택된 타입 기준으로 내용만 수정 (닉네임/이미지/바이오)
+router.patch("/profile/me/:communityId", authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const communityId = Number(req.params.communityId);
+    const { nickname, image, bio } = req.body;
+
+    if (!userId || isNaN(communityId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "유효한 요청이 아닙니다." });
+    }
+
+    const result = await updateCommunityProfile({
+      mode: "EDIT",
+      userId,
+      communityId,
+      patch: { nickname, image, bio },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "프로필이 수정되었습니다.",
+      profile: result,
+    });
+  } catch (err) {
+    return res.status(400).json({ success: false, message: err.message });
   }
 });
 
@@ -604,10 +688,20 @@ router.get("/profile/my/count", authenticateJWT, async (req, res) => {
 
     const userId = decoded.id || decoded.userId;
     if (!userId) {
-      return res.status(400)({ success: false, message: "유효하지 않습니다." });
+      return res
+        .status(400)
+        .json({ success: false, message: "유효하지 않습니다." });
     }
-    const count = await getMyProfileCount(userId);
-    res.status(200).json({ success: true, count });
+    const result = await getMyProfileCount(userId); // { used, isSubscribed }
+    const limit = result.isSubscribed ? null : 5;
+    const remain = result.isSubscribed ? null : Math.max(0, 5 - result.used);
+    res.status(200).json({
+      success: true,
+      used: result.used,
+      limit,
+      remain,
+      tier: result.isSubscribed ? "PAID" : "FREE",
+    });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
@@ -693,25 +787,24 @@ router.get("/profile/my/count", authenticateJWT, async (req, res) => {
 // 해당 커뮤니티에 설정한 내 프로필 조회
 router.get("/profile/my/:communityId", authenticateJWT, async (req, res) => {
   try {
-    const { communityId } = req.params;
     const userId = req.user?.id;
-
-    if (!userId || isNaN(communityId)) {
+    const communityId = Number(req.params.communityId);
+    if (!userId || Number.isNaN(communityId)) {
       return res
         .status(400)
-        .json({ success: false, messgae: "유효한 요청입니다." });
+        .json({ success: false, message: "유효한 요청입니다." });
     }
-    const profile = await getMyCommunityProfile(userId, parseInt(communityId));
-    return res.status(200).json({
-      success: true,
-      profile,
-    });
-  } catch (error) {
-    console.error("getMyCommunityProfile error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "커뮤니티에서 프로필 가져오기에 실패햇습니다.",
-    });
+
+    const { profileType, profile } = await getMyCommunityProfile(
+      userId,
+      communityId
+    );
+    return res.status(200).json({ success: true, profileType, profile });
+  } catch (e) {
+    console.error("getMyCommunityProfile error:", e);
+    return res
+      .status(500)
+      .json({ success: false, message: "프로필 조회 실패" });
   }
 });
 
