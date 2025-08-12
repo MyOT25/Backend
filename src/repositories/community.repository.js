@@ -1,8 +1,12 @@
 import prisma from "../config/prismaClient.js";
 
 // 커뮤니티 가입 여부 확인하기
-export const checkUserInCommunity = async (userId, communityId) => {
-  const record = await prisma.userCommunity.findFirst({
+export const checkUserInCommunity = async (
+  userId,
+  communityId,
+  db = prisma
+) => {
+  const record = await db.userCommunity.findFirst({
     where: {
       userId,
       communityId,
@@ -12,8 +16,12 @@ export const checkUserInCommunity = async (userId, communityId) => {
 };
 
 // 커뮤니티 가입하기
-export const insertUserToCommunity = async (userId, communityId) => {
-  await prisma.userCommunity.create({
+export const insertUserToCommunity = async (
+  userId,
+  communityId,
+  db = prisma
+) => {
+  await db.userCommunity.create({
     data: {
       userId,
       communityId,
@@ -22,8 +30,12 @@ export const insertUserToCommunity = async (userId, communityId) => {
 };
 
 // 커뮤니티 탈퇴
-export const deleteUserFromCommunity = async (userId, communityId) => {
-  await prisma.userCommunity.deleteMany({
+export const deleteUserFromCommunity = async (
+  userId,
+  communityId,
+  db = prisma
+) => {
+  await db.userCommunity.deleteMany({
     where: {
       userId,
       communityId,
@@ -147,14 +159,11 @@ export const findCommunityById = async (communityId) => {
 };
 
 // 커뮤니티 프로필 추가
-export const createCommunityProfileRepository = async ({
-  userId,
-  communityId,
-  nickname,
-  image,
-  bio,
-}) => {
-  return await prisma.multiProfile.create({
+export const createCommunityProfileRepository = async (
+  { userId, communityId, nickname, image, bio },
+  db = prisma
+) => {
+  return await db.multiProfile.create({
     data: {
       userId,
       communityId,
@@ -165,14 +174,13 @@ export const createCommunityProfileRepository = async ({
   });
 };
 
-export const countUserProfilesInCommunity = async (userId) => {
-  return await prisma.multiProfile.count({
-    where: { userId },
-  });
+// (이 함수는 전역 멀티 개수 카운트에 쓰이는데, 이름이 헷갈림)
+export const countUserProfilesInCommunity = async (userId, db = prisma) => {
+  return await db.multiProfile.count({ where: { userId } });
 };
 // 커뮤니티 프로필 수정하기
-export const modifyCommunityProfile = async (profileId, data) => {
-  return await prisma.multiProfile.update({
+export const modifyCommunityProfile = async (profileId, data, db = prisma) => {
+  return await db.multiProfile.update({
     where: { id: profileId },
     data,
   });
@@ -180,10 +188,11 @@ export const modifyCommunityProfile = async (profileId, data) => {
 
 // 커뮤니티 프로필 삭제하기
 
-export const deleteCommunityProfileRepository = async (profileId) => {
-  return await prisma.multiProfile.delete({
-    where: { id: profileId },
-  });
+export const deleteCommunityProfileRepository = async (
+  profileId,
+  db = prisma
+) => {
+  return await db.multiProfile.delete({ where: { id: profileId } });
 };
 
 // 커뮤니티 내 피드 다른 커뮤니티로 인용
@@ -269,29 +278,27 @@ export const findPopularFeed = async (communityId) => {
 // 해당 커뮤니티에 설정한 내 프로필 조회
 export const findMyProfileInCommunityRepository = async (
   userId,
-  communityId
+  communityId,
+  db = prisma
 ) => {
-  console.log("🌐 userId in repo:", userId);
-  console.log("🌐 communityId in repo:", communityId);
-
-  return await prisma.MultiProfile.findMany({
-    where: {
-      userId: Number(userId),
-      communityId: Number(communityId),
+  return await db.multiProfile.findFirst({
+    where: { userId: Number(userId), communityId: Number(communityId) },
+    select: {
+      id: true,
+      userId: true,
+      communityId: true,
+      nickname: true,
+      image: true,
+      bio: true,
     },
   });
 };
 
 // 특정 유저의 해당 커뮤니티 프로필 조회
-export const findMultiProfile = async (communityId, userId) => {
-  return await prisma.multiProfile.findFirst({
-    where: { communityId, userId },
-  });
+export const findMultiProfile = async (communityId, userId, db = prisma) => {
+  return await db.multiProfile.findFirst({ where: { communityId, userId } });
 };
-
 // 현재 등록된 내 프로필 개수 확인
-export const countMyProfile = async (userId) => {
-  return await prisma.multiProfile.count({
-    where: { userId },
-  });
+export const countMyProfile = async (userId, db = prisma) => {
+  return await db.multiProfile.count({ where: { userId } });
 };
