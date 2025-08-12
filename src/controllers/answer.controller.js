@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticateJWT } from '../middlewares/authMiddleware.js';
 import { AnswerService } from '../services/answer.service.js';
-import { CommentService } from '../services/qcomment.service.js';
+import { InteractionService } from '../services/qinteraction.service.js';
 const router = express.Router();
 
 
@@ -389,63 +389,14 @@ router.delete('/:answerId', authenticateJWT, async (req, res, next) => {
   }
 });
 
-/**
- * 답변 댓글 등록
- * POST /api/answers/:answerId/comments
- */
-router.post('/:answerId/comments', authenticateJWT, async (req, res, next) => {
+// 내 상호작용 여부 (답변)
+router.get('/:answerId/me', authenticateJWT, async (req, res, next) => {
   try {
     const answerId = Number(req.params.answerId);
-    const { content, isAnonymous = false } = req.body;
-
-    if (!content?.trim()) {
-      return res.status(400).json(response.fail('AC100', 'content는 필수입니다.'));
-    }
-
-    const result = await CommentService.addAnswerComment(
-      answerId,
-      req.user.id,
-      content,
-      toBool(isAnonymous)
-    );
-    return res.status(201).json(response.success('답변 댓글이 등록되었습니다.', result));
+    const userId = req.user.id;
+    const data = await InteractionService.getAnswerMyStatus(answerId, userId);
+    return res.status(200).json(response.success('답변 상호작용 여부 조회 성공', data));
   } catch (err) {
-    if (err?.errorCode) return res.status(400).json(response.fail(err.errorCode, err.reason));
-    next(err);
-  }
-});
-
-/**
- * 답변 댓글 목록
- * GET /api/answers/:answerId/comments
- */
-router.get('/:answerId/comments', async (req, res, next) => {
-  try {
-    const answerId = Number(req.params.answerId);
-    const page = Number(req.query.page ?? 1);
-    const size = Number(req.query.size ?? 20);
-
-    const result = await CommentService.listAnswerComments(answerId, { page, size });
-    return res.status(200).json(response.success('답변 댓글 목록을 불러왔습니다.', result));
-  } catch (err) {
-    next(err);
-  }
-});
-
-/**
- * 답변 댓글 삭제
- * DELETE /api/answers/:answerId/comments/:commentId
- */
-router.delete('/:answerId/comments/:commentId', authenticateJWT, async (req, res, next) => {
-  try {
-    const commentId = Number(req.params.commentId);
-    const isAdmin = req.user?.role === 'ADMIN';
-
-    await CommentService.removeAnswerComment(commentId, req.user.id, isAdmin);
-    return res.status(200).json(response.success('답변 댓글 삭제 완료', null));
-  } catch (err) {
-    if (err?.errorCode === 'AC404') return res.status(404).json(response.fail('AC404', err.reason));
-    if (err?.errorCode === 'AC403') return res.status(403).json(response.fail('AC403', err.reason));
     next(err);
   }
 });
