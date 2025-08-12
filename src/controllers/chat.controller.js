@@ -69,10 +69,9 @@ import prisma from "../config/prismaClient.js";
 
 export const createChatRoomController = async (req, res) => {
   try {
-    const userId = req.user.id; // 로그인된 유저 ID (JWT 인증에서 추출)
+    const userId = req.user.id;
     const { type, opponentId, userIds, name } = req.body;
 
-    // 1:1이면 상대방 하나만 받고, 그룹이면 명시적 배열 받아야 함
     const participantIds =
       type === "ONE_TO_ONE" ? [userId, opponentId] : [userId, ...userIds];
 
@@ -81,6 +80,11 @@ export const createChatRoomController = async (req, res) => {
       userIds: participantIds,
       name,
     });
+
+    const participants = chatRoom.users.map((u) => ({
+      id: u.user.id,
+      nickname: u.user.nickname,
+    }));
 
     return res.status(existing ? 200 : 201).json({
       resultType: "SUCCESS",
@@ -93,6 +97,7 @@ export const createChatRoomController = async (req, res) => {
           chatRoomId: chatRoom.id,
           type: chatRoom.type,
           name: chatRoom.name,
+          participants,
         },
       },
     });
@@ -107,7 +112,6 @@ export const createChatRoomController = async (req, res) => {
     });
   }
 };
-
 // 채팅방 조회 API
 /**
  * @swagger
@@ -152,23 +156,24 @@ export const createChatRoomController = async (req, res) => {
  *                             example: ONE_TO_ONE
  */
 export const getChatRoomListController = async (req, res, next) => {
-    try {
-      const userId = req.user.id;
-  
-      const rooms = await getChatRoomsByUserId(userId);
-  
-      return res.status(200).json({
-        resultType: "SUCCESS",
-        error: null,
-        success: {
-          message: "채팅방 목록 조회 성공",
-          data: rooms,
-        },
-      });
-    } catch (err) {
-      next(err);
-    }
-  };
+  try {
+    const userId = req.user.id;
+
+    const rooms = await getChatRoomsByUserId(userId);
+
+    return res.status(200).json({
+      resultType: "SUCCESS",
+      error: null,
+      success: {
+        message: "채팅방 목록 조회 성공",
+        data: rooms,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 // 메세지 전송 API
 /**

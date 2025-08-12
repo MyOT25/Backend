@@ -32,7 +32,11 @@ export const createChatRoomService = async ({ type, userIds, name }) => {
           },
         },
       },
-      include: { users: true },
+      include: {
+        users: {
+          include: { user: { select: { id: true, nickname: true } } },
+        },
+      },
     });
 
     if (existing && existing.users.length === 2) {
@@ -54,6 +58,11 @@ export const createChatRoomService = async ({ type, userIds, name }) => {
         })),
       },
     },
+    include: {
+      users: {
+        include: { user: { select: { id: true, nickname: true } } },
+      },
+    },
   });
 
   return {
@@ -62,60 +71,68 @@ export const createChatRoomService = async ({ type, userIds, name }) => {
   };
 };
 
+
 // 채팅방 목록 조회 API
 export const getChatRoomsByUserId = async (userId) => {
-    const rooms = await prisma.chatRoom.findMany({
-      where: {
-        users: {
-          some: {
-            userId: userId,
-          },
+  const rooms = await prisma.chatRoom.findMany({
+    where: {
+      users: {
+        some: {
+          userId: userId,
         },
       },
-      include: {
-        users: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                nickname: true,
-              },
+    },
+    include: {
+      users: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              nickname: true,
             },
           },
         },
-        messages: {
-          orderBy: {
-            createdAt: "desc",
-          },
-          take: 1,
+      },
+      messages: {
+        orderBy: {
+          createdAt: "desc",
         },
+        take: 1,
       },
-      orderBy: {
-        updatedAt: "desc",
-      },
-    });
-  
-    return rooms.map((room) => {
-      const participants = room.users.map((u) => u.user.id);
-      const participantNicknames = room.users.map((u) => u.user.nickname);
-  
-      // 1:1 채팅이고, 채팅방 이름이 없으면 상대방 닉네임으로 대체
-      let roomName = room.name;
-      if ((room.type === "ONE_TO_ONE") && (!room.name || room.name.trim() === "")) {
-        const otherUser = room.users.find((u) => u.user.id !== userId);
-        roomName = otherUser?.user.nickname || "이름 없는 채팅방";
-      }
-  
-      return {
-        roomId: room.id,
-        roomName: roomName,
-        type: room.type,
-        participants: participants,
-        lastMessage: room.messages[0]?.content || null,
-        lastMessageTime: room.messages[0]?.createdAt || null,
-      };
-    });
-  };
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+  });
+
+  return rooms.map((room) => {
+    const participants = room.users.map((u) => ({
+      id: u.user.id,
+      nickname: u.user.nickname,
+    }));
+
+    // 1:1 채팅방의 경우 상대방 닉네임을 이름으로 사용
+    let roomName = room.name;
+    if (room.type === "ONE_TO_ONE" && (!room.name || room.name.trim() === "")) {
+      const otherUser = room.users.find((u) => u.user.id !== userId);
+      roomName = otherUser?.user.nickname || "이름 없는 채팅방";
+    }
+
+    const lastMessageObj = room.messages[0];
+
+    return {
+      chatRoomId: room.id,
+      name: roomName,
+      type: room.type,
+      participants: participants,
+      lastMessage: lastMessageObj ? {
+        content: lastMessageObj.content,
+        createdAt: lastMessageObj.createdAt,
+      } : null,
+    };
+  });
+};
+
 
 // 메세지 전송 API
 export const sendMessageService = async ({ chatRoomId, senderId, content }) => {
