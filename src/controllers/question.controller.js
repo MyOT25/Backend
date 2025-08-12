@@ -4,6 +4,8 @@ import { authenticateJWT } from '../middlewares/authMiddleware.js';
 
 import { QuestionService } from '../services/question.service.js';
 import { s3Uploader, uploadToS3 } from '../middlewares/s3Uploader.js';
+import { CommentService } from '../services/qcomment.service.js';
+
 
 const router = express.Router();
 
@@ -366,6 +368,179 @@ const toBoolean = (v) => {
  */
 
 
+/**
+ * @swagger
+ * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ *   schemas:
+ *     CommentUser:
+ *       type: object
+ *       properties:
+ *         id: { type: integer, nullable: true, example: null }
+ *         username: { type: string, example: "익명" }
+ *         profileImage: { type: string, nullable: true, example: null }
+ *     Comment:
+ *       type: object
+ *       properties:
+ *         id: { type: integer, example: 101 }
+ *         content: { type: string, example: "추가 정보 감사합니다!" }
+ *         isAnonymous: { type: boolean, example: false }
+ *         createdAt: { type: string, format: date-time }
+ *         user:
+ *           $ref: '#/components/schemas/CommentUser'
+ *     PagedComments:
+ *       type: object
+ *       properties:
+ *         page: { type: integer, example: 1 }
+ *         size: { type: integer, example: 20 }
+ *         total: { type: integer, example: 57 }
+ *         comments:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Comment'
+ *     EnvelopeSuccessComment:
+ *       type: object
+ *       properties:
+ *         resultType: { type: string, example: "SUCCESS" }
+ *         error: { type: object, nullable: true, example: null }
+ *         success:
+ *           type: object
+ *           properties:
+ *             message: { type: string, example: "댓글이 등록되었습니다." }
+ *             data:
+ *               $ref: '#/components/schemas/Comment'
+ *     EnvelopeSuccessPagedComments:
+ *       type: object
+ *       properties:
+ *         resultType: { type: string, example: "SUCCESS" }
+ *         error: { type: object, nullable: true, example: null }
+ *         success:
+ *           type: object
+ *           properties:
+ *             message: { type: string, example: "댓글 목록을 불러왔습니다." }
+ *             data:
+ *               $ref: '#/components/schemas/PagedComments'
+ *     EnvelopeSuccessMessage:
+ *       type: object
+ *       properties:
+ *         resultType: { type: string, example: "SUCCESS" }
+ *         error: { type: object, nullable: true, example: null }
+ *         success:
+ *           type: object
+ *           properties:
+ *             message: { type: string, example: "댓글 삭제 완료" }
+ *             data: { type: object, nullable: true, example: null }
+ *     EnvelopeFail:
+ *       type: object
+ *       properties:
+ *         resultType: { type: string, example: "FAIL" }
+ *         error:
+ *           type: object
+ *           properties:
+ *             errorCode: { type: string, example: "QC404" }
+ *             reason: { type: string, example: "댓글을 찾을 수 없습니다." }
+ *             data: { type: object, nullable: true, example: null }
+ *         success: { type: object, nullable: true, example: null }
+ */
+
+/**
+ * @swagger
+ * /api/questions/{questionId}/comments:
+ *   post:
+ *     summary: 질문에 댓글 등록
+ *     tags: [Question Comments]
+ *     security: [ { bearerAuth: [] } ]
+ *     parameters:
+ *       - in: path
+ *         name: questionId
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               content: { type: string, example: "같은 생각이에요!" }
+ *               isAnonymous: { type: boolean, default: false }
+ *     responses:
+ *       201:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/EnvelopeSuccessComment'
+ *       400:
+ *         description: 잘못된 요청(QC100 등)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/EnvelopeFail'
+ *
+ *   get:
+ *     summary: 질문 댓글 목록 조회 (페이징)
+ *     tags: [Question Comments]
+ *     parameters:
+ *       - in: path
+ *         name: questionId
+ *         required: true
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: size
+ *         schema: { type: integer, default: 20 }
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/EnvelopeSuccessPagedComments'
+ */
+ 
+/**
+ * @swagger
+ * /api/questions/{questionId}/comments/{commentId}:
+ *   delete:
+ *     summary: 질문 댓글 삭제
+ *     tags: [Question Comments]
+ *     security: [ { bearerAuth: [] } ]
+ *     parameters:
+ *       - in: path
+ *         name: questionId
+ *         required: true
+ *         schema: { type: integer }
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/EnvelopeSuccessMessage'
+ *       403:
+ *         description: 권한 없음(QC403)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/EnvelopeFail'
+ *       404:
+ *         description: 없음(QC404)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/EnvelopeFail'
+ */
 
 
 /**
@@ -506,6 +681,57 @@ router.delete('/:questionId', authenticateJWT, async (req, res, next) => {
     await QuestionService.deleteQuestion(Number(questionId), userId);
     return res.status(200).json(response.success('질문 삭제 완료'));
   } catch (err) {
+    next(err);
+  }
+});
+
+// 댓글 등록
+router.post('/:questionId/comments', authenticateJWT, async (req, res, next) => {
+  try {
+    const { questionId } = req.params;
+    const userId = req.user.id;
+    const { content, isAnonymous } = req.body;
+
+    const result = await CommentService.addQuestionComment(
+      Number(questionId),
+      userId,
+      content,
+      String(isAnonymous).toLowerCase() === 'true'
+    );
+
+    return res.status(201).json(response.success('댓글이 등록되었습니다.', result));
+  } catch (err) {
+    if (err?.errorCode) return res.status(400).json(response.fail(err.errorCode, err.reason));
+    next(err);
+  }
+});
+
+// 댓글 목록
+router.get('/:questionId/comments', async (req, res, next) => {
+  try {
+    const { questionId } = req.params;
+    const page = Number(req.query.page ?? 1);
+    const size = Number(req.query.size ?? 20);
+
+    const result = await CommentService.listQuestionComments(Number(questionId), { page, size });
+    return res.status(200).json(response.success('댓글 목록을 불러왔습니다.', result));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 댓글 삭제
+router.delete('/:questionId/comments/:commentId', authenticateJWT, async (req, res, next) => {
+  try {
+    const { commentId } = req.params;
+    const userId = req.user.id;
+    const isAdmin = req.user.role === 'ADMIN';
+
+    await CommentService.removeQuestionComment(Number(commentId), userId, isAdmin);
+    return res.status(200).json(response.success('댓글 삭제 완료'));
+  } catch (err) {
+    if (err?.errorCode === 'QC404') return res.status(404).json(response.fail(err.errorCode, err.reason));
+    if (err?.errorCode === 'QC403') return res.status(403).json(response.fail(err.errorCode, err.reason));
     next(err);
   }
 });

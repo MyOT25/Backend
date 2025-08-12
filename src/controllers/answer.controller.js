@@ -1,21 +1,29 @@
 import express from 'express';
 import { authenticateJWT } from '../middlewares/authMiddleware.js';
 import { AnswerService } from '../services/answer.service.js';
-
+import { CommentService } from '../services/qcomment.service.js';
 const router = express.Router();
 
-// ✅ 공통 응답 포맷 유틸
-const successResponse = (message, data = null) => ({
-  resultType: 'SUCCESS',
-  error: null,
-  success: { message, data },
-});
 
-const failResponse = (code, reason, data = null) => ({
-  resultType: 'FAIL',
-  error: { errorCode: code, reason, data },
-  success: null,
-});
+// 응답 포맷 유틸
+const response = {
+  success: (message, data = null) => ({
+    resultType: 'SUCCESS',
+    error: null,
+    success: { message, data },
+  }),
+  fail: (code, reason, data = null) => ({
+    resultType: 'FAIL',
+    error: { errorCode: code, reason, data },
+    success: null,
+  }),
+};
+
+// 문자열/불리언 모두 처리
+const toBool = (v) => {
+  if (typeof v === 'string') return v.trim().toLowerCase() === 'true';
+  return Boolean(v);
+};
 
 /**
  * @swagger
@@ -143,7 +151,7 @@ const failResponse = (code, reason, data = null) => ({
 
 /**
  * @swagger
- * /api/answers/answers/{answerId}:
+ * /api/answers/{answerId}:
  *   delete:
  *     summary: 답변 삭제
  *     tags:
@@ -166,37 +174,139 @@ const failResponse = (code, reason, data = null) => ({
  *         description: 존재하지 않는 답변
  */
 
-
+/**
+ * @swagger
+ * /api/answers/{answerId}/comments:
+ *   post:
+ *     summary: 답변에 댓글 등록
+ *     tags: [Answer Comments]
+ *     security: [ { bearerAuth: [] } ]
+ *     parameters:
+ *       - in: path
+ *         name: answerId
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               content: { type: string, example: "도움됐어요!" }
+ *               isAnonymous: { type: boolean, default: false }
+ *     responses:
+ *       201:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/EnvelopeSuccessComment'
+ *       400:
+ *         description: 잘못된 요청(AC100 등)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/EnvelopeFail'
+ *
+ *   get:
+ *     summary: 답변 댓글 목록 조회 (페이징)
+ *     tags: [Answer Comments]
+ *     parameters:
+ *       - in: path
+ *         name: answerId
+ *         required: true
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: size
+ *         schema: { type: integer, default: 20 }
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/EnvelopeSuccessPagedComments'
+ */
+ 
+/**
+ * @swagger
+ * /api/answers/{answerId}/comments/{commentId}:
+ *   delete:
+ *     summary: 답변 댓글 삭제
+ *     tags: [Answer Comments]
+ *     security: [ { bearerAuth: [] } ]
+ *     parameters:
+ *       - in: path
+ *         name: answerId
+ *         required: true
+ *         schema: { type: integer }
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/EnvelopeSuccessMessage'
+ *       403:
+ *         description: 권한 없음(AC403)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/EnvelopeFail'
+ *       404:
+ *         description: 없음(AC404)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/EnvelopeFail'
+ */
 /**
  * 답변 등록
  * POST /api/answers/:questionId
  */
 router.post('/:questionId', authenticateJWT, async (req, res, next) => {
-  const { questionId } = req.params;
-  const { content } = req.body;
-  const userId = req.user.id;
-
   try {
-    if (!content) {
-      return res.status(400).json(failResponse('A100', 'content는 필수입니다.'));
+    const questionId = Number(req.params.questionId);
+    const userId = req.user.id;
+    const { content, isAnonymous = false } = req.body;
+
+    if (!content?.trim()) {
+      return res.status(400).json(response.fail('A100', 'content는 필수입니다.'));
     }
 
-    const answer = await AnswerService.createAnswer({ questionId: Number(questionId), userId, content });
-    return res.status(201).json(successResponse('답변이 등록되었습니다.', answer));
+    const answer = await AnswerService.createAnswer({
+      questionId,
+      userId,
+      content,
+      isAnonymous: toBool(isAnonymous),
+    });
+
+    return res.status(201).json(response.success('답변이 등록되었습니다.', answer));
   } catch (err) {
-    if (err.code === 'QUESTION_NOT_FOUND') {
-      return res.status(404).json(failResponse('Q404', '존재하지 않는 질문입니다.'));
+    if (err?.code === 'QUESTION_NOT_FOUND' || err?.errorCode === 'Q404') {
+      return res.status(404).json(response.fail('Q404', '존재하지 않는 질문입니다.'));
     }
     next(err);
   }
 });
 
-// GET /api/questions/:questionId/answers
+/**
+ * 답변 목록 조회(질문 기준)
+ * GET /api/answers/question/:questionId
+ */
 router.get('/question/:questionId', async (req, res, next) => {
-  const questionId = Number(req.params.questionId);
   try {
+    const questionId = Number(req.params.questionId);
     const answers = await AnswerService.getAnswersByQuestionId(questionId);
-    return res.status(200).json(successResponse('답변 목록 조회 성공', answers));
+    return res.status(200).json(response.success('답변 목록 조회 성공', answers));
   } catch (err) {
     next(err);
   }
@@ -207,19 +317,19 @@ router.get('/question/:questionId', async (req, res, next) => {
  * POST /api/answers/:answerId/like
  */
 router.post('/:answerId/like', authenticateJWT, async (req, res) => {
-  const userId = req.user.id;
-  const answerId = Number(req.params.answerId);
-
   try {
+    const answerId = Number(req.params.answerId);
+    const userId = req.user.id;
+
     const alreadyLiked = await AnswerService.hasLiked(answerId, userId);
     if (alreadyLiked) {
-      return res.status(400).json(failResponse('ALREADY_LIKED', '이미 좋아요한 답변입니다.'));
+      return res.status(400).json(response.fail('ALREADY_LIKED', '이미 좋아요한 답변입니다.'));
     }
 
     const like = await AnswerService.likeAnswer(answerId, userId);
-    return res.status(201).json(successResponse('답변 좋아요 완료', like));
+    return res.status(201).json(response.success('답변 좋아요 완료', like));
   } catch (err) {
-    return res.status(500).json(failResponse('SERVER_ERROR', err.message));
+    return res.status(500).json(response.fail('SERVER_ERROR', err.message));
   }
 });
 
@@ -228,19 +338,19 @@ router.post('/:answerId/like', authenticateJWT, async (req, res) => {
  * DELETE /api/answers/:answerId/like
  */
 router.delete('/:answerId/like', authenticateJWT, async (req, res) => {
-  const userId = req.user.id;
-  const answerId = Number(req.params.answerId);
-
   try {
+    const answerId = Number(req.params.answerId);
+    const userId = req.user.id;
+
     const alreadyLiked = await AnswerService.hasLiked(answerId, userId);
     if (!alreadyLiked) {
-      return res.status(404).json(failResponse('LIKE_NOT_FOUND', '좋아요한 적이 없습니다.'));
+      return res.status(404).json(response.fail('LIKE_NOT_FOUND', '좋아요한 적이 없습니다.'));
     }
 
     await AnswerService.unlikeAnswer(answerId, userId);
-    return res.status(200).json(successResponse('답변 좋아요 취소 완료'));
+    return res.status(200).json(response.success('답변 좋아요 취소 완료', null));
   } catch (err) {
-    return res.status(500).json(failResponse('SERVER_ERROR', err.message));
+    return res.status(500).json(response.fail('SERVER_ERROR', err.message));
   }
 });
 
@@ -249,32 +359,93 @@ router.delete('/:answerId/like', authenticateJWT, async (req, res) => {
  * GET /api/answers/:answerId/like/count
  */
 router.get('/:answerId/like/count', async (req, res) => {
-  const answerId = Number(req.params.answerId);
-
   try {
+    const answerId = Number(req.params.answerId);
     const count = await AnswerService.getLikeCount(answerId);
-    return res.status(200).json(successResponse('답변 좋아요 수 조회 완료', {
-      answerId,
-      likeCount: count,
-    }));
+    return res
+      .status(200)
+      .json(response.success('답변 좋아요 수 조회 완료', { answerId, likeCount: count }));
   } catch (err) {
-    return res.status(500).json(failResponse('SERVER_ERROR', err.message));
+    return res.status(500).json(response.fail('SERVER_ERROR', err.message));
   }
 });
 
-// DELETE /api/answers/:answerId
-router.delete('/answers/:answerId', authenticateJWT, async (req, res, next) => {
-  const { answerId } = req.params;
-  const userId = req.user.id;
-
+/**
+ * 답변 삭제
+ * DELETE /api/answers/:answerId
+ * (주의: 라우터가 /api/answers 에 마운트되어 있으므로 여기서는 '/:answerId'가 맞음)
+ */
+router.delete('/:answerId', authenticateJWT, async (req, res, next) => {
   try {
-    await AnswerService.deleteAnswer(Number(answerId), userId);
-    return res.status(200).json({
-      resultType: 'SUCCESS',
-      error: null,
-      success: { message: '답변 삭제 완료' },
-    });
+    const answerId = Number(req.params.answerId);
+    const userId = req.user.id;
+
+    await AnswerService.deleteAnswer(answerId, userId);
+    return res.status(200).json(response.success('답변 삭제 완료', null));
   } catch (err) {
+    if (err?.errorCode === 'A404') return res.status(404).json(response.fail('A404', '답변을 찾을 수 없습니다.'));
+    if (err?.errorCode === 'A403') return res.status(403).json(response.fail('A403', '삭제 권한이 없습니다.'));
+    next(err);
+  }
+});
+
+/**
+ * 답변 댓글 등록
+ * POST /api/answers/:answerId/comments
+ */
+router.post('/:answerId/comments', authenticateJWT, async (req, res, next) => {
+  try {
+    const answerId = Number(req.params.answerId);
+    const { content, isAnonymous = false } = req.body;
+
+    if (!content?.trim()) {
+      return res.status(400).json(response.fail('AC100', 'content는 필수입니다.'));
+    }
+
+    const result = await CommentService.addAnswerComment(
+      answerId,
+      req.user.id,
+      content,
+      toBool(isAnonymous)
+    );
+    return res.status(201).json(response.success('답변 댓글이 등록되었습니다.', result));
+  } catch (err) {
+    if (err?.errorCode) return res.status(400).json(response.fail(err.errorCode, err.reason));
+    next(err);
+  }
+});
+
+/**
+ * 답변 댓글 목록
+ * GET /api/answers/:answerId/comments
+ */
+router.get('/:answerId/comments', async (req, res, next) => {
+  try {
+    const answerId = Number(req.params.answerId);
+    const page = Number(req.query.page ?? 1);
+    const size = Number(req.query.size ?? 20);
+
+    const result = await CommentService.listAnswerComments(answerId, { page, size });
+    return res.status(200).json(response.success('답변 댓글 목록을 불러왔습니다.', result));
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * 답변 댓글 삭제
+ * DELETE /api/answers/:answerId/comments/:commentId
+ */
+router.delete('/:answerId/comments/:commentId', authenticateJWT, async (req, res, next) => {
+  try {
+    const commentId = Number(req.params.commentId);
+    const isAdmin = req.user?.role === 'ADMIN';
+
+    await CommentService.removeAnswerComment(commentId, req.user.id, isAdmin);
+    return res.status(200).json(response.success('답변 댓글 삭제 완료', null));
+  } catch (err) {
+    if (err?.errorCode === 'AC404') return res.status(404).json(response.fail('AC404', err.reason));
+    if (err?.errorCode === 'AC403') return res.status(403).json(response.fail('AC403', err.reason));
     next(err);
   }
 });
