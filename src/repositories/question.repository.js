@@ -2,25 +2,56 @@
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
-// 질문 생성
-export const createQuestion = async ({ userId, title, content }) => {
+/**
+ * 질문 생성
+ * - service가 authorId를 넘겨도, userId를 넘겨도 받도록 호환 처리
+ * - isAnonymous 저장
+ */
+export const createQuestion = async ({ userId, authorId, title, content, isAnonymous = false }) => {
+  const uid = userId ?? authorId;
+  if (!uid) throw new Error('createQuestion: userId가 필요합니다.');
   return await prisma.question.create({
-    data: { userId, title, content },
+    data: { userId: uid, title, content, isAnonymous: Boolean(isAnonymous) },
   });
 };
 
-// 태그 연결
-export const createQuestionTags = async (questionId, userId, tagIds) => {
-  return await prisma.questionTag.createMany({
-    data: tagIds.map((tagId) => ({
+/**
+ * 질문 이미지 여러 개 저장
+ */
+export const createQuestionImages = async (questionId, userId, imageUrls) => {
+  if (!Array.isArray(imageUrls) || imageUrls.length === 0) return { count: 0 };
+  return await prisma.questionImage.createMany({
+    data: imageUrls.map((url) => ({
       questionId,
       userId,
-      tagId,
+      imageUrl: url,
     })),
   });
 };
 
-// 질문 목록 조회
+/**
+ * 태그 연결
+ */
+export const createQuestionTags = async (questionId, userId, tagIds) => {
+  if (!Array.isArray(tagIds) || tagIds.length === 0) return [];
+  return await Promise.all(
+    tagIds.map((tagId) =>
+      prisma.questionTag.create({
+        data: {
+          question: { connect: { id: questionId } },
+          user: { connect: { id: userId } },
+          tag: { connect: { id: tagId } },
+        },
+        include: { tag: true },
+      })
+    )
+  );
+};
+
+/**
+ * 질문 목록 조회
+ * - isAnonymous 포함 (스칼라라서 기본 포함되지만 가독성 위해 주석만)
+ */
 export const getAllQuestions = async () => {
   return await prisma.question.findMany({
     orderBy: { createdAt: 'desc' },
@@ -32,17 +63,21 @@ export const getAllQuestions = async () => {
           profileImage: true,
         },
       },
-      questionTags: {
-        include: { tag: true }, // ← 관계 이름 문제 발생 시 여기서 에러남
-      },
+      questionTags: { include: { tag: true } },
+      images: true,
+      // isAnonymous는 스칼라 필드라 기본 포함됨
     },
   });
 };
 
-// 질문 상세 조회
+/**
+ * 질문 상세 조회
+ * - 질문/답변의 isAnonymous와 사용자 정보 포함
+ * - answers는 최신순 정렬
+ */
 export const getQuestionDetail = async (questionId) => {
   return await prisma.question.findUnique({
-    where: { id: questionId },
+    where: { id: Number(questionId) },
     include: {
       user: {
         select: {
@@ -57,40 +92,49 @@ export const getQuestionDetail = async (questionId) => {
             select: {
               id: true,
               nickname: true,
+              profileImage: true,
             },
           },
         },
         orderBy: { createdAt: 'desc' },
       },
-      questionTags: {
-        include: { tag: true },
-      },
+      questionTags: { include: { tag: true } },
+      images: true,
+      // isAnonymous는 스칼라 필드라 기본 포함됨
     },
   });
 };
 
-// 질문 단건 조회 (내부용)
+/**
+ * 질문 단건 조회 (내부용)
+ */
 export const getQuestionById = async (id) => {
-  return await prisma.question.findUnique({ where: { id } });
+  return await prisma.question.findUnique({ where: { id: Number(id) } });
 };
 
-// 답변 생성
-export const createAnswer = async (questionId, userId, content) => {
+/**
+ * (참고) 답변 생성은 별도 AnswerRepository가 있다면 제거 가능
+ * 현재 파일을 계속 사용할 경우 isAnonymous를 지원하도록 확장
+ */
+export const createAnswer = async (questionId, userId, content, isAnonymous = false) => {
   return await prisma.answer.create({
     data: {
-      questionId,
+      questionId: Number(questionId),
       userId,
       content,
+      isAnonymous: Boolean(isAnonymous),
     },
   });
 };
 
-// 좋아요 기능
-export const hasLikedQuestion = async (questionId, userId) => {
+/**
+ * 좋아요 기능
+ */
+export const findQuestionLike = async (questionId, userId) => {
   return await prisma.questionLike.findUnique({
     where: {
       questionId_userId: {
-        questionId,
+        questionId: Number(questionId),
         userId,
       },
     },
@@ -100,7 +144,7 @@ export const hasLikedQuestion = async (questionId, userId) => {
 export const likeQuestion = async (questionId, userId) => {
   return await prisma.questionLike.create({
     data: {
-      questionId,
+      questionId: Number(questionId),
       userId,
     },
   });
@@ -110,7 +154,7 @@ export const unlikeQuestion = async (questionId, userId) => {
   return await prisma.questionLike.delete({
     where: {
       questionId_userId: {
-        questionId,
+        questionId: Number(questionId),
         userId,
       },
     },
@@ -118,9 +162,28 @@ export const unlikeQuestion = async (questionId, userId) => {
 };
 
 export const getQuestionLikeCount = async (questionId) => {
-  return await prisma.questionLike.count({ where: { questionId } });
+  return await prisma.questionLike.count({ where: { questionId: Number(questionId) } });
 };
 
+/**
+ * 질문 삭제
+ * - FK 깨지지 않도록 연관 데이터(답변/좋아요/태그/이미지) 먼저 삭제
+ */
 export const deleteQuestion = async (questionId) => {
-  return await prisma.question.delete({ where: { id: questionId } });
+  const id = Number(questionId);
+
+  // 1) 답변 삭제
+  await prisma.answer.deleteMany({ where: { questionId: id } });
+
+  // 2) 좋아요 삭제
+  await prisma.questionLike.deleteMany({ where: { questionId: id } });
+
+  // 3) 태그 연결 삭제
+  await prisma.questionTag.deleteMany({ where: { questionId: id } });
+
+  // 4) 이미지 삭제 (누락 보완)
+  await prisma.questionImage.deleteMany({ where: { questionId: id } });
+
+  // 5) 질문 삭제
+  return await prisma.question.delete({ where: { id } });
 };

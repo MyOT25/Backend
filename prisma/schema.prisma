@@ -8,55 +8,62 @@ datasource db {
 }
 
 model User {
-  id              Int             @id @default(autoincrement())
-  loginId         String          @unique
-  username        String?
-  password        String?
-  email           String          @unique
-  nickname        String?
-  profileImage    String?
-  createdAt       DateTime?
-  updatedAt       DateTime?       @updatedAt
-  bio             String?
-  birthDate       DateTime?
-  isSubscribed    Boolean?
-  answers         Answer[]
-  answerLikes     AnswerLike[]
-  followers       Follow[]        @relation("Follower")
-  followings      Follow[]        @relation("Following")
-  memoryBooks     MemoryBook[]
-  multiProfiles   MultiProfile[]
-  posts           Post[]
-  postBookmarks   PostBookmark[]
-  postComments    PostComment[]
-  postLikes       PostLike[]
-  questions       Question[]
-  questionGoods   QuestionGood[]
-  questionImages  QuestionImage[]
-  questionLikes   QuestionLike[]
-  questionTags    QuestionTag[]
-  reviews         Review[]
-  setting         Setting?
-  subscriptions   Subscribe[]
-  userCommunities UserCommunity[]
-  userSeats       UserSeat[]
-  viewings        ViewingRecord[]
+  id               Int               @id @default(autoincrement())
+  loginId          String            @unique
+  username         String?
+  password         String?
+  email            String            @unique
+  nickname         String?
+  profileImage     String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  bio              String?
+  birthDate        DateTime?
+  isSubscribed     Boolean?
 
-  chatRooms       ChatRoomUser[]
-  messages        Message[]
-  messageReads    MessageRead[]
+  // 관계 필드
+  answers          Answer[]
+  answerLikes      AnswerLike[]
+  memoryBooks      MemoryBook[]
+  multiProfiles    MultiProfile[]
+  posts            Post[]
+  postBookmarks    PostBookmark[]
+  postComments     PostComment[]
+  postLikes        PostLike[]
+  questions        Question[]
+  questionGoods    QuestionGood[]
+  questionComments QuestionComment[] @relation("UserToQuestionComments")
+  answerComments   AnswerComment[]   @relation("UserToAnswerComments")
+  questionImages   QuestionImage[]
+  questionLikes    QuestionLike[]
+  questionTags     QuestionTag[]
+  reviews          Review[]
+  setting          Setting?
+  subscriptions    Subscribe[]
+  userCommunities  UserCommunity[]
+  userSeats        UserSeat[]
+  viewings         ViewingRecord[]
+  followers        Follow[]          @relation("Follower")
+  followings       Follow[]          @relation("Following")
+
+  // 채팅 관련
+  chatRooms        ChatRoomUser[]
+  messages         Message[]
+  messageReads     MessageRead[]
 }
 
+
 model Post {
-  id             Int            @id @default(autoincrement())
+  id             Int         @id @default(autoincrement())
   userId         Int
   communityId    Int
-  isRepost       Boolean        @default(false)
+  isRepost       Boolean     @default(false)
   repostType     RepostType?
   repostTargetId Int?
   title          String?
   content        String?
   mediaType      MediaType?
+
   viewCount      Int            @default(0)
   commentCount   Int            @default(0)
   likeCount      Int            @default(0)
@@ -73,6 +80,9 @@ model Post {
   postLikes      PostLike[]
   postTags       PostTag[]
   reviews        Review[]
+
+  repostTarget Post?     @relation("Reposts", fields: [repostTargetId], references: [id])
+  reposts      Post[]    @relation("Reposts")
 
   @@index([communityId], map: "Post_communityId_fkey")
   @@index([userId], map: "Post_userId_fkey")
@@ -233,6 +243,7 @@ model Seat {
   blockNumber Int
   rowNumber   Int
   seatIndex   Int
+
   theater     Theater         @relation(fields: [theaterId], references: [id])
   userSeats   UserSeat[]
   viewings    ViewingRecord[]
@@ -245,12 +256,15 @@ model UserSeat {
   userId           Int
   seatId           Int
   numberOfSittings Int  @default(1)
+  
   seat             Seat @relation(fields: [seatId], references: [id])
   user             User @relation(fields: [userId], references: [id])
 
   @@unique([userId, seatId])
   @@index([seatId], map: "UserSeat_seatId_fkey")
+
 }
+
 
 model Community {
   id                    Int                @id @default(autoincrement())
@@ -303,9 +317,8 @@ model Follow {
   followerId  Int
   followingId Int
   createdAt   DateTime @default(now())
-  follower    User     @relation("Follower", fields: [followerId], references: [id])
-  following   User     @relation("Following", fields: [followingId], references: [id])
-
+  follower  User @relation("Follower", fields: [followerId], references: [id])
+  following User @relation("Following", fields: [followingId], references: [id])
   @@index([followerId], map: "Follow_followerId_fkey")
   @@index([followingId], map: "Follow_followingId_fkey")
 }
@@ -340,33 +353,37 @@ model ViewingImage {
 }
 
 model Question {
-  id            Int             @id @default(autoincrement())
+  id            Int               @id @default(autoincrement())
   userId        Int
   title         String
   content       String
-  createdAt     DateTime?       @default(now())
-  updatedAt     DateTime        @updatedAt
+  isAnonymous   Boolean           @default(false)
+  createdAt     DateTime?         @default(now())
+  updatedAt     DateTime          @updatedAt
   answers       Answer[]
   answerLikes   AnswerLike[]
-  user          User            @relation(fields: [userId], references: [id])
+  user          User              @relation(fields: [userId], references: [id])
   questionGoods QuestionGood[]
   images        QuestionImage[]
   likes         QuestionLike[]
   questionTags  QuestionTag[]
+  comments      QuestionComment[] @relation("QuestionToQuestionComments")
 
   @@index([userId], map: "Question_userId_fkey")
 }
 
 model Answer {
-  id         Int          @id @default(autoincrement())
-  questionId Int
-  userId     Int
-  content    String
-  createdAt  DateTime?    @default(now())
-  updatedAt  DateTime     @updatedAt
-  question   Question     @relation(fields: [questionId], references: [id])
-  user       User         @relation(fields: [userId], references: [id])
-  likes      AnswerLike[]
+  id          Int             @id @default(autoincrement())
+  questionId  Int
+  userId      Int
+  content     String
+  isAnonymous Boolean         @default(false)
+  createdAt   DateTime?       @default(now())
+  updatedAt   DateTime        @updatedAt
+  question    Question        @relation(fields: [questionId], references: [id])
+  user        User            @relation(fields: [userId], references: [id])
+  likes       AnswerLike[]
+  comments    AnswerComment[] @relation("AnswerToAnswerComments")
 
   @@index([questionId], map: "Answer_questionId_fkey")
   @@index([userId], map: "Answer_userId_fkey")
@@ -397,6 +414,38 @@ model AnswerLike {
   @@unique([answerId, userId])
   @@index([questionId], map: "AnswerLike_questionId_fkey")
   @@index([userId], map: "AnswerLike_userId_fkey")
+}
+
+model QuestionComment {
+  id          Int      @id @default(autoincrement())
+  questionId  Int
+  userId      Int
+  content     String   @db.Text
+  isAnonymous Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  question Question @relation("QuestionToQuestionComments", fields: [questionId], references: [id], onDelete: Cascade)
+  user     User     @relation("UserToQuestionComments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@index([userId])
+}
+
+model AnswerComment {
+  id          Int      @id @default(autoincrement())
+  answerId    Int
+  userId      Int
+  content     String   @db.Text
+  isAnonymous Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  answer Answer @relation("AnswerToAnswerComments", fields: [answerId], references: [id], onDelete: Cascade)
+  user   User   @relation("UserToAnswerComments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([answerId])
+  @@index([userId])
 }
 
 model Region {

@@ -2,6 +2,7 @@ import express from "express";
 import prisma from "../config/prismaClient.js";
 import { authenticateJWT } from "../middlewares/authMiddleware.js";
 import jwt from "jsonwebtoken";
+//import { authenticateOptional } from "../middlewares/authOptional.js";
 
 import {
   handleJoinOrLeaveCommunity,
@@ -748,40 +749,25 @@ router.get("/profile/my/:communityId", authenticateJWT, async (req, res) => {
  *                   type: boolean
  *                   example: true
  *                 community:
+ *                   $ref: '#/components/schemas/CommunityDetail'
+ *                 isJoined:
+ *                   type: boolean
+ *                   description: 요청에 사용자 토큰이 있을 때 계산됨. 없으면 false
+ *                   example: true
+ *                 joinedProfile:
  *                   type: object
+ *                   nullable: true
  *                   properties:
- *                     communityId:
+ *                     profileId:
  *                       type: integer
- *                       example: 5
- *                     groupName:
+ *                       example: 12
+ *                     nickname:
  *                       type: string
- *                       example: "팬텀싱어 팬모임"
- *                     type:
- *                       type: string
- *                       example: musical
- *                     targetId:
- *                       type: integer
- *                       example: null
- *                     musicalName:
- *                       type: string
- *                       example: "팬텀싱어"
- *                     recentPerformanceDate:
- *                       type: string
- *                       format: date
- *                       example: "2025-06-10"
- *                     theaterName:
- *                       type: string
- *                       example: "예술의전당 오페라극장"
- *                     ticketLink:
- *                       type: string
- *                       example: "https://ticketlink.com/show/phantomsinger"
- *                     createdAt:
+ *                       example: "뮤지컬덕후"
+ *                     joinedAt:
  *                       type: string
  *                       format: date-time
- *                       example: "2025-07-20T15:00:00.000Z"
- *                     coverImage:
- *                       type: string
- *                       example: "https://yourcdn.com/images/cover.jpg"
+ *                       example: "2025-07-25T02:04:45.000Z"
  *       400:
  *         description: 잘못된 타입 등 유효하지 않은 요청
  *         content:
@@ -810,7 +796,7 @@ router.get("/profile/my/:communityId", authenticateJWT, async (req, res) => {
  *                   example: "커뮤니티를 찾을 수 없습니다."
  */
 
-router.get("/:type/:id", async (req, res) => {
+router.get("/:type/:id", authenticateJWT, async (req, res) => {
   try {
     const communityId = Number(req.params.id);
     const { type } = req.params;
@@ -841,15 +827,24 @@ router.get("/:type/:id", async (req, res) => {
       coverImage: community.coverImage,
     };
 
-    /*
-    if (community.type === "musical") {
-      formatted.musicalName = community.musicalName;
-    } else if (community.type === "actor") {
-      formatted.actorName = community.actorName || community.groupName;
+    const userId = req.user?.id;
+    let joinedProfile = null;
+    if (userId) {
+      joinedProfile = await checkUserInCommunity(userId, communityId);
     }
-      */
 
-    res.status(200).json({ success: true, community: formatted });
+    return res.status(200).json({
+      success: true,
+      community: formatted,
+      isJoined: !!joinedProfile,
+      joinedProfile: joinedProfile
+        ? {
+            profileId: joinedProfile.id,
+            nickname: joinedProfile.nickname,
+            joinedAt: joinedProfile.createdAt,
+          }
+        : null,
+    });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
