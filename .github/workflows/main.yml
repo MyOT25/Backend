@@ -2,8 +2,7 @@ name: deploy-main
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -34,10 +33,34 @@ jobs:
       - name: Deploy to EC2
         run: |
           ssh my-server '
-            cd ~/Backend &&
-            git pull origin main &&
-            npm install &&
-            npx prisma generate &&
-            npx prisma migrate deploy && 
-            pm2 restart backend || pm2 start npm --name backend -- run dev
+            set -e
+
+            cd ~/Backend
+
+            # 안전한 풀
+            git fetch origin main
+            git checkout main
+            git pull --ff-only origin main
+
+            # PM2 보장 설치(최초 대비)
+            command -v pm2 >/dev/null 2>&1 || npm i -g pm2
+
+            # 의존성 설치
+            npm ci
+
+            # Prisma
+            npx prisma generate
+            npx prisma migrate deploy
+
+            # dev 의존성 제거(선택)
+            npm prune --omit=dev || true
+
+            # PM2: 있으면 reload, 없으면 start
+            if pm2 list | grep -q "backend"; then
+              pm2 reload ecosystem.config.cjs --only backend --update-env
+            else
+              pm2 start ecosystem.config.cjs --only backend --env production
+            fi
+
+            pm2 save
           '
