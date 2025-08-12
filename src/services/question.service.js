@@ -1,16 +1,16 @@
+// src/services/question.service.js
 import * as questionRepository from '../repositories/question.repository.js';
-import * as commentRepository from '../repositories/qcomment.repository.js'; 
 import { PrismaClient } from '@prisma/client';
 import { maskAuthor } from '../middlewares/mask.js';
 
 const prisma = new PrismaClient();
 
-// 내부 헬퍼: 답변 좋아요 개수
+// 답변 좋아요 개수 (답변에는 댓글 기능 제거, 좋아요만 유지)
 const countAnswerLikes = (answerId) =>
   prisma.answerLike.count({ where: { answerId: Number(answerId) } });
 
 /**
- * 질문 등록 (그대로)
+ * 질문 등록
  */
 const registerQuestion = async (
   userId,
@@ -20,7 +20,7 @@ const registerQuestion = async (
   imageUrls = [],
   isAnonymous = false
 ) => {
-  // ✅ 문자열로 들어온 tagIds 처리
+  // tagIds 문자열 허용
   let parsedTagIds = tagIds;
   if (typeof tagIds === 'string') {
     try {
@@ -34,7 +34,6 @@ const registerQuestion = async (
     throw { errorCode: 'Q100', reason: 'userId, title, content, tagIds는 모두 필수입니다.' };
   }
 
-  // ✅ 익명 여부 저장
   const newQuestion = await questionRepository.createQuestion({
     authorId: userId,
     title,
@@ -49,62 +48,70 @@ const registerQuestion = async (
   }
 
   const fullQuestion = await questionRepository.getQuestionDetail(newQuestion.id);
-  return formatQuestionDetail(fullQuestion); // 상세는 아래 getQuestionDetail 로직과 동일 포맷을 쓰고 싶다면 이 부분을 변경해도 OK
+  return formatQuestionDetail(fullQuestion);
 };
 
 // ───────── 질문 목록/상세 조회 ─────────
+
+// 목록: 질문별 like/comment를 DB에서 한 번에 집계해서 합성
 const getQuestionList = async () => {
   const questions = await questionRepository.getAllQuestions();
+  const qIds = questions.map((q) => q.id);
 
-  // ✅ 각 질문에 likeCount / commentCount 주입
-  const withCounts = await Promise.all(
-    questions.map(async (q) => {
-      const [likeCount, commentCount] = await Promise.all([
-        questionRepository.getQuestionLikeCount(q.id),
-        commentRepository.countQuestionComments(q.id),
-      ]);
-      const base = formatQuestionSummary(q);
-      return { ...base, likeCount, commentCount }; // ← 목록 응답에 포함
-    })
-  );
+  // ✅ 배치 집계 (N+1 회피)
+  const [likeAgg, commentAgg] = await Promise.all([
+    prisma.questionLike.groupBy({
+      by: ['questionId'],
+      _count: { _all: true },
+      where: { questionId: { in: qIds } },
+    }),
+    prisma.questionComment.groupBy({
+      by: ['questionId'],
+      _count: { _all: true },
+      where: { questionId: { in: qIds } },
+    }),
+  ]);
 
-  return withCounts;
+  const likeMap = new Map(likeAgg.map((r) => [r.questionId, r._count._all]));
+  const commentMap = new Map(commentAgg.map((r) => [r.questionId, r._count._all]));
+
+  return questions.map((q) => ({
+    ...formatQuestionSummary(q),
+    likeCount: likeMap.get(q.id) ?? 0,
+    commentCount: commentMap.get(q.id) ?? 0, // ✅ 질문 댓글 수만 유지
+  }));
 };
 
+// 상세: 질문의 like/comment 집계 + 답변엔 like만
 const getQuestionDetail = async (questionId) => {
   const q = await questionRepository.getQuestionDetail(questionId);
   if (!q) throw { errorCode: 'Q404', reason: '존재하지 않는 질문입니다.' };
 
-  // ✅ 질문의 likeCount / commentCount
   const [likeCount, commentCount] = await Promise.all([
-    questionRepository.getQuestionLikeCount(q.id),
-    commentRepository.countQuestionComments(q.id),
+    prisma.questionLike.count({ where: { questionId: q.id } }),
+    prisma.questionComment.count({ where: { questionId: q.id } }), // ✅ 질문 댓글만
   ]);
 
-  // ✅ 각 답변에 likeCount / commentCount 주입
-  const answersWithCounts = await Promise.all(
+  // 답변에는 댓글 기능 제거 → likeCount만 붙임
+  const answersWithLike = await Promise.all(
     (q.answers ?? []).map(async (a) => {
-      const [aLikeCount, aCommentCount] = await Promise.all([
-        countAnswerLikes(a.id),                 // 답변 좋아요 개수
-        commentRepository.countAnswerComments(a.id), // 답변 댓글 개수
-      ]);
+      const aLikeCount = await countAnswerLikes(a.id);
       return {
         id: a.id,
         content: a.content,
         isAnonymous: Boolean(a.isAnonymous),
         createdAt: a.createdAt,
         user: maskAuthor(a.user, Boolean(a.isAnonymous)),
-        likeCount: aLikeCount,
-        commentCount: aCommentCount,
+        likeCount: aLikeCount, // ✅ 답변 댓글 카운트는 없음
       };
     })
   );
 
   const base = formatQuestionDetail({ ...q, answers: [] });
-  return { ...base, likeCount, commentCount, answers: answersWithCounts };
+  return { ...base, likeCount, commentCount, answers: answersWithLike };
 };
 
-// ───────── 질문 삭제/좋아요 (그대로) ─────────
+// ───────── 질문 삭제/좋아요 ─────────
 const deleteQuestion = async (questionId, userId) => {
   const question = await questionRepository.getQuestionById(questionId);
   if (!question) throw { errorCode: 'Q404', reason: '존재하지 않는 질문입니다.' };
@@ -128,15 +135,15 @@ const getQuestionLikeCount = async (questionId) => {
   return await questionRepository.getQuestionLikeCount(questionId);
 };
 
-// ───────── Formatter (기존 그대로) ─────────
+// ───────── Formatter ─────────
 export const formatQuestionSummary = (q) => ({
   id: q.id,
   title: q.title,
   content: q.content,
-  thumbnailUrl: q.images?.[0]?.imageUrl || null,
+  thumbnailUrl: q.images?.[0]?.imageUrl || null, // 목록에선 썸네일 1장
   tagList: (q.questionTags ?? [])
     .map((qt) => qt.tag?.tagName)
-    .filter((t) => t !== undefined && t !== null),
+    .filter((t) => t != null),
   isAnonymous: Boolean(q.isAnonymous),
   createdAt: q.createdAt,
   user: maskAuthor(q.user, Boolean(q.isAnonymous)),
@@ -146,25 +153,24 @@ const formatQuestionDetail = (q) => ({
   id: q.id,
   title: q.title,
   content: q.content,
-  imageUrl: q.images?.map((img) => img.imageUrl) ?? [],
+  imageUrl: q.images?.map((img) => img.imageUrl) ?? [], // 상세는 모든 이미지
   tagList: (q.questionTags ?? [])
     .map((qt) => qt.tag?.tagName)
-    .filter((t) => t !== undefined && t !== null),
+    .filter((t) => t != null),
   isAnonymous: Boolean(q.isAnonymous),
   createdAt: q.createdAt,
   user: maskAuthor(q.user, Boolean(q.isAnonymous)),
-  // answers는 getQuestionDetail에서 likeCount/commentCount 주입해서 리턴
-  answers:
-    (q.answers ?? []).map((a) => ({
-      id: a.id,
-      content: a.content,
-      isAnonymous: Boolean(a.isAnonymous),
-      createdAt: a.createdAt,
-      user: maskAuthor(a.user, Boolean(a.isAnonymous)),
-    })),
+  // answers는 getQuestionDetail에서 likeCount만 주입해서 리턴
+  answers: (q.answers ?? []).map((a) => ({
+    id: a.id,
+    content: a.content,
+    isAnonymous: Boolean(a.isAnonymous),
+    createdAt: a.createdAt,
+    user: maskAuthor(a.user, Boolean(a.isAnonymous)),
+  })),
 });
 
-// ───────── 서비스 객체 Export ─────────
+// ───────── Export ─────────
 export const QuestionService = {
   registerQuestion,
   getQuestionList,
