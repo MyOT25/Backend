@@ -256,25 +256,44 @@ export const findRepostFeed = async (communityId, db = prisma) => {
   return result;
 };
 
-// 커뮤니티 내 미디어가 있는 피드만 필터링 할 수 있는 탭
-export const findMediaFeed = async (communityId) => {
-  return await prisma.post.findMany({
+// 커뮤니티 내 "미디어가 있는" 피드
+export const findMediaFeed = async (communityId, db = prisma) => {
+  const cid = Number(communityId);
+
+  // 1) 우선 게시글만 가져옴(미디어 조건)
+  const posts = await db.post.findMany({
     where: {
-      communityId,
-      mediaType: {
-        in: ["image", "video"],
-      },
+      communityId: cid,
+      OR: [{ hasMedia: true }, { mediaType: { in: ["image", "video"] } }],
     },
+    orderBy: { createdAt: "desc" },
     include: {
       user: { select: { nickname: true, profileImage: true } },
       community: { select: { groupName: true } },
       postTags: { include: { tag: true } },
-      images: true,
-    },
-    orderBy: {
-      createdAt: "desc",
     },
   });
+
+  if (posts.length === 0) return [];
+
+  // 2) 이미지들을 한 번에 가져와서 postId별로 묶음
+  const ids = posts.map((p) => p.id);
+  const imgs = await db.postImage.findMany({
+    where: { postId: { in: ids } },
+    select: { id: true, postId: true, url: true, caption: true },
+  });
+
+  const byPostId = imgs.reduce((acc, img) => {
+    (acc[img.postId] ||= []).push(img);
+    return acc;
+  }, {});
+
+  // 3) 게시글에 병합해서 반환
+  return posts.map((p) => ({
+    ...p,
+    postImages: byPostId[p.id] || [],
+    mediaUrls: (byPostId[p.id] || []).map((i) => i.url),
+  }));
 };
 
 // 요즘 인기글만 볼 수 있는 피드
