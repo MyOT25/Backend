@@ -6,7 +6,7 @@ import { QuestionService } from '../services/question.service.js';
 import { s3Uploader, uploadToS3 } from '../middlewares/s3Uploader.js';
 import { CommentService } from '../services/qcomment.service.js';
 
-
+import { InteractionService } from '../services/qinteraction.service.js';
 const router = express.Router();
 
 // 응답 포맷 유틸
@@ -732,6 +732,18 @@ router.delete('/:questionId/comments/:commentId', authenticateJWT, async (req, r
   } catch (err) {
     if (err?.errorCode === 'QC404') return res.status(404).json(response.fail(err.errorCode, err.reason));
     if (err?.errorCode === 'QC403') return res.status(403).json(response.fail(err.errorCode, err.reason));
+    next(err);
+  }
+});
+
+// 내 상호작용 여부 (질문)
+router.get('/:questionId/me', authenticateJWT, async (req, res, next) => {
+  try {
+    const questionId = Number(req.params.questionId);
+    const userId = req.user.id;
+    const data = await InteractionService.getQuestionMyStatus(questionId, userId);
+    return res.status(200).json(response.success('질문 상호작용 여부 조회 성공', data));
+  } catch (err) {
     next(err);
   }
 });
