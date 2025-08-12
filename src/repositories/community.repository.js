@@ -198,27 +198,62 @@ export const deleteCommunityProfileRepository = async (
 // 커뮤니티 내 피드 다른 커뮤니티로 인용
 //현재 커뮤니티의 피드 중, '다른 커뮤니티의 글을 인용한 글(repost)'만 보여줌
 
-export const findRepostFeed = async (communityId) => {
-  const posts = await prisma.post.findMany({
+// 커뮤니티 내 '다른 커뮤니티' 글을 인용한 글(repost)만 조회
+export const findRepostFeed = async (communityId, db = prisma) => {
+  const cid = Number(communityId);
+
+  // 1) 현재 커뮤니티에서 작성된 '리포스트' 글만 먼저 가져온다
+  const posts = await db.post.findMany({
     where: {
-      communityId, // 현재 커뮤니티에서 작성된 글
+      communityId: cid,
       isRepost: true,
       repostTargetId: { not: null },
     },
+    orderBy: { createdAt: "desc" },
     include: {
-      repostTarget: {
-        include: {
-          community: true,
-        },
-      },
+      // 안전한 필드만 include
       user: { select: { nickname: true, profileImage: true } },
       community: { select: { groupName: true } },
       postTags: { include: { tag: true } },
+      // ⚠ repostTarget 는 Prisma 클라이언트에서 미노출이라 include 금지
     },
   });
 
-  // 인용 대상이 다른 커뮤니티 글인지 필터링
-  return posts.filter((post) => post.repostTarget?.communityId !== communityId);
+  if (posts.length === 0) return [];
+
+  // 2) 인용 대상(postId)들을 한 번에 조회해서 매핑
+  const targetIds = Array.from(
+    new Set(posts.map((p) => p.repostTargetId).filter(Boolean))
+  );
+
+  const targets = await db.post.findMany({
+    where: { id: { in: targetIds } },
+    select: {
+      id: true,
+      communityId: true,
+      title: true,
+      user: { select: { nickname: true } },
+      community: { select: { groupName: true } },
+    },
+  });
+
+  const targetMap = targets.reduce((acc, t) => {
+    acc[t.id] = t;
+    return acc;
+  }, {});
+
+  // 3) 타겟이 '다른 커뮤니티'인 경우만 필터 + 타겟 정보를 병합
+  const result = posts
+    .map((p) => {
+      const tgt = p.repostTargetId ? targetMap[p.repostTargetId] : null;
+      return {
+        ...p,
+        repostTarget: tgt || null,
+      };
+    })
+    .filter((p) => p.repostTarget && p.repostTarget.communityId !== cid);
+
+  return result;
 };
 
 // 커뮤니티 내 미디어가 있는 피드만 필터링 할 수 있는 탭
