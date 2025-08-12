@@ -22,6 +22,7 @@ import {
   getMyProfileCount,
   switchCommunityProfileType,
   getCommunityFeedAll,
+  editMyCommunityProfile,
 } from "../services/community.service.js";
 
 import { checkUserInCommunity } from "../repositories/community.repository.js";
@@ -395,8 +396,7 @@ router.patch("/profile/me/:communityId", authenticateJWT, async (req, res) => {
         .json({ success: false, message: "유효한 요청이 아닙니다." });
     }
 
-    const result = await updateCommunityProfile({
-      mode: "EDIT",
+    const result = await editMyCommunityProfile({
       userId,
       communityId,
       patch: { nickname, image, bio },
