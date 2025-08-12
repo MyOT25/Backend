@@ -10,7 +10,10 @@
 ALTER TABLE `Casting` DROP FOREIGN KEY `Casting_musicalId_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `Image` DROP FOREIGN KEY `Image_postId_fkey`;
+SET FOREIGN_KEY_CHECKS = 0;
+ALTER TABLE `Image` DROP FOREIGN KEY IF EXISTS `Image_postId_fkey`;
+SET FOREIGN_KEY_CHECKS = 1;
+
 
 -- DropForeignKey
 ALTER TABLE `MusicalCommunity` DROP FOREIGN KEY `MusicalCommunity_musicalId_fkey`;
