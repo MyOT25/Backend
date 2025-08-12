@@ -1,8 +1,12 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import http from "http";
+import { Server } from "socket.io";
+import { setupSocket } from "./sockets/socketHandler.js";
 import passport from "passport";
 import swaggerUi from "swagger-ui-express";
+import bodyParser from "body-parser";
 
 import errorHandler from "./middlewares/errorHandler.js";
 import swaggerSpec from "./config/swagger.js";
@@ -33,13 +37,26 @@ import {
 } from "./controllers/memorybook.controller.js";
 import { authenticateJWT } from "./middlewares/authMiddleware.js";
 import { getMusicalCastings } from "./controllers/casting.controller.js";
-import { getTicketBookDetail } from "./controllers/ticektbook.controller.js";
+import { getTicketBookDetail } from "./controllers/ticketbook.controller.js";
+import { createChatRoomController, getChatRoomListController, sendMessage } from "./controllers/chat.controller.js";
 
 import { s3Uploader, uploadToS3 } from "./middlewares/s3Uploader.js";
+import { getMessages } from "./controllers/message.controller.js";
 
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app); // 이걸로 서버 생성 
+
+const io=new Server(server, {
+  cors: {
+    origin: "*", // 개발 중엔 허용
+    methods: ["GET","POST"]
+  }
+});
+// 소켓 로직 분리해서 구성 
+setupSocket(io);
+
 const port = process.env.PORT || 3000;
 
 // ✅ 공통 응답 헬퍼 등록
@@ -101,6 +118,10 @@ app.get("/api/posts/memorybooks", authenticateJWT, getMemoryBook);
 app.put("/api/posts/memorybooks", authenticateJWT, updateMemoryBook);
 app.get("/api/posts/musical/castings", getMusicalCastings);
 app.get("/api/ticketbook/:musicalId", authenticateJWT, getTicketBookDetail);
+app.post("/api/chatrooms",authenticateJWT,createChatRoomController);
+app.get("/api/chat/rooms",authenticateJWT,getChatRoomListController);
+app.post("/api/chat/send", authenticateJWT,sendMessage);
+app.get("/api/messages",authenticateJWT,getMessages);
 
 app.get("/", (req, res) => {
   res.send("Hello MyOT!");
@@ -110,7 +131,7 @@ app.get("/", (req, res) => {
 app.use(errorHandler);
 
 // ✅ 서버 실행
-app.listen(port, "0.0.0.0", () => {
-  console.log(`🚀 Server running on http://localhost:${port}`);
+server.listen(port, "0.0.0.0", () => {
+  console.log(`🚀 Server+ Socket.IO running on http://localhost:${port}`);
 });
 console.log("📦 DB_NAME:", process.env.DB_NAME);

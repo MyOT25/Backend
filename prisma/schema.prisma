@@ -15,13 +15,15 @@ model User {
   email           String          @unique
   nickname        String?
   profileImage    String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt       DateTime?
+  updatedAt       DateTime?       @updatedAt
   bio             String?
   birthDate       DateTime?
   isSubscribed    Boolean?
   answers         Answer[]
   answerLikes     AnswerLike[]
+  followers       Follow[]        @relation("Follower")
+  followings      Follow[]        @relation("Following")
   memoryBooks     MemoryBook[]
   multiProfiles   MultiProfile[]
   posts           Post[]
@@ -30,8 +32,6 @@ model User {
   postLikes       PostLike[]
   questions       Question[]
   questionGoods   QuestionGood[]
-
-
   questionImages  QuestionImage[]
   questionLikes   QuestionLike[]
   questionTags    QuestionTag[]
@@ -39,13 +39,12 @@ model User {
   setting         Setting?
   subscriptions   Subscribe[]
   userCommunities UserCommunity[]
+  userSeats       UserSeat[]
   viewings        ViewingRecord[]
 
-  followers       Follow[]        @relation("Follower")
-  followings      Follow[]        @relation("Following")
-  userSeats       UserSeat[]
- 
-
+  chatRooms       ChatRoomUser[]
+  messages        Message[]
+  messageReads    MessageRead[]
 }
 
 model Post {
@@ -55,9 +54,9 @@ model Post {
   isRepost       Boolean        @default(false)
   repostType     RepostType?
   repostTargetId Int?
+  title          String?
   content        String?
   mediaType      MediaType?
-  hasMedia       Boolean        @default(false)
   viewCount      Int            @default(0)
   commentCount   Int            @default(0)
   likeCount      Int            @default(0)
@@ -65,18 +64,15 @@ model Post {
   repostCount    Int            @default(0)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
-  
+  hasMedia       Boolean        @default(false)
+  community      Community      @relation(fields: [communityId], references: [id])
+  user           User           @relation(fields: [userId], references: [id])
   postBookmarks  PostBookmark[]
   postComments   PostComment[]
   postImages     PostImage[]
   postLikes      PostLike[]
   postTags       PostTag[]
   reviews        Review[]
-
-  community      Community      @relation(fields: [communityId], references: [id])
-  user           User           @relation(fields: [userId], references: [id])
-  repostTarget   Post?          @relation("Reposts", fields: [repostTargetId], references: [id])
-  reposts        Post[]         @relation("Reposts")
 
   @@index([communityId], map: "Post_communityId_fkey")
   @@index([userId], map: "Post_userId_fkey")
@@ -230,31 +226,30 @@ model Theater {
 }
 
 model Seat {
-  id        Int             @id @default(autoincrement())
-  theaterId Int
-  floor     Int
-  zone      String
+  id          Int             @id @default(autoincrement())
+  theaterId   Int
+  floor       Int
+  zone        String
   blockNumber Int
-  rowNumber Int
-  seatIndex Int
-  
+  rowNumber   Int
+  seatIndex   Int
+  theater     Theater         @relation(fields: [theaterId], references: [id])
+  userSeats   UserSeat[]
+  viewings    ViewingRecord[]
 
-  theater   Theater         @relation(fields: [theaterId], references: [id])
-  viewings  ViewingRecord[] // 이 좌석을 사용한 관극기록들 
-  userSeats UserSeat[] //좌석에 연결된 사용자 관계 
-  
+  @@index([theaterId], map: "Seat_theaterId_fkey")
 }
 
 model UserSeat {
-  id              Int      @id @default(autoincrement())
-  userId          Int
-  seatId          Int
-  numberOfSittings Int     @default(1) // 사용자가 해당 좌석에 앉은 횟수
+  id               Int  @id @default(autoincrement())
+  userId           Int
+  seatId           Int
+  numberOfSittings Int  @default(1)
+  seat             Seat @relation(fields: [seatId], references: [id])
+  user             User @relation(fields: [userId], references: [id])
 
-  user            User     @relation(fields: [userId], references: [id])
-  seat            Seat     @relation(fields: [seatId], references: [id])
-
-  @@unique([userId, seatId]) // 한 좌석당 한 유저 데이터만 존재하게
+  @@unique([userId, seatId])
+  @@index([seatId], map: "UserSeat_seatId_fkey")
 }
 
 model Community {
@@ -293,7 +288,7 @@ model Tag {
 }
 
 model Subscribe {
-  id        Int       @id @default(autoincrement())
+  id        Int       @id
   userId    Int
   startDate DateTime?
   endDate   DateTime?
@@ -304,15 +299,13 @@ model Subscribe {
 }
 
 model Follow {
-  id          Int       @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   followerId  Int
   followingId Int
-  createdAt   DateTime  @default(now())
-  
-  follower    User      @relation("Follower", fields: [followerId], references: [id])
-  following   User      @relation("Following", fields: [followingId], references: [id])
+  createdAt   DateTime @default(now())
+  follower    User     @relation("Follower", fields: [followerId], references: [id])
+  following   User     @relation("Following", fields: [followingId], references: [id])
 
-  @@unique([followerId, followingId])
   @@index([followerId], map: "Follow_followerId_fkey")
   @@index([followingId], map: "Follow_followingId_fkey")
 }
@@ -327,7 +320,7 @@ model ViewingRecord {
   content   String?
   rating    Int?
   images    ViewingImage[]
-  musical   Musical        @relation(fields: [musicalId], references: [id])
+  musical   Musical        @relation(fields: [musicalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   seat      Seat?          @relation(fields: [seatId], references: [id])
   user      User           @relation(fields: [userId], references: [id])
 
@@ -418,7 +411,7 @@ model Casting {
   actorId   Int
   role      String?
   actor     Actor   @relation(fields: [actorId], references: [id])
-  musical   Musical @relation(fields: [musicalId], references: [id])
+  musical   Musical @relation(fields: [musicalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([actorId], map: "Casting_actorId_fkey")
   @@index([musicalId], map: "Casting_musicalId_fkey")
@@ -441,7 +434,7 @@ model MusicalCommunity {
   musicalId   Int
   communityId Int
   community   Community @relation(fields: [communityId], references: [id])
-  musical     Musical   @relation(fields: [musicalId], references: [id])
+  musical     Musical   @relation(fields: [musicalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([communityId], map: "MusicalCommunity_communityId_fkey")
   @@index([musicalId], map: "MusicalCommunity_musicalId_fkey")
@@ -525,6 +518,64 @@ model QuestionTagMaster {
   questions QuestionTag[]
 }
 
+model Image {
+  id      Int     @id @default(autoincrement())
+  postId  Int
+  url     String?
+  caption String?
+
+  @@index([postId], map: "Image_postId_fkey")
+}
+
+model ChatRoom {
+  id        Int           @id @default(autoincrement())
+  name      String?
+  type      ChatRoomType
+  users     ChatRoomUser[]
+  messages  Message[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now()) @updatedAt 
+}
+
+model ChatRoomUser {
+  id         Int       @id @default(autoincrement())
+  chatRoom   ChatRoom  @relation(fields: [chatRoomId], references: [id])
+  chatRoomId Int
+  user       User      @relation(fields: [userId], references: [id])
+  userId     Int
+  joinedAt   DateTime  @default(now())
+
+  @@unique([chatRoomId, userId])
+}
+
+model Message {
+  id          Int           @id @default(autoincrement())
+  chatRoom    ChatRoom      @relation(fields: [chatRoomId], references: [id])
+  chatRoomId  Int
+  sender      User          @relation(fields: [senderId], references: [id])
+  senderId    Int
+  content     String
+  createdAt   DateTime      @default(now())
+  readUsers   MessageRead[]
+}
+
+model MessageRead {
+  id         Int       @id @default(autoincrement())
+  message    Message   @relation(fields: [messageId], references: [id])
+  messageId  Int
+  user       User      @relation(fields: [userId], references: [id])
+  userId     Int
+  readAt     DateTime  @default(now())
+
+  @@unique([messageId, userId])
+}
+
+enum ChatRoomType {
+  ONE_TO_ONE
+  GROUP
+}
+
+
 enum RepostType {
   post
   review
@@ -543,8 +594,4 @@ enum TargetType {
 enum CommunityType {
   musical
   actor
-}
-
-enum Seat_seat_type {
-  VIP
 }
