@@ -302,3 +302,74 @@ export const findMultiProfile = async (communityId, userId, db = prisma) => {
 export const countMyProfile = async (userId, db = prisma) => {
   return await db.multiProfile.count({ where: { userId } });
 };
+
+// 커뮤니티 전체 피드 (원본 + 리포스트 모두), 커서 페이지네이션
+export const findCommunityFeedAll = async (
+  communityId,
+  { cursor, limit = 20, order = "desc" } = {},
+  db = prisma
+) => {
+  const query = {
+    where: { communityId: Number(communityId) },
+    orderBy: { createdAt: order === "asc" ? "asc" : "desc" },
+    take: Number(limit),
+    include: {
+      user: { select: { id: true, nickname: true, profileImage: true } },
+      community: { select: { id: true, groupName: true } },
+      postTags: { include: { tag: true } },
+    },
+  };
+
+  if (cursor) {
+    query.cursor = { id: Number(cursor) };
+    query.skip = 1;
+  }
+
+  // 1) 게시글 먼저 조회
+  const posts = await db.post.findMany(query);
+
+  // 2) 이미지 한 번에 모아서 매핑
+  const postIds = posts.map((p) => p.id);
+  let imagesByPostId = {};
+  if (postIds.length) {
+    const imgs = await db.postImage.findMany({
+      where: { postId: { in: postIds } },
+      select: { id: true, postId: true, url: true, caption: true },
+    });
+    imagesByPostId = imgs.reduce((acc, img) => {
+      (acc[img.postId] ||= []).push(img);
+      return acc;
+    }, {});
+  }
+
+  // 3) 리포스트 타겟도 별도 조회 후 매핑
+  const targetIds = Array.from(
+    new Set(posts.map((p) => p.repostTargetId).filter(Boolean))
+  );
+  let targetMap = {};
+  if (targetIds.length) {
+    const targets = await db.post.findMany({
+      where: { id: { in: targetIds } },
+      select: {
+        id: true,
+        communityId: true,
+        title: true,
+        user: { select: { id: true, nickname: true } },
+        community: { select: { id: true, groupName: true } },
+      },
+    });
+    targetMap = targets.reduce((acc, t) => ((acc[t.id] = t), acc), {});
+  }
+
+  // 4) 응답 병합
+  const items = posts.map((p) => ({
+    ...p,
+    postImages: imagesByPostId[p.id] || [],
+    repostTarget: p.repostTargetId ? targetMap[p.repostTargetId] || null : null,
+  }));
+
+  const nextCursor =
+    items.length === Number(limit) ? items[items.length - 1].id : null;
+
+  return { items, nextCursor };
+};

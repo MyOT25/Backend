@@ -18,6 +18,7 @@ import {
   findMyProfileInCommunityRepository,
   findMultiProfile,
   countMyProfile,
+  findCommunityFeedAll,
 } from "../repositories/community.repository.js";
 
 // === helpers (service 내부 최상단 근처) ===
@@ -334,4 +335,9 @@ export const getOtherUserProfile = async (communityId, userId) => {
 // 현재 등록된 내 프로필 개수 확인
 export const getMyProfileCount = async (userId) => {
   return await countMyProfile(userId);
+};
+
+// 커뮤니티 전체 피드
+export const getCommunityFeedAll = async (communityId, options = {}) => {
+  return await findCommunityFeedAll(communityId, options);
 };

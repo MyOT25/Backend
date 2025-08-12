@@ -21,6 +21,7 @@ import {
   getOtherUserProfile,
   getMyProfileCount,
   switchCommunityProfileType,
+  getCommunityFeedAll,
 } from "../services/community.service.js";
 
 import { checkUserInCommunity } from "../repositories/community.repository.js";
@@ -29,12 +30,65 @@ const router = express.Router();
 
 /**
  * @swagger
+ * /api/community/{id}/feed:
+ *   get:
+ *     summary: 커뮤니티 전체 피드 조회 (원본+리포스트)
+ *     description: 해당 커뮤니티에서 작성된 모든 게시글을 최신순으로 조회합니다. 커서 기반 페이지네이션 지원.
+ *     tags: [Community]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *         description: 커뮤니티 ID
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20 }
+ *       - in: query
+ *         name: cursor
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: order
+ *         schema: { type: string, enum: [asc, desc], default: desc }
+ *     responses:
+ *       200:
+ *         description: 전체 피드 조회 성공
+ *       400:
+ *         description: 잘못된 요청
+ */
+
+router.get("/:id/feed", async (req, res) => {
+  try {
+    const communityId = Number(req.params.id);
+    if (Number.isNaN(communityId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "유효한 커뮤니티 ID가 필요합니다." });
+    }
+
+    const limit = req.query.limit ? Number(req.query.limit) : 20;
+    const cursor = req.query.cursor ? Number(req.query.cursor) : undefined;
+    const order = (req.query.order || "desc").toString().toLowerCase();
+
+    const { items, nextCursor } = await getCommunityFeedAll(communityId, {
+      limit,
+      cursor,
+      order,
+    });
+    return res.status(200).json({ success: true, feed: items, nextCursor });
+  } catch (err) {
+    console.error("getCommunityFeedAll error:", err);
+    return res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+/**
+ * @swagger
  * /api/community:
  *   get:
  *     summary: 모든 커뮤니티 목록 조회
  *     description: 모든 커뮤니티를 조회하거나, type 쿼리 파라미터에 따라 특정 타입의 커뮤니티만 필터링하여 조회합니다.
- *     tags:
- *       - Community
+ *     tags: [Community]
  *     parameters:
  *       - in: query
  *         name: type
@@ -50,40 +104,16 @@ const router = express.Router();
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
+ *                 success: { type: boolean, example: true }
  *                 communities:
  *                   type: array
  *                   items:
  *                     type: object
  *                     properties:
- *                       communityId:
- *                         type: integer
- *                         example: 1
- *                       communityName:
- *                         type: string
- *                         example: 오페라의 유령 팬모임
- *                       type:
- *                         type: string
- *                         example: MUSICAL
- *                       createdAt:
- *                         type: string
- *                         format: date-time
- *                         example: "2025-07-25T12:00:00.000Z"
- *       400:
- *         description: 잘못된 요청 또는 서버 오류
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: 오류 메시지
+ *                       communityId: { type: integer, example: 1 }
+ *                       communityName: { type: string, example: "오페라의 유령 팬모임" }
+ *                       type: { type: string, example: "musical" }
+ *                       createdAt: { type: string, format: date-time, example: "2025-07-25T12:00:00.000Z" }
  */
 
 // 모든 커뮤니티 목록 보기
@@ -125,55 +155,47 @@ router.get("/", async (req, res) => {
  * /api/community/type/join:
  *   post:
  *     summary: 커뮤니티 가입 또는 탈퇴
- *     description: 로그인된 사용자가 특정 커뮤니티에 가입하거나 탈퇴합니다.
- *     tags:
- *       - Community
- *     security:
- *       - bearerAuth: []  # JWT 인증 필요
+ *     description: 로그인된 사용자가 특정 커뮤니티에 가입하거나 탈퇴합니다. 가입 시 프로필 타입(BASIC/MULTI) 선택 가능하며, MULTI 선택 시 멀티 프로필을 즉시 생성합니다.
+ *     tags: [Community]
+ *     security: [{ bearerAuth: [] }]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - communityId
- *               - action
+ *             required: [communityId, action]
  *             properties:
- *               communityId:
- *                 type: integer
- *                 example: 3
+ *               communityId: { type: integer, example: 3 }
  *               action:
  *                 type: string
  *                 enum: [join, leave]
  *                 example: join
+ *               profileType:
+ *                 type: string
+ *                 description: 가입 시 사용할 프로필 타입 (join일 때만 사용)
+ *                 enum: [BASIC, MULTI]
+ *                 example: BASIC
+ *               multi:
+ *                 type: object
+ *                 nullable: true
+ *                 description: profileType=MULTI일 때 생성할 멀티 프로필 정보
+ *                 properties:
+ *                   nickname: { type: string, example: "뮤지컬덕후" }
+ *                   image: { type: string, nullable: true, example: "https://example.com/image.png" }
+ *                   bio: { type: string, nullable: true, example: "배우 덕질은 삶의 활력" }
  *     responses:
  *       200:
- *         description: 커뮤니티 가입 또는 탈퇴 성공
+ *         description: 처리 성공
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: 가입이 완료되었습니다.
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: "커뮤니티 가입 완료" }
  *       400:
  *         description: 잘못된 요청 또는 처리 실패
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: userId, communityId, action(join/leave)을 확인하세요.
  */
 
 router.post("/type/join", authenticateJWT, async (req, res) => {
@@ -198,6 +220,69 @@ router.post("/type/join", authenticateJWT, async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 });
+
+/**
+ * @swagger
+ * /api/community/profile/type/{communityId}:
+ *   patch:
+ *     summary: 커뮤니티 내 프로필 타입 전환 (BASIC ⇄ MULTI)
+ *     description: BASIC → MULTI로 전환 시 한도 체크 후 멀티 생성, MULTI → BASIC 전환 시 기존 멀티 자동 삭제.
+ *     tags: [Community]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: communityId
+ *         required: true
+ *         schema: { type: integer }
+ *         description: 커뮤니티 ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [profileType]
+ *             properties:
+ *               profileType:
+ *                 type: string
+ *                 enum: [BASIC, MULTI]
+ *                 example: MULTI
+ *               multi:
+ *                 type: object
+ *                 nullable: true
+ *                 description: MULTI 전환 시 생성할 멀티 프로필 정보
+ *                 properties:
+ *                   nickname: { type: string, example: "전환_닉" }
+ *                   image: { type: string, nullable: true, example: null }
+ *                   bio: { type: string, nullable: true, example: "전환하며 생성" }
+ *     responses:
+ *       200:
+ *         description: 전환 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: "프로필 타입이 변경되었습니다." }
+ *                 changedTo:
+ *                   type: string
+ *                   enum: [BASIC, MULTI]
+ *                   example: MULTI
+ *                 profile:
+ *                   type: object
+ *                   nullable: true
+ *                   description: MULTI로 전환 시 생성된 멀티 프로필
+ *                   properties:
+ *                     id: { type: integer, example: 12 }
+ *                     userId: { type: integer, example: 7 }
+ *                     communityId: { type: integer, example: 3 }
+ *                     nickname: { type: string, example: "전환_닉" }
+ *                     image: { type: string, nullable: true, example: null }
+ *                     bio: { type: string, nullable: true, example: "전환하며 생성" }
+ *       400:
+ *         description: 잘못된 요청 또는 한도 초과 등
+ */
 
 // 커뮤니티 가입 후 타입 전환/자동삭제 (커뮤니티별 프로필 타입 전환)
 // 타입 전환: BASIC ⇄ MULTI
@@ -249,6 +334,53 @@ router.patch(
     }
   }
 );
+
+/**
+ * @swagger
+ * /api/community/profile/me/{communityId}:
+ *   patch:
+ *     summary: 현재 선택된 타입(BASIC/MULTI)에 맞춰 내 프로필 내용 수정
+ *     description: MULTI 사용 중이면 멀티 프로필을, BASIC 사용 중이면 User 기본 프로필을 수정합니다.
+ *     tags: [Community]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: communityId
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nickname: { type: string, example: "수정닉" }
+ *               image: { type: string, nullable: true, example: null }
+ *               bio: { type: string, nullable: true, example: "소개 수정" }
+ *     responses:
+ *       200:
+ *         description: 수정 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: "프로필이 수정되었습니다." }
+ *                 profile:
+ *                   type: object
+ *                   description: 수정 후 프로필 스냅샷
+ *                   properties:
+ *                     id: { type: integer, example: 7 }
+ *                     userId: { type: integer, example: 7 }
+ *                     communityId: { type: integer, example: 3 }
+ *                     nickname: { type: string, example: "수정닉" }
+ *                     image: { type: string, nullable: true, example: null }
+ *                     bio: { type: string, nullable: true, example: "소개 수정" }
+ *       400:
+ *         description: 잘못된 요청
+ */
 
 // 현재 선택된 타입 기준으로 내용만 수정 (닉네임/이미지/바이오)
 router.patch("/profile/me/:communityId", authenticateJWT, async (req, res) => {
@@ -626,52 +758,25 @@ router.get("/mine", authenticateJWT, async (req, res) => {
  * @swagger
  * /api/community/profile/my/count:
  *   get:
- *     summary: 현재 등록된 내 커뮤니티 프로필 개수 확인
- *     description: JWT 인증을 통해 로그인한 사용자가 생성한 커뮤니티 프로필의 총 개수를 반환합니다.
- *     tags:
- *       - Community
- *     security:
- *       - bearerAuth: []  # JWT 인증 필요
+ *     summary: 내 멀티 프로필 사용 현황
+ *     description: 사용 중인 멀티 프로필 수 및 무료/유료 한도를 반환합니다.
+ *     tags: [Community]
+ *     security: [{ bearerAuth: [] }]
  *     responses:
  *       200:
- *         description: 프로필 개수 조회 성공
+ *         description: 조회 성공
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 count:
- *                   type: integer
- *                   example: 3
+ *                 success: { type: boolean, example: true }
+ *                 used: { type: integer, example: 3 }
+ *                 limit: { type: integer, nullable: true, example: 5, description: 유료면 null }
+ *                 remain: { type: integer, nullable: true, example: 2, description: 유료면 null }
+ *                 tier: { type: string, enum: [FREE, PAID], example: "FREE" }
  *       400:
- *         description: 잘못된 요청 또는 유효하지 않은 토큰
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: 토큰이 없습니다.
- *       401:
- *         description: 인증 실패
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: 유효하지 않은 토큰입니다.
+ *         description: 토큰 누락/유효하지 않음
  */
 
 // 현재 등록된 내 프로필 개수 확인
@@ -712,76 +817,37 @@ router.get("/profile/my/count", authenticateJWT, async (req, res) => {
  * /api/community/profile/my/{communityId}:
  *   get:
  *     summary: 특정 커뮤니티에서 내 프로필 조회
- *     description: JWT 인증을 통해 로그인한 사용자가 특정 커뮤니티에서 설정한 자신의 프로필 정보를 조회합니다.
- *     tags:
- *       - Community
- *     security:
- *       - bearerAuth: []  # JWT 인증 필요
+ *     description: 멀티 사용 중이면 멀티 값을, 아니면 기본 프로필(BASIC)을 반환합니다.
+ *     tags: [Community]
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - in: path
  *         name: communityId
  *         required: true
- *         schema:
- *           type: integer
- *         description: 커뮤니티 ID
+ *         schema: { type: integer }
  *     responses:
  *       200:
- *         description: 내 프로필 조회 성공
+ *         description: 조회 성공
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
+ *                 success: { type: boolean, example: true }
+ *                 profileType: { type: string, enum: [BASIC, MULTI], example: "BASIC" }
  *                 profile:
  *                   type: object
  *                   properties:
- *                     id:
- *                       type: integer
- *                       example: 1
- *                     nickname:
- *                       type: string
- *                       example: "뮤덕이"
- *                     image:
- *                       type: string
- *                       example: "https://example.com/image.jpg"
- *                     bio:
- *                       type: string
- *                       example: "배우님 덕질하는 중"
- *                     communityId:
- *                       type: integer
- *                       example: 3
- *                     userId:
- *                       type: integer
- *                       example: 7
+ *                     id: { type: integer, example: 7 }
+ *                     userId: { type: integer, example: 7 }
+ *                     communityId: { type: integer, example: 3 }
+ *                     nickname: { type: string, example: "내기본닉" }
+ *                     image: { type: string, nullable: true, example: "https://example.com/me.png" }
+ *                     bio: { type: string, nullable: true, example: "자기소개" }
  *       400:
- *         description: 잘못된 요청 (communityId가 숫자가 아님 등)
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: 유효한 요청입니다.
+ *         description: 잘못된 요청
  *       500:
  *         description: 서버 내부 오류
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: 커뮤니티에서 프로필 가져오기에 실패햇습니다.
  */
 
 // 해당 커뮤니티에 설정한 내 프로필 조회
