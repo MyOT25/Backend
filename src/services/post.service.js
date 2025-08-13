@@ -82,67 +82,76 @@ export const createViewingRecord = async (userId, body) => {
     musicalId,
     watchDate,
     watchTime,
-    seat,
-    casts,
+    seat,        // { theaterId, floor, zone, rowNumber(string), columnNumber(int) }
+    casts,       // [{ actorId, role }]
     content,
     rating,
     imageUrls,
   } = body;
 
-  // 좌석 upsert
-  const seatRecord = await prisma.seat.upsert({
-    where: {
-      theaterId_row_column: {
-        theaterId: seat.locationId,
-        row: seat.row,
-        column: seat.column,
+  const theaterId     = Number(seat?.theaterId ?? seat?.locationId);
+  const floor         = Number(seat?.floor);
+  const zone          = String(seat?.zone ?? "").trim();
+  const rowNumber     = String(seat?.rowNumber ?? seat?.row ?? "").trim(); // 문자열
+  const columnNumber  = Number(seat?.columnNumber ?? seat?.column);
+
+  if (!Number.isInteger(theaterId) || !Number.isInteger(floor) || !Number.isInteger(columnNumber) || !zone || !rowNumber) {
+    throw new Error("좌석 필드 형식이 올바르지 않습니다. (theaterId/floor/columnNumber=정수, zone/rowNumber=문자열)");
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    // 1) 좌석 존재 확인(사전 시드 필수). 없으면 에러
+    const seatRecord = await tx.seat.findUnique({
+      where: {
+        seat_unique_by_position: { theaterId, floor, zone, rowNumber, columnNumber },
       },
-    },
-    update: {},
-    create: {
-      theaterId: seat.locationId,
-      row: seat.row,
-      column: seat.column,
-      seat_type: seat.seatType,
-    },
-  });
-
-  // 관극 기록 생성
-  const viewing = await prisma.viewingRecord.create({
-    data: {
-      userId,
-      musicalId,
-      seatId: seatRecord.id,
-      date: new Date(watchDate),
-      time: new Date(`${watchDate}T${watchTime}`),
-      content,
-      rating,
-    },
-  });
-
-  // 이미지 등록
-  if (imageUrls?.length) {
-    await prisma.viewingImage.createMany({
-      data: imageUrls.map((url) => ({
-        viewingId: viewing.id,
-        url,
-      })),
     });
-  }
+    if (!seatRecord) {
+      throw new Error("존재하지 않는 좌석입니다. 좌석을 먼저 등록해 주세요.");
+    }
 
-  // 출연진 등록
-  if (casts?.length) {
-    await prisma.casting.createMany({
-      data: casts.map((c) => ({
+    // 2) 관극 기록 생성
+    const viewing = await tx.viewingRecord.create({
+      data: {
+        userId,
         musicalId,
-        actorId: c.actorId,
-        role: c.role,
-      })),
+        seatId: seatRecord.id,
+        date: new Date(watchDate),
+        time: new Date(`${watchDate}T${watchTime}`),
+        content,
+        rating,
+      },
     });
-  }
 
-  return viewing;
+    // 3) UserSeat 카운트 증가: 있으면 +1, 없으면 디폴트(1)로 생성
+    await tx.userSeat.upsert({
+      where: { userId_seatId: { userId, seatId: seatRecord.id } },
+      update: { numberOfSittings: { increment: 1 } },
+      create: { userId, seatId: seatRecord.id }, // default(1) 사용
+    });
+
+    // 4) 이미지
+    if (imageUrls?.length) {
+      await tx.viewingImage.createMany({
+        data: imageUrls.map((url) => ({ viewingId: viewing.id, url })),
+      });
+    }
+
+    // 5) 출연진
+    if (casts?.length) {
+      await tx.casting.createMany({
+        data: casts.map((c) => ({ musicalId, actorId: c.actorId, role: c.role })),
+        skipDuplicates: true,
+      });
+    }
+
+    return viewing;
+  });
+
+  return result;
 };
+
+
 
 // 배우 이름으로 후기 필터링
 export const getPostByActorName = async (actorName) => {

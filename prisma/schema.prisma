@@ -240,15 +240,15 @@ model Seat {
   theaterId   Int
   floor       Int
   zone        String
-  blockNumber Int
-  rowNumber   Int
-  seatIndex   Int
+  rowNumber   String 
+  columnNumber Int 
 
   theater     Theater         @relation(fields: [theaterId], references: [id])
   userSeats   UserSeat[]
   viewings    ViewingRecord[]
 
   @@index([theaterId], map: "Seat_theaterId_fkey")
+  @@unique([theaterId, floor, zone, rowNumber, columnNumber], name: "seat_unique_by_position")
 }
 
 model UserSeat {
@@ -256,7 +256,7 @@ model UserSeat {
   userId           Int
   seatId           Int
   numberOfSittings Int  @default(1)
-  
+
   seat             Seat @relation(fields: [seatId], references: [id])
   user             User @relation(fields: [userId], references: [id])
 

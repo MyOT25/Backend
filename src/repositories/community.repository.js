@@ -198,48 +198,102 @@ export const deleteCommunityProfileRepository = async (
 // 커뮤니티 내 피드 다른 커뮤니티로 인용
 //현재 커뮤니티의 피드 중, '다른 커뮤니티의 글을 인용한 글(repost)'만 보여줌
 
-export const findRepostFeed = async (communityId) => {
-  const posts = await prisma.post.findMany({
+// 커뮤니티 내 '다른 커뮤니티' 글을 인용한 글(repost)만 조회
+export const findRepostFeed = async (communityId, db = prisma) => {
+  const cid = Number(communityId);
+
+  // 1) 현재 커뮤니티에서 작성된 '리포스트' 글만 먼저 가져온다
+  const posts = await db.post.findMany({
     where: {
-      communityId, // 현재 커뮤니티에서 작성된 글
+      communityId: cid,
       isRepost: true,
       repostTargetId: { not: null },
     },
+    orderBy: { createdAt: "desc" },
     include: {
-      repostTarget: {
-        include: {
-          community: true,
-        },
-      },
+      // 안전한 필드만 include
       user: { select: { nickname: true, profileImage: true } },
       community: { select: { groupName: true } },
       postTags: { include: { tag: true } },
+      // ⚠ repostTarget 는 Prisma 클라이언트에서 미노출이라 include 금지
     },
   });
 
-  // 인용 대상이 다른 커뮤니티 글인지 필터링
-  return posts.filter((post) => post.repostTarget?.communityId !== communityId);
+  if (posts.length === 0) return [];
+
+  // 2) 인용 대상(postId)들을 한 번에 조회해서 매핑
+  const targetIds = Array.from(
+    new Set(posts.map((p) => p.repostTargetId).filter(Boolean))
+  );
+
+  const targets = await db.post.findMany({
+    where: { id: { in: targetIds } },
+    select: {
+      id: true,
+      communityId: true,
+      title: true,
+      user: { select: { nickname: true } },
+      community: { select: { groupName: true } },
+    },
+  });
+
+  const targetMap = targets.reduce((acc, t) => {
+    acc[t.id] = t;
+    return acc;
+  }, {});
+
+  // 3) 타겟이 '다른 커뮤니티'인 경우만 필터 + 타겟 정보를 병합
+  const result = posts
+    .map((p) => {
+      const tgt = p.repostTargetId ? targetMap[p.repostTargetId] : null;
+      return {
+        ...p,
+        repostTarget: tgt || null,
+      };
+    })
+    .filter((p) => p.repostTarget && p.repostTarget.communityId !== cid);
+
+  return result;
 };
 
-// 커뮤니티 내 미디어가 있는 피드만 필터링 할 수 있는 탭
-export const findMediaFeed = async (communityId) => {
-  return await prisma.post.findMany({
+// 커뮤니티 내 "미디어가 있는" 피드
+export const findMediaFeed = async (communityId, db = prisma) => {
+  const cid = Number(communityId);
+
+  // 1) 우선 게시글만 가져옴(미디어 조건)
+  const posts = await db.post.findMany({
     where: {
-      communityId,
-      mediaType: {
-        in: ["image", "video"],
-      },
+      communityId: cid,
+      OR: [{ hasMedia: true }, { mediaType: { in: ["image", "video"] } }],
     },
+    orderBy: { createdAt: "desc" },
     include: {
       user: { select: { nickname: true, profileImage: true } },
       community: { select: { groupName: true } },
       postTags: { include: { tag: true } },
-      images: true,
-    },
-    orderBy: {
-      createdAt: "desc",
     },
   });
+
+  if (posts.length === 0) return [];
+
+  // 2) 이미지들을 한 번에 가져와서 postId별로 묶음
+  const ids = posts.map((p) => p.id);
+  const imgs = await db.postImage.findMany({
+    where: { postId: { in: ids } },
+    select: { id: true, postId: true, url: true, caption: true },
+  });
+
+  const byPostId = imgs.reduce((acc, img) => {
+    (acc[img.postId] ||= []).push(img);
+    return acc;
+  }, {});
+
+  // 3) 게시글에 병합해서 반환
+  return posts.map((p) => ({
+    ...p,
+    postImages: byPostId[p.id] || [],
+    mediaUrls: (byPostId[p.id] || []).map((i) => i.url),
+  }));
 };
 
 // 요즘 인기글만 볼 수 있는 피드
@@ -301,4 +355,75 @@ export const findMultiProfile = async (communityId, userId, db = prisma) => {
 // 현재 등록된 내 프로필 개수 확인
 export const countMyProfile = async (userId, db = prisma) => {
   return await db.multiProfile.count({ where: { userId } });
+};
+
+// 커뮤니티 전체 피드 (원본 + 리포스트 모두), 커서 페이지네이션
+export const findCommunityFeedAll = async (
+  communityId,
+  { cursor, limit = 20, order = "desc" } = {},
+  db = prisma
+) => {
+  const query = {
+    where: { communityId: Number(communityId) },
+    orderBy: { createdAt: order === "asc" ? "asc" : "desc" },
+    take: Number(limit),
+    include: {
+      user: { select: { id: true, nickname: true, profileImage: true } },
+      community: { select: { id: true, groupName: true } },
+      postTags: { include: { tag: true } },
+    },
+  };
+
+  if (cursor) {
+    query.cursor = { id: Number(cursor) };
+    query.skip = 1;
+  }
+
+  // 1) 게시글 먼저 조회
+  const posts = await db.post.findMany(query);
+
+  // 2) 이미지 한 번에 모아서 매핑
+  const postIds = posts.map((p) => p.id);
+  let imagesByPostId = {};
+  if (postIds.length) {
+    const imgs = await db.postImage.findMany({
+      where: { postId: { in: postIds } },
+      select: { id: true, postId: true, url: true, caption: true },
+    });
+    imagesByPostId = imgs.reduce((acc, img) => {
+      (acc[img.postId] ||= []).push(img);
+      return acc;
+    }, {});
+  }
+
+  // 3) 리포스트 타겟도 별도 조회 후 매핑
+  const targetIds = Array.from(
+    new Set(posts.map((p) => p.repostTargetId).filter(Boolean))
+  );
+  let targetMap = {};
+  if (targetIds.length) {
+    const targets = await db.post.findMany({
+      where: { id: { in: targetIds } },
+      select: {
+        id: true,
+        communityId: true,
+        title: true,
+        user: { select: { id: true, nickname: true } },
+        community: { select: { id: true, groupName: true } },
+      },
+    });
+    targetMap = targets.reduce((acc, t) => ((acc[t.id] = t), acc), {});
+  }
+
+  // 4) 응답 병합
+  const items = posts.map((p) => ({
+    ...p,
+    postImages: imagesByPostId[p.id] || [],
+    repostTarget: p.repostTargetId ? targetMap[p.repostTargetId] || null : null,
+  }));
+
+  const nextCursor =
+    items.length === Number(limit) ? items[items.length - 1].id : null;
+
+  return { items, nextCursor };
 };

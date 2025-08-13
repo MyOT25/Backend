@@ -162,4 +162,5 @@ d
 .yarn-integrity
 
 
-prima/migration
+
+node_modules/
