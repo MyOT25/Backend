@@ -747,5 +747,64 @@ router.get('/:questionId/me', authenticateJWT, async (req, res, next) => {
     next(err);
   }
 });
+// 댓글 좋아요 등록
+// POST /api/questions/:questionId/comments/:commentId/like
+router.post('/:questionId/comments/:commentId/like', authenticateJWT, async (req, res, next) => {
+  try {
+    const { questionId, commentId } = req.params;
+    const like = await CommentService.likeQuestionComment(Number(questionId), Number(commentId), req.user.id);
+    return res.status(201).json(response.success('댓글 좋아요 완료', like));
+  } catch (err) {
+    if (err?.errorCode === 'ALREADY_LIKED')
+      return res.status(400).json(response.fail('ALREADY_LIKED', '이미 좋아요한 댓글입니다.'));
+    if (err?.errorCode === 'QC404')
+      return res.status(404).json(response.fail('QC404', '댓글을 찾을 수 없습니다.'));
+    next(err);
+  }
+});
+
+// 댓글 좋아요 취소
+// DELETE /api/questions/:questionId/comments/:commentId/like
+router.delete('/:questionId/comments/:commentId/like', authenticateJWT, async (req, res, next) => {
+  try {
+    const { questionId, commentId } = req.params;
+    await CommentService.unlikeQuestionComment(Number(questionId), Number(commentId), req.user.id);
+    return res.status(200).json(response.success('댓글 좋아요 취소 완료', null));
+  } catch (err) {
+    if (err?.errorCode === 'LIKE_NOT_FOUND')
+      return res.status(404).json(response.fail('LIKE_NOT_FOUND', '좋아요한 적이 없습니다.'));
+    if (err?.errorCode === 'QC404')
+      return res.status(404).json(response.fail('QC404', '댓글을 찾을 수 없습니다.'));
+    next(err);
+  }
+});
+
+// 댓글 좋아요 수 조회
+// GET /api/questions/:questionId/comments/:commentId/like/count
+router.get('/:questionId/comments/:commentId/like/count', async (req, res, next) => {
+  try {
+    const { questionId, commentId } = req.params;
+    const count = await CommentService.getQuestionCommentLikeCount(Number(questionId), Number(commentId));
+    return res.status(200).json(response.success('댓글 좋아요 수 조회 완료', { commentId: Number(commentId), likeCount: count }));
+  } catch (err) {
+    if (err?.errorCode === 'QC404')
+      return res.status(404).json(response.fail('QC404', '댓글을 찾을 수 없습니다.'));
+    next(err);
+  }
+});
+
+// (선택) 내가 이 댓글에 좋아요 눌렀는지 Boolean
+// GET /api/questions/:questionId/comments/:commentId/me
+router.get('/:questionId/comments/:commentId/me', authenticateJWT, async (req, res, next) => {
+  try {
+    const { questionId, commentId } = req.params;
+    const liked = await CommentService.hasLikedQuestionComment(Number(questionId), Number(commentId), req.user.id);
+    return res.status(200).json(response.success('댓글 좋아요 여부 조회 성공', liked));
+  } catch (err) {
+    if (err?.errorCode === 'QC404')
+      return res.status(404).json(response.fail('QC404', '댓글을 찾을 수 없습니다.'));
+    next(err);
+  }
+});
 
 export default router;

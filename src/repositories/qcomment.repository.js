@@ -41,3 +41,29 @@ export const existsQuestionCommentByUser = async (questionId, userId) => {
   });
   return !!row;
 };
+
+// 질문 댓글 단건
+export const findCommentById = (commentId) =>
+  prisma.questionComment.findUnique({
+    where: { id: Number(commentId) },
+    select: { id: true, questionId: true, userId: true },
+  });
+
+// 좋아요 존재 여부
+export const findCommentLike = (commentId, userId) =>
+  prisma.questionCommentLike.findUnique({
+    where: { commentId_userId: { commentId: Number(commentId), userId: Number(userId) } },
+  });
+
+// 좋아요 등록/취소
+export const likeComment = (commentId, userId) =>
+  prisma.questionCommentLike.create({ data: { commentId: Number(commentId), userId: Number(userId) } });
+
+export const unlikeComment = (commentId, userId) =>
+  prisma.questionCommentLike.delete({
+    where: { commentId_userId: { commentId: Number(commentId), userId: Number(userId) } },
+  });
+
+// 좋아요 수
+export const countCommentLikes = (commentId) =>
+  prisma.questionCommentLike.count({ where: { commentId: Number(commentId) } });
