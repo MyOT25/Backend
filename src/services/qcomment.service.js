@@ -1,4 +1,5 @@
 import * as commentRepo from '../repositories/qcomment.repository.js';
+import * as qcommentRepo from '../repositories/qcomment.repository.js';
 import { maskAuthor } from '../middlewares/mask.js';
 
 const formatComment = (row) => ({
