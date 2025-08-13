@@ -54,6 +54,7 @@ import { getRepostedUsersService } from "../services/post.service.js";
 import { getQuotedPostService } from "../services/post.service.js";
 // 게시글 상세 조회 import
 import { getPostDetail } from "../services/post.service.js";
+import { Visibility } from "@prisma/client";
 
 /**
  * GET /api/posts/ticketbook
@@ -488,9 +489,10 @@ router.get("/filter", async (req, res) => {
  *                   format: url
  *                 example:
  *                   - "https://example.com/image1.jpg"
- *               hasMedia:
- *                 type: boolean
- *                 example: true
+ *               visibility:
+ *                 type: string
+ *                 enum: [public, friends]
+ *                 example: public
  *     responses:
  *       201:
  *         description: 게시글 등록 성공
@@ -507,23 +509,34 @@ router.get("/filter", async (req, res) => {
  *                   properties:
  *                     postid:
  *                       type: integer
- *                       example: 1
+ *                       example: 523
+ *                     userid:
+ *                       type: integer
+ *                       example: 106
+ *                     communityid:
+ *                       type: integer
+ *                       example: 4
  *                     content:
  *                       type: string
- *                       example: "오늘 공연 진짜 좋았어요!"
+ *                       example: "글 내용"
  *                     postimages:
  *                       type: array
  *                       items:
  *                         type: string
  *                         format: url
  *                       example:
- *                         - "https://example.com/image1.jpg"
+ *                         - "이미지 url"
+ *                     visibility:
+ *                       type: string
+ *                       enum: [public, friends]
+ *                       example: public
  *                     createdAt:
  *                       type: string
  *                       format: date-time
+ *                       example: "2025-08-13T17:00:42.466Z"
  *                     message:
  *                       type: string
- *                       example: 게시글이 성공적으로 생성되었습니다.
+ *                       example: "게시글이 성공적으로 생성되었습니다."
  */
 router.post(
   "/:communityId/post",
@@ -538,8 +551,11 @@ router.post(
       resultType: "SUCCESS",
       success: {
         postid: post.post.id,
+        userid: post.post.userId,
+        communityid: post.post.communityId,
         content: post.post.content,
         postimages: post.postimages,
+        visibility: post.post.visibility,
         createdAt: post.post.createdAt,
         message: "게시글이 성공적으로 생성되었습니다.",
       },
@@ -553,27 +569,21 @@ router.post(
 
 /**
  * @swagger
- * /api/communities/{communityId}/posts/{postId}/repost:
+ * /api/posts/{postId}/repost:
  *   post:
  *     summary: 재게시용 게시글 등록
  *     tags:
  *       - Posts
- *     description: 특정 게시글 또는 리뷰를 재게시하는 API입니다. repostType을 통해 재게시 대상 유형(post 또는 review)을 지정할 수 있습니다.
+ *     description: 특정 게시글 또는 리뷰를 재게시하는 API입니다. 재게시된 게시글은 항상 repostType이 "repost"로 설정됩니다.
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: communityId
- *         required: true
- *         schema:
- *           type: integer
- *         description: 커뮤니티 ID
  *       - in: path
  *         name: postId
  *         required: true
  *         schema:
  *           type: integer
- *         description: 재게시할 원본 게시글 또는 리뷰의 ID
+ *         description: 재게시할 원본 게시글의 ID
  *     requestBody:
  *       required: true
  *       content:
@@ -581,11 +591,15 @@ router.post(
  *           schema:
  *             type: object
  *             properties:
- *               repostType:
+ *               communityId:
+ *                 type: integer
+ *                 example: 4
+ *                 description: 게시글을 등록할 커뮤니티 ID
+ *               visibility:
  *                 type: string
- *                 enum: [post, review]
- *                 example: post
- *                 description: 재게시 대상 타입
+ *                 enum: [public, friends]
+ *                 example: public
+ *                 description: 게시글 공개 범위
  *     responses:
  *       201:
  *         description: 재게시 등록 성공
@@ -602,26 +616,24 @@ router.post(
  *                   properties:
  *                     postId:
  *                       type: integer
- *                       example: 123
- *                     createdAt:
- *                       type: string
- *                       format: date-time
- *                       example: "2025-07-28T12:34:56.000Z"
+ *                       example: 526
+ *                     repostTargetId:
+ *                       type: integer
+ *                       example: 523
  *                     message:
  *                       type: string
- *                       example: "게시글이 성공적으로 생성되었습니다."
+ *                       example: "성공적으로 재게시하였습니다"
  */
 router.post(
-  "/:communityId/posts/:postId/repost",
+  "/:postId/repost",
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const { communityId, postId } = req.params;
+    const { postId } = req.params;
     const createRepostDto = new CreateRepostDTO(req.body);
 
     const repost = await createRepostService(
       userId,
-      parseInt(communityId),
       parseInt(postId),
       createRepostDto
     );
@@ -630,8 +642,8 @@ router.post(
       resultType: "SUCCESS",
       success: {
         postId: repost.id,
-        createdAt: repost.createdAt,
-        message: "게시글이 성공적으로 생성되었습니다.",
+        repostTargetId: repost.repostTargetId,
+        message: "성공적으로 재게시하였습니다",
       },
     });
   })
@@ -643,21 +655,15 @@ router.post(
 
 /**
  * @swagger
- * /api/communities/{communityId}/posts/{postId}/quote:
+ * /api/posts/{postId}/quote:
  *   post:
  *     summary: 인용 게시글 등록
  *     tags:
  *       - Posts
- *     description: 기존 게시글 또는 리뷰를 인용하여 새로운 게시글을 등록합니다.
+ *     description: 기존 게시글 또는 리뷰를 인용하여 새로운 게시글을 등록합니다. content와 postimages가 둘 다 비어있으면 repost로 처리됩니다.
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: communityId
- *         required: true
- *         schema:
- *           type: integer
- *         description: 커뮤니티 ID
  *       - in: path
  *         name: postId
  *         required: true
@@ -670,32 +676,27 @@ router.post(
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - repostType
- *               - content
  *             properties:
- *               repostType:
- *                 type: string
- *                 enum: [post, review]
- *                 example: post
- *                 description: 인용 대상의 타입
  *               content:
  *                 type: string
- *                 example: "이 장면 진짜 인상 깊었어요."
+ *                 example: ""
  *                 description: 인용 게시글 내용
  *               postimages:
  *                 type: array
  *                 items:
  *                   type: string
  *                   format: url
- *                 example:
- *                   - "https://example.com/image1.jpg"
- *                   - "https://example.com/image2.jpg"
+ *                 example: []
  *                 description: 이미지 URL 배열
- *               hasMedia:
- *                 type: boolean
- *                 example: true
- *                 description: 미디어 포함 여부
+ *               communityId:
+ *                 type: integer
+ *                 example: 4
+ *                 description: 게시글을 등록할 커뮤니티 ID
+ *               visibility:
+ *                 type: string
+ *                 enum: [public, friends]
+ *                 example: friends
+ *                 description: 게시글 공개 범위
  *     responses:
  *       201:
  *         description: 인용 게시글 등록 성공
@@ -712,49 +713,30 @@ router.post(
  *                   properties:
  *                     postId:
  *                       type: integer
- *                       example: 456
- *                     content:
- *                       type: string
- *                       example: "이 장면 진짜 인상 깊었어요."
- *                     postimages:
- *                       type: array
- *                       items:
- *                         type: string
- *                         format: url
- *                       example:
- *                         - "https://example.com/image1.jpg"
- *                         - "https://example.com/image2.jpg"
- *                     createdAt:
- *                       type: string
- *                       format: date-time
- *                       example: "2025-07-28T13:45:00.000Z"
+ *                       example: 529
+ *                     repostTargetId:
+ *                       type: integer
+ *                       example: 501
  *                     message:
  *                       type: string
- *                       example: "게시글이 성공적으로 생성되었습니다."
+ *                       example: "게시글이 성공적으로 인용되었습니다."
  */
 router.post(
-  "/:communityId/posts/:postId/quote",
+  "/:postId/quote",
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const { communityId, postId } = req.params;
-    const dto = new CreateQuotePostDTO({ ...req.body, communityId });
+    const { postId } = req.params;
+    const dto = new CreateQuotePostDTO({ ...req.body });
 
-    const result = await createQuotePostService(
-      userId,
-      parseInt(communityId),
-      parseInt(postId),
-      dto
-    );
+    const result = await createQuotePostService(userId, parseInt(postId), dto);
 
     return res.status(201).json({
       resultType: "SUCCESS",
       success: {
         postId: result.post.id,
-        content: result.post.content,
-        postimages: result.postimages,
-        createdAt: result.post.createdAt,
-        message: "게시글이 성공적으로 생성되었습니다.",
+        repostTargetId: result.post.repostTargetId,
+        message: "게시글이 성공적으로 인용되었습니다.",
       },
     });
   })
@@ -771,7 +753,7 @@ router.post(
  *     summary: 게시글 수정
  *     tags:
  *       - Posts
- *     description: 게시글의 내용을 수정합니다.
+ *     description: 게시글의 내용, 이미지, 공개 범위 등을 수정합니다.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -790,17 +772,20 @@ router.post(
  *             properties:
  *               content:
  *                 type: string
- *                 example: "수정된 게시글 내용"
+ *                 example: "글 내용 수정"
  *                 description: 변경할 게시글 내용
  *               postimages:
  *                 type: array
  *                 items:
  *                   type: string
  *                   format: url
- *                 example:
- *                   - "https://example.com/updated-image1.jpg"
- *                   - "https://example.com/updated-image2.jpg"
+ *                 example: []
  *                 description: 수정된 이미지 URL 배열
+ *               visibility:
+ *                 type: string
+ *                 enum: [public, friends]
+ *                 example: friends
+ *                 description: 게시글 공개 범위
  *     responses:
  *       200:
  *         description: 게시글 수정 성공
@@ -821,22 +806,11 @@ router.post(
  *                   properties:
  *                     postId:
  *                       type: integer
- *                       example: 42
- *                     content:
- *                       type: string
- *                       example: "수정된 게시글 내용"
- *                     postimages:
- *                       type: array
- *                       items:
- *                         type: string
- *                         format: url
- *                       example:
- *                         - "https://example.com/updated-image1.jpg"
- *                         - "https://example.com/updated-image2.jpg"
+ *                       example: 523
  *                     updatedAt:
  *                       type: string
  *                       format: date-time
- *                       example: "2025-07-28T14:00:00.000Z"
+ *                       example: "2025-08-13T19:03:14.453Z"
  *                     message:
  *                       type: string
  *                       example: "게시글이 성공적으로 수정되었습니다."
@@ -868,8 +842,6 @@ router.patch(
       error: null,
       success: {
         postId: updatedPost.id,
-        content: updatedPost.content,
-        postimages: updatedPost.postimages.map((img) => img.url),
         updatedAt: updatedPost.updatedAt,
         message: "게시글이 성공적으로 수정되었습니다.",
       },

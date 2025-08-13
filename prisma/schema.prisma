@@ -60,9 +60,8 @@ model Post {
   isRepost       Boolean     @default(false)
   repostType     RepostType?
   repostTargetId Int?
-  title          String?
   content        String?
-  mediaType      MediaType?
+  visibility     Visibility?
 
   viewCount     Int            @default(0)
   commentCount  Int            @default(0)
@@ -638,13 +637,13 @@ enum ChatRoomType {
 }
 
 enum RepostType {
-  post
-  review
+  quote
+  repost
 }
 
-enum MediaType {
-  image
-  video
+enum Visibility {
+  public
+  friends
 }
 
 enum TargetType {

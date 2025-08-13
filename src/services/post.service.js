@@ -82,28 +82,42 @@ export const createViewingRecord = async (userId, body) => {
     musicalId,
     watchDate,
     watchTime,
-    seat,        // { theaterId, floor, zone, rowNumber(string), columnNumber(int) }
-    casts,       // [{ actorId, role }]
+    seat, // { theaterId, floor, zone, rowNumber(string), columnNumber(int) }
+    casts, // [{ actorId, role }]
     content,
     rating,
     imageUrls,
   } = body;
 
-  const theaterId     = Number(seat?.theaterId ?? seat?.locationId);
-  const floor         = Number(seat?.floor);
-  const zone          = String(seat?.zone ?? "").trim();
-  const rowNumber     = String(seat?.rowNumber ?? seat?.row ?? "").trim(); // 문자열
-  const columnNumber  = Number(seat?.columnNumber ?? seat?.column);
+  const theaterId = Number(seat?.theaterId ?? seat?.locationId);
+  const floor = Number(seat?.floor);
+  const zone = String(seat?.zone ?? "").trim();
+  const rowNumber = String(seat?.rowNumber ?? seat?.row ?? "").trim(); // 문자열
+  const columnNumber = Number(seat?.columnNumber ?? seat?.column);
 
-  if (!Number.isInteger(theaterId) || !Number.isInteger(floor) || !Number.isInteger(columnNumber) || !zone || !rowNumber) {
-    throw new Error("좌석 필드 형식이 올바르지 않습니다. (theaterId/floor/columnNumber=정수, zone/rowNumber=문자열)");
+  if (
+    !Number.isInteger(theaterId) ||
+    !Number.isInteger(floor) ||
+    !Number.isInteger(columnNumber) ||
+    !zone ||
+    !rowNumber
+  ) {
+    throw new Error(
+      "좌석 필드 형식이 올바르지 않습니다. (theaterId/floor/columnNumber=정수, zone/rowNumber=문자열)"
+    );
   }
 
   const result = await prisma.$transaction(async (tx) => {
     // 1) 좌석 존재 확인(사전 시드 필수). 없으면 에러
     const seatRecord = await tx.seat.findUnique({
       where: {
-        seat_unique_by_position: { theaterId, floor, zone, rowNumber, columnNumber },
+        seat_unique_by_position: {
+          theaterId,
+          floor,
+          zone,
+          rowNumber,
+          columnNumber,
+        },
       },
     });
     if (!seatRecord) {
@@ -140,7 +154,11 @@ export const createViewingRecord = async (userId, body) => {
     // 5) 출연진
     if (casts?.length) {
       await tx.casting.createMany({
-        data: casts.map((c) => ({ musicalId, actorId: c.actorId, role: c.role })),
+        data: casts.map((c) => ({
+          musicalId,
+          actorId: c.actorId,
+          role: c.role,
+        })),
         skipDuplicates: true,
       });
     }
@@ -151,8 +169,6 @@ export const createViewingRecord = async (userId, body) => {
   return result;
 };
 
-
-
 // 배우 이름으로 후기 필터링
 export const getPostByActorName = async (actorName) => {
   if (!actorName) throw new Error("배우 이름이 필요합니다.");
@@ -160,10 +176,11 @@ export const getPostByActorName = async (actorName) => {
   return posts;
 };
 
-/*일반 게시글 등록(생성)
+/*
+ *일반 게시글 등록(생성)
  */
 export const createPostService = async (userId, dto) => {
-  const { communityId, content, hasMedia, postimages } = dto;
+  const { communityId, content, hasMedia, postimages, visibility } = dto;
 
   // 커뮤니티 가입 여부 확인
   const membership = await PostRepository.findUserCommunity(
@@ -183,10 +200,14 @@ export const createPostService = async (userId, dto) => {
         communityId,
         content,
         hasMedia,
+        visibility,
       },
       select: {
         id: true,
+        userId: true,
+        communityId: true,
         content: true,
+        visibility: true,
         createdAt: true,
       },
     });
@@ -232,25 +253,11 @@ export const createPostService = async (userId, dto) => {
 };
 
 /*재게시용 게시글 생성 */
-export const createRepostService = async (
-  userId,
-  communityId,
-  postId,
-  createRepostDto
-) => {
-  // 커뮤니티 가입 여부 확인
-  const membership = await PostRepository.findUserCommunity(
-    userId,
-    communityId
-  );
-  if (!membership) {
-    throw new Error("해당 커뮤니티에 가입된 사용자만 재게시할 수 있습니다.");
-  }
-
+export const createRepostService = async (userId, postId, createRepostDto) => {
   const repost = await PostRepository.createRepost({
     userId,
-    communityId,
-    repostType: createRepostDto.repostType,
+    communityId: createRepostDto.communityId,
+    visibility: createRepostDto.visibility,
     repostTargetId: postId,
   });
 
@@ -262,24 +269,9 @@ export const createRepostService = async (
 /**
  * 인용 게시글 생성
  */
-export const createQuotePostService = async (
-  userId,
-  communityId,
-  postId,
-  dto
-) => {
-  const { repostType, content, postimages, hasMedia } = dto;
-
-  // 커뮤니티 가입 여부 확인
-  const membership = await PostRepository.findUserCommunity(
-    userId,
-    communityId
-  );
-  if (!membership) {
-    throw new Error(
-      "해당 커뮤니티에 가입된 사용자만 인용 게시글을 작성할 수 있습니다."
-    );
-  }
+export const createQuotePostService = async (userId, postId, dto) => {
+  const { content, postimages, communityId, visibility, hasMedia, repostType } =
+    dto;
 
   const result = await prisma.$transaction(async (tx) => {
     // 1. 인용 게시글 생성
@@ -292,11 +284,12 @@ export const createQuotePostService = async (
         repostTargetId: postId,
         content,
         hasMedia,
+        visibility,
       },
       select: {
         id: true,
         content: true,
-        createdAt: true,
+        repostTargetId: true,
       },
     });
 
@@ -347,7 +340,7 @@ export const createQuotePostService = async (
  * 게시글 수정
  */
 export const updatePostService = async (postId, userId, updatePostDto) => {
-  const { content, postimages } = updatePostDto;
+  const { content, postimages, visibility } = updatePostDto;
 
   // 1. 게시글 존재 및 작성자 확인
   const post = await PostRepository.findPostById(postId);
@@ -361,31 +354,46 @@ export const updatePostService = async (postId, userId, updatePostDto) => {
   // 2. hasMedia 판단
   const hasMedia = Array.isArray(postimages) && postimages.length > 0;
 
-  // 3~6. 트랜잭션으로 수정, 삭제, 삽입 처리
+  // 3. repostType 판단 (인용 게시글에서 content와 postimages가 둘 다 null이면 repost로 변경)
+  let newRepostType = post.repostType;
+  const isEmptyContent = !content || content.trim() === "";
+  const isEmptyImages = !postimages || postimages.length === 0;
+  if (
+    post.isRepost &&
+    post.repostType === "quote" &&
+    isEmptyContent &&
+    isEmptyImages
+  ) {
+    newRepostType = "repost";
+  }
+
+  // 4~7. 트랜잭션으로 수정, 삭제, 삽입 처리
   await prisma.$transaction(async (tx) => {
-    // 3. 게시글 본문 및 hasMedia 수정
+    // 4. 게시글 본문, hasMedia, visibility, repostType 수정
     await tx.post.update({
       where: { id: postId },
       data: {
         content,
+        visibility,
         hasMedia,
+        repostType: newRepostType,
       },
     });
 
-    // 4. 기존 이미지 및 태그 삭제
+    // 5. 기존 이미지 및 태그 삭제
     await tx.postImage.deleteMany({ where: { postId } });
     await tx.postTag.deleteMany({ where: { postId } });
 
-    // 5. 새로운 이미지 등록
+    // 6. 새로운 이미지 등록
     if (hasMedia) {
       const imageData = postimages.map((url) => ({ postId, url }));
       await tx.postImage.createMany({ data: imageData });
     }
 
-    // 6. 해시태그 추출 및 저장
-    const hashtags = updatePostDto.extractHashtags();
+    // 7. 해시태그 추출 및 저장
+    const hashtags = updatePostDto.extractHashtags?.() || [];
     for (const tag of hashtags) {
-      const tagRecord = await tx.tag_Post.upsert({
+      const tagRecord = await tx.tag.upsert({
         where: { name: tag },
         update: {},
         create: { name: tag },
@@ -399,7 +407,7 @@ export const updatePostService = async (postId, userId, updatePostDto) => {
     }
   });
 
-  // 7. 수정된 게시글 다시 조회 및 반환
+  // 8. 수정된 게시글 다시 조회 및 반환
   const updatedPost = await PostRepository.findPostById(postId);
   return updatedPost;
 };
