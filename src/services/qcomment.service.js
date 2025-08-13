@@ -1,4 +1,4 @@
-import * as commentRepo from '../repositories/qcomment.repository.js';
+import * as qcommentRepo from '../repositories/qcomment.repository.js';
 import { maskAuthor } from '../middlewares/mask.js';
 
 const formatComment = (row) => ({
@@ -70,6 +70,38 @@ const removeAnswerComment = async (commentId, requesterId, isAdmin = false) => {
   await commentRepo.deleteAnswerComment(commentId);
 };
 
+const ensureBelongs = async (questionId, commentId) => {
+  const c = await qcommentRepo.findCommentById(commentId);
+  if (!c || c.questionId !== Number(questionId)) {
+    throw { errorCode: 'QC404', reason: '댓글을 찾을 수 없습니다.' };
+  }
+};
+
+const likeQuestionComment = async (questionId, commentId, userId) => {
+  await ensureBelongs(questionId, commentId);
+  const existing = await qcommentRepo.findCommentLike(commentId, userId);
+  if (existing) throw { errorCode: 'ALREADY_LIKED', reason: '이미 좋아요한 댓글입니다.' };
+  return qcommentRepo.likeComment(commentId, userId);
+};
+
+const unlikeQuestionComment = async (questionId, commentId, userId) => {
+  await ensureBelongs(questionId, commentId);
+  const existing = await qcommentRepo.findCommentLike(commentId, userId);
+  if (!existing) throw { errorCode: 'LIKE_NOT_FOUND', reason: '좋아요한 적이 없습니다.' };
+  return qcommentRepo.unlikeComment(commentId, userId);
+};
+
+const getQuestionCommentLikeCount = async (questionId, commentId) => {
+  await ensureBelongs(questionId, commentId);
+  return qcommentRepo.countCommentLikes(commentId);
+};
+
+const hasLikedQuestionComment = async (questionId, commentId, userId) => {
+  await ensureBelongs(questionId, commentId);
+  const row = await qcommentRepo.findCommentLike(commentId, userId);
+  return !!row; // Boolean
+};
+
 export const CommentService = {
   addQuestionComment,
   listQuestionComments,
@@ -77,4 +109,8 @@ export const CommentService = {
   addAnswerComment,
   listAnswerComments,
   removeAnswerComment,
+  likeQuestionComment,
+  unlikeQuestionComment,
+  getQuestionCommentLikeCount,
+  hasLikedQuestionComment,
 };
