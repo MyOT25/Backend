@@ -1,5 +1,5 @@
 -- DropForeignKey
-ALTER TABLE `Image` DROP FOREIGN KEY `Image_postId_fkey`;
+-- ALTER TABLE `Image` DROP FOREIGN KEY `Image_postId_fkey`;
 
 -- CreateTable
 CREATE TABLE `ViewingLike` (
