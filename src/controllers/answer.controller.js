@@ -179,7 +179,7 @@ const toBool = (v) => {
  * /api/answers/{answerId}/me:
  *   get:
  *     summary: 내 상호작용 여부 조회 (답변)
- *     description: 특정 답변에 대해 현재 로그인한 사용자의 상호작용(예: 좋아요, 북마크 등) 상태를 반환합니다.
+ *     description: "특정 답변에 대해 현재 로그인한 사용자의 상호작용(예: 좋아요, 북마크 등) 상태를 반환합니다."
  *     tags:
  *       - Answers
  *     security:
