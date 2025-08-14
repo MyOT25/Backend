@@ -10,9 +10,11 @@
 ALTER TABLE `Casting` DROP FOREIGN KEY `Casting_musicalId_fkey`;
 
 -- DropForeignKey
-SET FOREIGN_KEY_CHECKS = 0;
-ALTER TABLE `Image` DROP FOREIGN KEY IF EXISTS `Image_postId_fkey`;
-SET FOREIGN_KEY_CHECKS = 1;
+ALTER TABLE `Image` DROP FOREIGN KEY `Image_postId_fkey`;
+
+-- backfill null timestamps before altering NOT NULL
+UPDATE `User`   SET `createdAt` = IFNULL(`createdAt`, NOW()), `updatedAt` = IFNULL(`updatedAt`, NOW());
+UPDATE `Follow` SET `createdAt` = IFNULL(`createdAt`, NOW());
 
 
 -- DropForeignKey

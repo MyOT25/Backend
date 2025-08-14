@@ -24,6 +24,7 @@ model User {
   // 관계 필드
   answers              Answer[]
   answerLikes          AnswerLike[]
+  viewingLikes         ViewingLike[]
   memoryBooks          MemoryBook[]
   multiProfiles        MultiProfile[]
   posts                Post[]
@@ -331,6 +332,7 @@ model ViewingRecord {
   content   String?
   rating    Int?
   images    ViewingImage[]
+  likes     ViewingLike[]
   musical   Musical        @relation(fields: [musicalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   seat      Seat?          @relation(fields: [seatId], references: [id])
   user      User           @relation(fields: [userId], references: [id])
@@ -339,6 +341,20 @@ model ViewingRecord {
   @@index([seatId], map: "ViewingRecord_seatId_fkey")
   @@index([userId], map: "ViewingRecord_userId_fkey")
 }
+
+model ViewingLike {
+  id          Int           @id @default(autoincrement())
+  viewingId   Int
+  userId      Int
+  createdAt   DateTime      @default(now())
+  viewing     ViewingRecord @relation(fields: [viewingId], references: [id])
+  user        User          @relation(fields: [userId], references: [id])
+
+  @@unique([userId, viewingId])
+  @@index([viewingId])
+  @@index([userId])
+}
+
 
 model ViewingImage {
   id        Int           @id @default(autoincrement())
