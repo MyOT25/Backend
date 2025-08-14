@@ -32,25 +32,30 @@ import {
 } from "./controllers/memorybook.controller.js";
 import { authenticateJWT } from "./middlewares/authMiddleware.js";
 import { getMusicalCastings } from "./controllers/casting.controller.js";
+
 import { getTicketBookDetail,getTicketbookSeriesController } from "./controllers/ticketbook.controller.js";
 import { createChatRoomController, getChatRoomListController, sendMessage } from "./controllers/chat.controller.js";
 
 import { s3Uploader, uploadToS3 } from "./middlewares/s3Uploader.js";
 import { getMessages } from "./controllers/message.controller.js";
-import { getUserTicketbookWatchingRecords, getMonthlySummary,createViewingPost} from "./controllers/viewingRecord.controller.js";
+import {
+  getUserTicketbookWatchingRecords,
+  getMonthlySummary,
+  createViewingPost,
+} from "./controllers/viewingRecord.controller.js";
 
 dotenv.config();
 
 const app = express();
-const server = http.createServer(app); // 이걸로 서버 생성 
+const server = http.createServer(app); // 이걸로 서버 생성
 
-const io=new Server(server, {
+const io = new Server(server, {
   cors: {
     origin: "*", // 개발 중엔 허용
-    methods: ["GET","POST"]
-  }
+    methods: ["GET", "POST"],
+  },
 });
-// 소켓 로직 분리해서 구성 
+// 소켓 로직 분리해서 구성
 setupSocket(io);
 
 const port = process.env.PORT || 3000;
@@ -81,12 +86,7 @@ app.use(express.urlencoded({ extended: false }));
 // Swagger 문서
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-
-
-
 app.use(passport.initialize()); // JWT 인증 활성화
-
-
 
 // 라우터 연결 (controllers에서 라우터 export하는 구조)
 app.use("/api/test", testRouter);
@@ -96,6 +96,7 @@ app.use("/api", authRouter);
 //app.use("/api/communities", communityRouter);
 app.use("/api/communities", postRouter);
 app.use("/api/posts", postRouter);
+app.use("/api", postRouter);
 app.use("/api/questions", questionRouter);
 app.use("/api/answers", answerRouter);
 app.use("/api", questionTagRouter);
@@ -104,12 +105,7 @@ app.use("/api/users/:userId/profilefeed", profileFeedRouter);
 
 // 기본 라우트
 
-
-
 // Swagger UI 경로 설정
-
-
-
 
 app.post("/api/posts/musical/castings", authenticateJWT, addCasting);
 app.post("/api/posts/memorybooks", authenticateJWT, addMemoryBook);
@@ -117,12 +113,20 @@ app.get("/api/posts/memorybooks", authenticateJWT, getMemoryBook);
 app.put("/api/posts/memorybooks", authenticateJWT, updateMemoryBook);
 app.get("/api/posts/musical/castings", getMusicalCastings);
 app.get("/api/ticketbook/:musicalId", authenticateJWT, getTicketBookDetail);
-app.post("/api/chatrooms",authenticateJWT,createChatRoomController);
-app.get("/api/chat/rooms",authenticateJWT,getChatRoomListController);
-app.post("/api/chat/send", authenticateJWT,sendMessage);
-app.get("/api/messages",authenticateJWT,getMessages);
-app.get("/api/viewingrecords/ticketbook",authenticateJWT,getUserTicketbookWatchingRecords);
-app.get("/api/viewingrecords/monthly-summary",authenticateJWT,getMonthlySummary);
+app.post("/api/chatrooms", authenticateJWT, createChatRoomController);
+app.get("/api/chat/rooms", authenticateJWT, getChatRoomListController);
+app.post("/api/chat/send", authenticateJWT, sendMessage);
+app.get("/api/messages", authenticateJWT, getMessages);
+app.get(
+  "/api/viewingrecords/ticketbook",
+  authenticateJWT,
+  getUserTicketbookWatchingRecords
+);
+app.get(
+  "/api/viewingrecords/monthly-summary",
+  authenticateJWT,
+  getMonthlySummary
+);
 app.post(
   "/api/viewingrecords/musical",
   authenticateJWT,
