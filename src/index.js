@@ -94,12 +94,13 @@ app.use("/api/users", userRouter); // 필요에 따라 추가
 app.use("/api/community", communityRouter);
 app.use("/api", authRouter);
 //app.use("/api/communities", communityRouter);
+app.use("/api/questions", questionRouter);
+app.use("/api/answers", answerRouter);
 app.use("/api/communities", postRouter);
 app.use("/api/posts", postRouter);
 app.use("/api", postRouter);
-app.use("/api/questions", questionRouter);
-app.use("/api/answers", answerRouter);
-app.use("/api", questionTagRouter);
+
+//app.use("/api", questionTagRouter);
 app.use("/api/homefeed", homeFeedRouter);
 app.use("/api/users/:userId/profilefeed", profileFeedRouter);
 
