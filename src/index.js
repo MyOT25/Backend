@@ -32,12 +32,9 @@ import {
 } from "./controllers/memorybook.controller.js";
 import { authenticateJWT } from "./middlewares/authMiddleware.js";
 import { getMusicalCastings } from "./controllers/casting.controller.js";
-import { getTicketBookDetail } from "./controllers/ticketbook.controller.js";
-import {
-  createChatRoomController,
-  getChatRoomListController,
-  sendMessage,
-} from "./controllers/chat.controller.js";
+
+import { getTicketBookDetail,getTicketbookSeriesController } from "./controllers/ticketbook.controller.js";
+import { createChatRoomController, getChatRoomListController, sendMessage } from "./controllers/chat.controller.js";
 
 import { s3Uploader, uploadToS3 } from "./middlewares/s3Uploader.js";
 import { getMessages } from "./controllers/message.controller.js";
@@ -136,6 +133,8 @@ app.post(
   s3Uploader(),
   createViewingPost
 );
+// 작품 모아보기(시리즈)
+app.get("/api/ticketbook/:musicalId/series", authenticateJWT,getTicketbookSeriesController);
 
 app.get("/", (req, res) => {
   res.send("Hello MyOT!");

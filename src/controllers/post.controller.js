@@ -48,7 +48,13 @@ import { getRepostedUsersService } from "../services/post.service.js";
 import { getQuotedPostService } from "../services/post.service.js";
 // 게시글 상세 조회 import
 import { getPostDetail } from "../services/post.service.js";
-import { Visibility } from "@prisma/client";
+
+import pkg from "@prisma/client";
+
+const {visibility} = pkg;
+
+
+
 
 export const createPost = asyncHandler(async (req, res) => {
   const userId = req.user.id; // JWT 인증 후 user.id가 존재한다고 가정
