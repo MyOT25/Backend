@@ -6,22 +6,69 @@
   - Made the column `updatedAt` on table `User` required. This step will fail if there are existing NULL values in that column.
 
 */
--- DropForeignKey
-ALTER TABLE `Casting` DROP FOREIGN KEY `Casting_musicalId_fkey`;
 
--- DropForeignKey
-ALTER TABLE `Image` DROP FOREIGN KEY `Image_postId_fkey`;
+-- =========================
+-- SAFE DROP FOREIGN KEYS
+-- =========================
+
+-- Casting_musicalId_fkey
+SET @fk := (
+  SELECT CONSTRAINT_NAME
+  FROM information_schema.REFERENTIAL_CONSTRAINTS
+  WHERE CONSTRAINT_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'Casting'
+    AND CONSTRAINT_NAME = 'Casting_musicalId_fkey'
+);
+SET @sql := IF(@fk IS NOT NULL,
+  'ALTER TABLE `Casting` DROP FOREIGN KEY `Casting_musicalId_fkey`',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- Image_postId_fkey
+SET @fk := (
+  SELECT CONSTRAINT_NAME
+  FROM information_schema.REFERENTIAL_CONSTRAINTS
+  WHERE CONSTRAINT_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'Image'
+    AND CONSTRAINT_NAME = 'Image_postId_fkey'
+);
+SET @sql := IF(@fk IS NOT NULL,
+  'ALTER TABLE `Image` DROP FOREIGN KEY `Image_postId_fkey`',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- MusicalCommunity_musicalId_fkey
+SET @fk := (
+  SELECT CONSTRAINT_NAME
+  FROM information_schema.REFERENTIAL_CONSTRAINTS
+  WHERE CONSTRAINT_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'MusicalCommunity'
+    AND CONSTRAINT_NAME = 'MusicalCommunity_musicalId_fkey'
+);
+SET @sql := IF(@fk IS NOT NULL,
+  'ALTER TABLE `MusicalCommunity` DROP FOREIGN KEY `MusicalCommunity_musicalId_fkey`',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- ViewingRecord_musicalId_fkey
+SET @fk := (
+  SELECT CONSTRAINT_NAME
+  FROM information_schema.REFERENTIAL_CONSTRAINTS
+  WHERE CONSTRAINT_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'ViewingRecord'
+    AND CONSTRAINT_NAME = 'ViewingRecord_musicalId_fkey'
+);
+SET @sql := IF(@fk IS NOT NULL,
+  'ALTER TABLE `ViewingRecord` DROP FOREIGN KEY `ViewingRecord_musicalId_fkey`',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 
 -- backfill null timestamps before altering NOT NULL
 UPDATE `User`   SET `createdAt` = IFNULL(`createdAt`, NOW()), `updatedAt` = IFNULL(`updatedAt`, NOW());
 UPDATE `Follow` SET `createdAt` = IFNULL(`createdAt`, NOW());
 
 
--- DropForeignKey
-ALTER TABLE `MusicalCommunity` DROP FOREIGN KEY `MusicalCommunity_musicalId_fkey`;
-
--- DropForeignKey
-ALTER TABLE `ViewingRecord` DROP FOREIGN KEY `ViewingRecord_musicalId_fkey`;
 
 -- AlterTable
 ALTER TABLE `Answer` ADD COLUMN `isAnonymous` BOOLEAN NOT NULL DEFAULT false;
@@ -158,3 +205,8 @@ ALTER TABLE `MessageRead` ADD CONSTRAINT `MessageRead_messageId_fkey` FOREIGN KE
 
 -- AddForeignKey
 ALTER TABLE `MessageRead` ADD CONSTRAINT `MessageRead_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE `Image`
+  ADD CONSTRAINT `Image_postId_fkey`
+  FOREIGN KEY (`postId`) REFERENCES `Post`(`id`)
+  ON DELETE CASCADE ON UPDATE CASCADE;
