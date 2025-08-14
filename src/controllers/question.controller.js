@@ -542,6 +542,244 @@ const toBoolean = (v) => {
  *               $ref: '#/components/schemas/EnvelopeFail'
  */
 
+/**
+ * @swagger
+ * /api/questions/{questionId}/me:
+ *   get:
+ *     summary: 내 상호작용 여부 조회 (질문)
+ *     description: 특정 질문에 대해 현재 로그인한 사용자의 상호작용(좋아요, 북마크 등) 상태를 반환합니다.
+ *     tags:
+ *       - Questions
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: questionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 상호작용 여부를 조회할 질문 ID
+ *     responses:
+ *       200:
+ *         description: 질문 상호작용 여부 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 error:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
+ *                 success:
+ *                   type: object
+ *                   description: 서비스에서 반환하는 상호작용 상태 객체
+ *                   additionalProperties: true
+ *                   example:
+ *                     liked: true
+ *                     bookmarked: false
+ *       401:
+ *         description: 인증 필요
+ *       404:
+ *         description: 질문을 찾을 수 없음
+ */
+
+/**
+ * @swagger
+ * /api/questions/{questionId}/comments/{commentId}/like:
+ *   post:
+ *     summary: 댓글 좋아요 등록
+ *     tags:
+ *       - Question Comments
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: questionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 질문 ID
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 좋아요할 댓글 ID
+ *     responses:
+ *       201:
+ *         description: 댓글 좋아요 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 error:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
+ *                 success:
+ *                   type: object
+ *                   description: 생성/갱신된 좋아요 엔티티 또는 결과 정보
+ *                   additionalProperties: true
+ *                   example:
+ *                     commentId: 12
+ *                     userId: 3
+ *                     likedAt: "2025-08-14T08:00:00.000Z"
+ *       400:
+ *         description: 이미 좋아요한 댓글입니다. (ALREADY_LIKED)
+ *       401:
+ *         description: 인증 필요
+ *       404:
+ *         description: 댓글을 찾을 수 없습니다. (QC404)
+ */
+
+/**
+ * @swagger
+ * /api/questions/{questionId}/comments/{commentId}/like:
+ *   delete:
+ *     summary: 댓글 좋아요 취소
+ *     tags:
+ *       - Question Comments
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: questionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 질문 ID
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 좋아요 취소할 댓글 ID
+ *     responses:
+ *       200:
+ *         description: 댓글 좋아요 취소 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 error:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
+ *                 success:
+ *                   nullable: true
+ *                   example: null
+ *       401:
+ *         description: 인증 필요
+ *       404:
+ *         description: 좋아요한 적이 없습니다. (LIKE_NOT_FOUND) 또는 댓글을 찾을 수 없습니다. (QC404)
+ */
+
+/**
+ * @swagger
+ * /api/questions/{questionId}/comments/{commentId}/like/count:
+ *   get:
+ *     summary: 댓글 좋아요 수 조회
+ *     tags:
+ *       - Question Comments
+ *     parameters:
+ *       - in: path
+ *         name: questionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 질문 ID
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 좋아요 수를 조회할 댓글 ID
+ *     responses:
+ *       200:
+ *         description: 댓글 좋아요 수 조회 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 error:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     commentId:
+ *                       type: integer
+ *                       example: 12
+ *                     likeCount:
+ *                       type: integer
+ *                       example: 7
+ *       404:
+ *         description: 댓글을 찾을 수 없습니다. (QC404)
+ */
+
+/**
+ * @swagger
+ * /api/questions/{questionId}/comments/{commentId}/me:
+ *   get:
+ *     summary: 내가 해당 댓글에 좋아요 눌렀는지 조회
+ *     tags:
+ *       - Question Comments
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: questionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 질문 ID
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 댓글 ID
+ *     responses:
+ *       200:
+ *         description: 댓글 좋아요 여부 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 error:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *       401:
+ *         description: 인증 필요
+ *       404:
+ *         description: 댓글을 찾을 수 없습니다. (QC404)
+ */
+
 
 /**
  * 질문 등록 API
@@ -684,6 +922,23 @@ router.delete('/:questionId', authenticateJWT, async (req, res, next) => {
     next(err);
   }
 });
+
+/**
+ * 질문 좋아요 수 조회
+ * GET /api/questions/:questionId/like/count
+ */
+router.get('/:questionId/like/count', async (req, res) => {
+  try {
+    const questionId = Number(req.params.questionId);
+    const count = await QuestionService.getQuestionLikeCount(questionId);
+    return res
+      .status(200)
+      .json(response.success('질문 좋아요 수 조회 완료', { questionId, likeCount: count }));
+  } catch (err) {
+    return res.status(500).json(response.fail('SERVER_ERROR', err.message));
+  }
+});
+
 
 // 댓글 등록
 router.post('/:questionId/comments', authenticateJWT, async (req, res, next) => {

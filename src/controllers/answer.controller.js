@@ -54,7 +54,7 @@ const toBool = (v) => {
  *             required:
  *               - content
  *           example:
- *             content: "JWT는 JSON Web Token의 약자입니다."
+ *             content: "해당 뮤지컬에는 OOO배우님이 나와요."
  *     responses:
  *       201:
  *         description: 답변 등록 성공
@@ -176,98 +176,53 @@ const toBool = (v) => {
 
 /**
  * @swagger
- * /api/answers/{answerId}/comments:
- *   post:
- *     summary: 답변에 댓글 등록
- *     tags: [Answer Comments]
- *     security: [ { bearerAuth: [] } ]
- *     parameters:
- *       - in: path
- *         name: answerId
- *         required: true
- *         schema: { type: integer }
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               content: { type: string, example: "도움됐어요!" }
- *               isAnonymous: { type: boolean, default: false }
- *     responses:
- *       201:
- *         description: OK
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/EnvelopeSuccessComment'
- *       400:
- *         description: 잘못된 요청(AC100 등)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/EnvelopeFail'
- *
+ * /api/answers/{answerId}/me:
  *   get:
- *     summary: 답변 댓글 목록 조회 (페이징)
- *     tags: [Answer Comments]
+ *     summary: 내 상호작용 여부 조회 (답변)
+ *     description: 특정 답변에 대해 현재 로그인한 사용자의 상호작용(예: 좋아요, 북마크 등) 상태를 반환합니다.
+ *     tags:
+ *       - Answers
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: answerId
  *         required: true
- *         schema: { type: integer }
- *       - in: query
- *         name: page
- *         schema: { type: integer, default: 1 }
- *       - in: query
- *         name: size
- *         schema: { type: integer, default: 20 }
+ *         schema:
+ *           type: integer
+ *         description: 상호작용 여부를 조회할 답변 ID
  *     responses:
  *       200:
- *         description: OK
+ *         description: 답변 상호작용 여부 조회 성공
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/EnvelopeSuccessPagedComments'
- */
- 
-/**
- * @swagger
- * /api/answers/{answerId}/comments/{commentId}:
- *   delete:
- *     summary: 답변 댓글 삭제
- *     tags: [Answer Comments]
- *     security: [ { bearerAuth: [] } ]
- *     parameters:
- *       - in: path
- *         name: answerId
- *         required: true
- *         schema: { type: integer }
- *       - in: path
- *         name: commentId
- *         required: true
- *         schema: { type: integer }
- *     responses:
- *       200:
- *         description: OK
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/EnvelopeSuccessMessage'
- *       403:
- *         description: 권한 없음(AC403)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/EnvelopeFail'
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 error:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
+ *                 success:
+ *                   type: object
+ *                   description: 서비스에서 반환하는 상호작용 상태 객체 (필드명은 구현에 따라 달라질 수 있음)
+ *                   additionalProperties: true
+ *                   example:
+ *                     liked: true
+ *                     disliked: false
+ *                     bookmarked: false
+ *                     reported: false
+ *       401:
+ *         description: 인증이 필요합니다.
  *       404:
- *         description: 없음(AC404)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/EnvelopeFail'
+ *         description: 답변을 찾을 수 없습니다.
+ *       500:
+ *         description: 서버 오류
  */
+
 /**
  * 답변 등록
  * POST /api/answers/:questionId
