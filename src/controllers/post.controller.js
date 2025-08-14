@@ -49,9 +49,9 @@ import { getRepostedUsersService } from "../services/post.service.js";
 import { getQuotedPostService } from "../services/post.service.js";
 // 게시글 상세 조회 import
 import { getPostDetail } from "../services/post.service.js";
-import { Visibility } from "@prisma/client";
+import pkg from "@prisma/client";
 
-
+const {visibility} = pkg;
 
 
 
