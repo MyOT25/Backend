@@ -149,10 +149,30 @@ export const createViewingRecord = async (userId, body) => {
   
       // 5) 출연진
       if (casts?.length) {
-        await tx.casting.createMany({
-          data: casts.map((c) => ({ musicalId, actorId: c.actorId, role: c.role })),
+        const actorIds = casts.map(c => Number(c.actorId)).filter(Boolean);
+      
+        // 배우 존재 여부 확인
+        const actors = await tx.actor.findMany({
+          where: { id: { in: actorIds } },
+          select: { id: true },
+        });
+        const existing = new Set(actors.map(a => a.id));
+        const missing = actorIds.filter(id => !existing.has(id));
+      
+        if (missing.length) {
+          throw new Error(`존재하지 않는 배우 ID: [${missing.join(", ")}]. 먼저 Actor를 등록해 주세요.`);
+          // 여기서 CustomError로 400 반환하면 더 좋습니다.
+        }
+      
+        const result = await tx.casting.createMany({
+          data: casts.map(c => ({
+            musicalId,
+            actorId: c.actorId,
+            role: c.role,
+          })),
           skipDuplicates: true,
         });
+        console.log("casting.createMany:", result); // { count: N }
       }
   
       return viewing;

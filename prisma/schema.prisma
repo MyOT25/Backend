@@ -192,14 +192,13 @@ model Review {
 
 model Actor {
   id          Int       @id @default(autoincrement())
-  userId      Int
   communityId Int
-  key         Int
   name        String?
   image       String?
   profile     String?
   snsLink     String?
-  fk          Int?
+  birthDate   DateTime? // 생년월일 
+
   castings    Casting[]
 }
 
@@ -212,9 +211,11 @@ model Musical {
   poster      String?
   createdAt   DateTime?
   updatedAt   DateTime?
+  performanceCount  Int   @default(0) // 총 공연 횟수 
+
+
   castings    Casting[]
   theater     Theater            @relation(fields: [theaterId], references: [id])
-  communities MusicalCommunity[]
   viewings    ViewingRecord[]
 
   @@index([theaterId], map: "Musical_theaterId_fkey")
@@ -278,7 +279,6 @@ model Community {
   coverImage            String?            @db.VarChar(255)
   memoryBooks           MemoryBook?
   multiProfiles         MultiProfile[]
-  musicalCommunities    MusicalCommunity[]
   posts                 Post[]
   userCommunities       UserCommunity[]
 }
@@ -487,6 +487,9 @@ model Casting {
   musicalId Int
   actorId   Int
   role      String?
+  performanceCount Int  @default(0) // 해당 역할로 공연한 횟수 
+
+
   actor     Actor   @relation(fields: [actorId], references: [id])
   musical   Musical @relation(fields: [musicalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -506,16 +509,6 @@ model UserCommunity {
   @@index([userId], map: "UserCommunity_userId_fkey")
 }
 
-model MusicalCommunity {
-  id          Int       @id @default(autoincrement())
-  musicalId   Int
-  communityId Int
-  community   Community @relation(fields: [communityId], references: [id])
-  musical     Musical   @relation(fields: [musicalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@index([communityId], map: "MusicalCommunity_communityId_fkey")
-  @@index([musicalId], map: "MusicalCommunity_musicalId_fkey")
-}
 
 model MultiProfile {
   id          Int       @id @default(autoincrement())
