@@ -7,13 +7,12 @@
 
 */
 
-<<<<<<< HEAD
 -- =========================
 -- SAFE DROP FOREIGN KEYS
 -- =========================
 
 -- Casting_musicalId_fkey
-SET @fk := (
+SET @fk := ( 
   SELECT CONSTRAINT_NAME
   FROM information_schema.REFERENTIAL_CONSTRAINTS
   WHERE CONSTRAINT_SCHEMA = DATABASE()
@@ -63,12 +62,6 @@ SET @sql := IF(@fk IS NOT NULL,
   'ALTER TABLE `ViewingRecord` DROP FOREIGN KEY `ViewingRecord_musicalId_fkey`',
   'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-=======
--- DropForeignKey
-SET FOREIGN_KEY_CHECKS = 0;
-ALTER TABLE `Image` DROP FOREIGN KEY  `Image_postId_fkey`;
-SET FOREIGN_KEY_CHECKS = 1;
->>>>>>> f333404 (fix: migration.sql & schema.prisma 수정)
 
 
 -- backfill null timestamps before altering NOT NULL
