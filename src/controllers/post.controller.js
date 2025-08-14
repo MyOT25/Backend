@@ -1,4 +1,3 @@
-
 import asyncHandler from "../middlewares/asyncHandler.js";
 import prisma from "../config/prismaClient.js";
 // import prisma from "../../prisma/client.js";
@@ -51,11 +50,6 @@ import { getQuotedPostService } from "../services/post.service.js";
 import { getPostDetail } from "../services/post.service.js";
 import { Visibility } from "@prisma/client";
 
-
-
-
-
-
 export const createPost = asyncHandler(async (req, res) => {
   const userId = req.user.id; // JWT 인증 후 user.id가 존재한다고 가정
   const createPostDto = new CreatePostDTO(req.body);
@@ -107,8 +101,6 @@ export const addCasting = asyncHandler(async (req, res) => {
     data: casting,
   });
 });
-
-
 
 const router = express.Router();
 
@@ -216,6 +208,119 @@ router.post(
     const userId = req.user.id;
     const { communityId } = req.params;
     const createPostDto = new CreatePostDTO({ ...req.body, communityId });
+    const post = await createPostService(userId, createPostDto);
+
+    res.status(201).json({
+      resultType: "SUCCESS",
+      success: {
+        postid: post.post.id,
+        userid: post.post.userId,
+        communityid: post.post.communityId,
+        content: post.post.content,
+        postimages: post.postimages,
+        visibility: post.post.visibility,
+        createdAt: post.post.createdAt,
+        message: "게시글이 성공적으로 생성되었습니다.",
+      },
+    });
+  })
+);
+
+/**
+ * 일반 게시글 등록 (피드에서 등록, 커뮤니티 선택)
+ */
+
+/**
+ * @swagger
+ * /api/post:
+ *   post:
+ *     summary: 일반 게시글 등록 (피드에서 등록)
+ *     tags:
+ *       - Posts
+ *     description: 게시글 등록 시 게시할 커뮤니티를 선택합니다.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 example: "홈피드 내 게시글 등록"
+ *                 description: 게시글 내용
+ *               postimages:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: url
+ *                 example:
+ *                   - "이미지 url1"
+ *                   - "이미지 url2"
+ *                 description: 첨부할 이미지 URL 배열
+ *               communityId:
+ *                 type: integer
+ *                 example: 4
+ *                 description: 게시글을 등록할 커뮤니티 ID
+ *               visibility:
+ *                 type: string
+ *                 enum: [public, friends]
+ *                 example: friends
+ *                 description: 게시글 공개 범위
+ *     responses:
+ *       201:
+ *         description: 게시글 등록 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     postid:
+ *                       type: integer
+ *                       example: 530
+ *                     userid:
+ *                       type: integer
+ *                       example: 106
+ *                     communityid:
+ *                       type: integer
+ *                       example: 4
+ *                     content:
+ *                       type: string
+ *                       example: "홈피드 내 게시글 등록"
+ *                     postimages:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                         format: url
+ *                       example:
+ *                         - "이미지 url1"
+ *                         - "이미지 url2"
+ *                     visibility:
+ *                       type: string
+ *                       enum: [public, friends]
+ *                       example: friends
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2025-08-14T06:17:24.940Z"
+ *                     message:
+ *                       type: string
+ *                       example: "게시글이 성공적으로 생성되었습니다."
+ */
+router.post(
+  "/post",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const createPostDto = new CreatePostDTO({ ...req.body });
     const post = await createPostService(userId, createPostDto);
 
     res.status(201).json({
@@ -592,6 +697,83 @@ router.delete(
       success: {
         postId: deletedPostId,
         message: "게시글이 성공적으로 삭제되었습니다.",
+      },
+    });
+  })
+);
+
+/**
+ * 리포스트 게시글 삭제 (재게시 취소)
+ */
+
+/**
+ * @swagger
+ * /api/posts/{postId}/repost:
+ *   delete:
+ *     summary: 재게시 취소 (repost 게시글 삭제)
+ *     tags:
+ *       - Posts
+ *     description: 특정 게시글을 삭제합니다.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 삭제할 게시글의 ID
+ *     responses:
+ *       200:
+ *         description: 게시글 삭제 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 error:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     postId:
+ *                       type: integer
+ *                       example: 532
+ *                     message:
+ *                       type: string
+ *                       example: "재게시가 취소되었습니다."
+ */
+router.delete(
+  "/:postId/repost",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const { postId } = req.params;
+    const userId = req.user.id;
+
+    if (!postId || isNaN(postId) || parseInt(postId) < 1) {
+      return res.status(400).json({
+        resultType: "FAIL",
+        error: {
+          errorCode: "INVALID_ID",
+          reason: "유효한 게시글 ID가 아닙니다.",
+        },
+        success: null,
+      });
+    }
+
+    const deletedPostId = await deletePostService(parseInt(postId), userId);
+
+    return res.status(200).json({
+      resultType: "SUCCESS",
+      error: null,
+      success: {
+        postId: deletedPostId,
+        message: "재게시가 취소되었습니다.",
       },
     });
   })

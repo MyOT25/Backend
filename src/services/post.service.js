@@ -8,9 +8,6 @@ import { findPostsByActorName } from "../repositories/post.repositories.js";
 import CommentRepository from "../repositories/comment.repository.js";
 import { formatPostResponse } from "../dtos/post.dto.js";
 
-
-
-
 // 배우 이름으로 후기 필터링
 export const getPostByActorName = async (actorName) => {
   if (!actorName) throw new Error("배우 이름이 필요합니다.");
@@ -287,6 +284,41 @@ export const deletePostService = async (postId, userId) => {
     await PostRepository.deletePostTagsByPostId(postId);
 
     // 5. 게시글 자체 삭제
+    await PostRepository.deletePostById(postId);
+
+    // 6. 응답
+    return postId;
+  });
+};
+
+/**
+ * repost 게시글 삭제
+ */
+export const deleteRepostService = async (postId, userId) => {
+  return await prisma.$transaction(async (tx) => {
+    // 1. 게시글 존재 여부 확인
+    const post = await PostRepository.findPostById(postId);
+    if (!post) {
+      throw new NotFoundError("삭제할 게시글이 존재하지 않습니다.");
+    }
+
+    // 2. 작성자 본인인지 확인
+    if (post.user.id !== userId) {
+      throw new ForbiddenError("게시글 삭제 권한이 없습니다.");
+    }
+
+    // 3. 리포스트 게시글이라면, 원본의 repostCound 감소
+    if (post.isRepost && post.repostTargetId) {
+      await tx.post.update({
+        where: { id: post.repostTargetId },
+        data: {
+          repostCount: {
+            decrement: 1,
+          },
+        },
+      });
+    }
+    // 4. 게시글 자체 삭제
     await PostRepository.deletePostById(postId);
 
     // 6. 응답
