@@ -8,50 +8,50 @@ datasource db {
 }
 
 model User {
-  id               Int               @id @default(autoincrement())
-  loginId          String            @unique
-  username         String?
-  password         String?
-  email            String            @unique
-  nickname         String?
-  profileImage     String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  bio              String?
-  birthDate        DateTime?
-  isSubscribed     Boolean?
+  id           Int       @id @default(autoincrement())
+  loginId      String    @unique
+  username     String?
+  password     String?
+  email        String    @unique
+  nickname     String?
+  profileImage String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  bio          String?
+  birthDate    DateTime?
+  isSubscribed Boolean?
 
   // 관계 필드
-  answers          Answer[]
-  answerLikes      AnswerLike[]
-  memoryBooks      MemoryBook[]
-  multiProfiles    MultiProfile[]
-  posts            Post[]
-  postBookmarks    PostBookmark[]
-  postComments     PostComment[]
-  postLikes        PostLike[]
-  questions        Question[]
-  questionGoods    QuestionGood[]
-  questionComments QuestionComment[] @relation("UserToQuestionComments")
-  answerComments   AnswerComment[]   @relation("UserToAnswerComments")
-  questionImages   QuestionImage[]
-  questionLikes    QuestionLike[]
-  questionTags     QuestionTag[]
-  reviews          Review[]
-  setting          Setting?
-  subscriptions    Subscribe[]
-  userCommunities  UserCommunity[]
-  userSeats        UserSeat[]
-  viewings         ViewingRecord[]
-  followers        Follow[]          @relation("Follower")
-  followings       Follow[]          @relation("Following")
+  answers              Answer[]
+  answerLikes          AnswerLike[]
+  memoryBooks          MemoryBook[]
+  multiProfiles        MultiProfile[]
+  posts                Post[]
+  postBookmarks        PostBookmark[]
+  postComments         PostComment[]
+  postLikes            PostLike[]
+  questions            Question[]
+  questionGoods        QuestionGood[]
+  questionComments     QuestionComment[]     @relation("UserToQuestionComments")
+  answerComments       AnswerComment[]       @relation("UserToAnswerComments")
+  questionImages       QuestionImage[]
+  questionLikes        QuestionLike[]
+  questionTags         QuestionTag[]
+  questionCommentLikes QuestionCommentLike[] @relation("UserToQuestionCommentLikes")
+  reviews              Review[]
+  setting              Setting?
+  subscriptions        Subscribe[]
+  userCommunities      UserCommunity[]
+  userSeats            UserSeat[]
+  viewings             ViewingRecord[]
+  followers            Follow[]              @relation("Follower")
+  followings           Follow[]              @relation("Following")
 
   // 채팅 관련
-  chatRooms        ChatRoomUser[]
-  messages         Message[]
-  messageReads     MessageRead[]
+  chatRooms    ChatRoomUser[]
+  messages     Message[]
+  messageReads MessageRead[]
 }
-
 
 model Post {
   id             Int         @id @default(autoincrement())
@@ -60,29 +60,28 @@ model Post {
   isRepost       Boolean     @default(false)
   repostType     RepostType?
   repostTargetId Int?
-  title          String?
   content        String?
-  mediaType      MediaType?
+  visibility     Visibility?
 
-  viewCount      Int            @default(0)
-  commentCount   Int            @default(0)
-  likeCount      Int            @default(0)
-  bookmarkCount  Int            @default(0)
-  repostCount    Int            @default(0)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  hasMedia       Boolean        @default(false)
-  community      Community      @relation(fields: [communityId], references: [id])
-  user           User           @relation(fields: [userId], references: [id])
-  postBookmarks  PostBookmark[]
-  postComments   PostComment[]
-  postImages     PostImage[]
-  postLikes      PostLike[]
-  postTags       PostTag[]
-  reviews        Review[]
+  viewCount     Int            @default(0)
+  commentCount  Int            @default(0)
+  likeCount     Int            @default(0)
+  bookmarkCount Int            @default(0)
+  repostCount   Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  hasMedia      Boolean        @default(false)
+  community     Community      @relation(fields: [communityId], references: [id])
+  user          User           @relation(fields: [userId], references: [id])
+  postBookmarks PostBookmark[]
+  postComments  PostComment[]
+  postImages    PostImage[]
+  postLikes     PostLike[]
+  postTags      PostTag[]
+  reviews       Review[]
 
-  repostTarget Post?     @relation("Reposts", fields: [repostTargetId], references: [id])
-  reposts      Post[]    @relation("Reposts")
+  repostTarget Post?  @relation("Reposts", fields: [repostTargetId], references: [id])
+  reposts      Post[] @relation("Reposts")
 
   @@index([communityId], map: "Post_communityId_fkey")
   @@index([userId], map: "Post_userId_fkey")
@@ -236,35 +235,33 @@ model Theater {
 }
 
 model Seat {
-  id          Int             @id @default(autoincrement())
-  theaterId   Int
-  floor       Int
-  zone        String
-  rowNumber   String 
-  columnNumber Int 
+  id           Int    @id @default(autoincrement())
+  theaterId    Int
+  floor        Int
+  zone         String
+  rowNumber    String
+  columnNumber Int
 
-  theater     Theater         @relation(fields: [theaterId], references: [id])
-  userSeats   UserSeat[]
-  viewings    ViewingRecord[]
+  theater   Theater         @relation(fields: [theaterId], references: [id])
+  userSeats UserSeat[]
+  viewings  ViewingRecord[]
 
-  @@index([theaterId], map: "Seat_theaterId_fkey")
   @@unique([theaterId, floor, zone, rowNumber, columnNumber], name: "seat_unique_by_position")
+  @@index([theaterId], map: "Seat_theaterId_fkey")
 }
 
 model UserSeat {
-  id               Int  @id @default(autoincrement())
+  id               Int @id @default(autoincrement())
   userId           Int
   seatId           Int
-  numberOfSittings Int  @default(1)
+  numberOfSittings Int @default(1)
 
-  seat             Seat @relation(fields: [seatId], references: [id])
-  user             User @relation(fields: [userId], references: [id])
+  seat Seat @relation(fields: [seatId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@unique([userId, seatId])
   @@index([seatId], map: "UserSeat_seatId_fkey")
-
 }
-
 
 model Community {
   id                    Int                @id @default(autoincrement())
@@ -317,8 +314,9 @@ model Follow {
   followerId  Int
   followingId Int
   createdAt   DateTime @default(now())
-  follower  User @relation("Follower", fields: [followerId], references: [id])
-  following User @relation("Following", fields: [followingId], references: [id])
+  follower    User     @relation("Follower", fields: [followerId], references: [id])
+  following   User     @relation("Following", fields: [followingId], references: [id])
+
   @@index([followerId], map: "Follow_followerId_fkey")
   @@index([followingId], map: "Follow_followingId_fkey")
 }
@@ -425,11 +423,25 @@ model QuestionComment {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  question Question @relation("QuestionToQuestionComments", fields: [questionId], references: [id], onDelete: Cascade)
-  user     User     @relation("UserToQuestionComments", fields: [userId], references: [id], onDelete: Cascade)
+  question            Question              @relation("QuestionToQuestionComments", fields: [questionId], references: [id], onDelete: Cascade)
+  user                User                  @relation("UserToQuestionComments", fields: [userId], references: [id], onDelete: Cascade)
+  QuestionCommentLike QuestionCommentLike[]
 
   @@index([questionId])
   @@index([userId])
+}
+
+model QuestionCommentLike {
+  id        Int             @id @default(autoincrement())
+  comment   QuestionComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId Int
+
+  user   User @relation("UserToQuestionCommentLikes", fields: [userId], references: [id], onDelete: Cascade)
+  userId Int
+
+  createdAt DateTime @default(now())
+
+  @@unique([commentId, userId], name: "commentId_userId")
 }
 
 model AnswerComment {
@@ -577,44 +589,44 @@ model Image {
 }
 
 model ChatRoom {
-  id        Int           @id @default(autoincrement())
+  id        Int            @id @default(autoincrement())
   name      String?
   type      ChatRoomType
   users     ChatRoomUser[]
   messages  Message[]
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @default(now()) @updatedAt 
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @default(now()) @updatedAt
 }
 
 model ChatRoomUser {
-  id         Int       @id @default(autoincrement())
-  chatRoom   ChatRoom  @relation(fields: [chatRoomId], references: [id])
+  id         Int      @id @default(autoincrement())
+  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id])
   chatRoomId Int
-  user       User      @relation(fields: [userId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
   userId     Int
-  joinedAt   DateTime  @default(now())
+  joinedAt   DateTime @default(now())
 
   @@unique([chatRoomId, userId])
 }
 
 model Message {
-  id          Int           @id @default(autoincrement())
-  chatRoom    ChatRoom      @relation(fields: [chatRoomId], references: [id])
-  chatRoomId  Int
-  sender      User          @relation(fields: [senderId], references: [id])
-  senderId    Int
-  content     String
-  createdAt   DateTime      @default(now())
-  readUsers   MessageRead[]
+  id         Int           @id @default(autoincrement())
+  chatRoom   ChatRoom      @relation(fields: [chatRoomId], references: [id])
+  chatRoomId Int
+  sender     User          @relation(fields: [senderId], references: [id])
+  senderId   Int
+  content    String
+  createdAt  DateTime      @default(now())
+  readUsers  MessageRead[]
 }
 
 model MessageRead {
-  id         Int       @id @default(autoincrement())
-  message    Message   @relation(fields: [messageId], references: [id])
-  messageId  Int
-  user       User      @relation(fields: [userId], references: [id])
-  userId     Int
-  readAt     DateTime  @default(now())
+  id        Int      @id @default(autoincrement())
+  message   Message  @relation(fields: [messageId], references: [id])
+  messageId Int
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  readAt    DateTime @default(now())
 
   @@unique([messageId, userId])
 }
@@ -624,15 +636,14 @@ enum ChatRoomType {
   GROUP
 }
 
-
 enum RepostType {
-  post
-  review
+  quote
+  repost
 }
 
-enum MediaType {
-  image
-  video
+enum Visibility {
+  public
+  friends
 }
 
 enum TargetType {

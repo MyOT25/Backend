@@ -37,13 +37,14 @@ class PostRepository {
   }
 
   //Post 테이블 업데이트
-  async createPost({ userId, communityId, content, hasMedia }) {
+  async createPost({ userId, communityId, content, hasMedia, visibility }) {
     return prisma.post.create({
       data: {
         userId,
         communityId,
         content,
         hasMedia,
+        visibility,
       },
     });
   }
@@ -75,14 +76,15 @@ class PostRepository {
   }
 
   // 재게시용 게시글 생성
-  async createRepost({ userId, communityId, repostType, repostTargetId }) {
+  async createRepost({ userId, communityId, repostTargetId, visibility }) {
     return prisma.post.create({
       data: {
         userId,
         communityId,
         isRepost: true,
-        repostType,
+        repostType: "repost",
         repostTargetId,
+        visibility,
       },
     });
   }
@@ -94,7 +96,7 @@ class PostRepository {
     repostType,
     repostTargetId,
     content,
-    hasMedia,
+    visibility,
   }) {
     return prisma.post.create({
       data: {
@@ -104,7 +106,7 @@ class PostRepository {
         repostType,
         repostTargetId,
         content,
-        hasMedia,
+        visibility,
       },
     });
   }
@@ -127,18 +129,20 @@ class PostRepository {
       where: { id: postId },
       include: {
         user: true,
-        postimages: true,
+        postImages: true,
         postTags: true,
       },
     });
   }
 
   // 게시글 수정 (본문 및 미디어 여부)
-  async updatePost(postId, content, hasMedia) {
+  async updatePost(postId, content, postimages, visibility) {
     return prisma.post.update({
       where: { id: postId },
       data: {
         content,
+        postimages,
+        visibility,
         hasMedia,
       },
     });
