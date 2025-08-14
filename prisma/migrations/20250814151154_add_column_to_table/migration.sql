@@ -11,7 +11,7 @@
 
 */
 -- DropForeignKey
-ALTER TABLE `MusicalCommunity` DROP FOREIGN KEY `MusicalCommunity_communityId_fkey`;
+-- ALTER TABLE `MusicalCommunity` DROP FOREIGN KEY `MusicalCommunity_communityId_fkey`;
 
 -- DropForeignKey
 ALTER TABLE `MusicalCommunity` DROP FOREIGN KEY `MusicalCommunity_musicalId_fkey`;
