@@ -137,8 +137,6 @@ d
 .yarn/install-state.gz
 .pnp.*
 
-src/generated/prisma/
-
 
 # node modules 
 node_modules/
