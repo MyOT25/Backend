@@ -51,10 +51,7 @@ import { getPostDetail } from "../services/post.service.js";
 
 import pkg from "@prisma/client";
 
-const {visibility} = pkg;
-
-
-
+const { visibility } = pkg;
 
 export const createPost = asyncHandler(async (req, res) => {
   const userId = req.user.id; // JWT 인증 후 user.id가 존재한다고 가정
@@ -322,7 +319,7 @@ router.post(
  *                       example: "게시글이 성공적으로 생성되었습니다."
  */
 router.post(
-  "/post",
+  "/",
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const userId = req.user.id;

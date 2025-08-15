@@ -95,7 +95,6 @@ class ProfileFeedRepository {
       likeCount: true,
       repostCount: true,
       bookmarkCount: true,
-      mediaType: true,
       hasMedia: true,
       isRepost: true,
       repostType: true,

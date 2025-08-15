@@ -282,6 +282,8 @@ export const deletePostService = async (postId, userId) => {
     // 4. 연관 데이터 삭제
     await PostRepository.deletePostImagesByPostId(postId);
     await PostRepository.deletePostTagsByPostId(postId);
+    await PostRepository.deletePostLikesByPostId(postId);
+    await PostRepository.deletePostBookmarksByPostId(postId);
 
     // 5. 게시글 자체 삭제
     await PostRepository.deletePostById(postId);
