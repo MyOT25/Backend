@@ -162,6 +162,20 @@ class PostRepository {
     });
   }
 
+  // 게시글 좋아요 삭제 (postId 기준)
+  async deletePostLikesByPostId(postId) {
+    return prisma.postLike.deleteMany({
+      where: { postId },
+    });
+  }
+
+  // 게시글 북마크 삭제 (postId 기준)
+  async deletePostBookmarksByPostId(postId) {
+    return prisma.postBookmark.deleteMany({
+      where: { postId },
+    });
+  }
+
   // Post 삭제
   async deletePostById(postId) {
     return prisma.post.delete({
