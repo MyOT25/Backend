@@ -3,9 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
-  shadowDatabaseUrl= env("SHADOW_DATABASE_URL")
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 model User {
@@ -200,24 +200,28 @@ model Actor {
   snsLink     String?
   birthDate   DateTime? // 생년월일 
 
-  castings    Casting[]
+  castings Casting[]
 }
 
 model Musical {
-  id          Int                @id @default(autoincrement())
-  theaterId   Int
-  name        String?
-  startDate   DateTime?
-  endDate     DateTime?
-  poster      String?
-  createdAt   DateTime?
-  updatedAt   DateTime?
-  performanceCount  Int   @default(0) // 총 공연 횟수 
+  id               Int       @id @default(autoincrement())
+  theaterId        Int
+  name             String
+  startDate        DateTime?
+  endDate          DateTime?
+  poster           String?
+  ticketpic        String?
+  createdAt        DateTime?
+  updatedAt        DateTime?
+  performanceCount Int       @default(0) // 총 공연 횟수 
 
+  // 별점 집계 관련 컬럼
+  ratingCount Int     @default(0) // 별점 개수
+  ratingSum   Decimal @default(0) @db.Decimal(10, 2) // 별점 합계 (소수 허용)
 
-  castings    Casting[]
-  theater     Theater            @relation(fields: [theaterId], references: [id])
-  viewings    ViewingRecord[]
+  castings Casting[]
+  theater  Theater         @relation(fields: [theaterId], references: [id])
+  viewings ViewingRecord[]
 
   @@index([theaterId], map: "Musical_theaterId_fkey")
 }
@@ -240,10 +244,15 @@ model Theater {
 model Seat {
   id           Int    @id @default(autoincrement())
   theaterId    Int
-  floor        Int
-  zone         String
-  rowNumber    String
-  columnNumber Int
+  floor        Int?
+  zone         String?
+  rowNumber    String?
+  columnNumber Int?
+
+  hasFloor     Boolean @default(false) // 층 정보 있는지
+  hasZone      Boolean @default(false) // 구역 정보 있는지
+  hasRowNumber Boolean @default(false) // 열 정보 있는지
+  hasColumn    Boolean @default(false) // 번호 정보 있는지
 
   theater   Theater         @relation(fields: [theaterId], references: [id])
   userSeats UserSeat[]
@@ -267,7 +276,7 @@ model UserSeat {
 }
 
 model Community {
-  id                    Int                @id @default(autoincrement())
+  id                    Int             @id @default(autoincrement())
   type                  CommunityType
   targetId              Int?
   groupName             String
@@ -275,9 +284,9 @@ model Community {
   recentPerformanceDate DateTime?
   theaterName           String?
   ticketLink            String?
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  coverImage            String?            @db.VarChar(255)
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  coverImage            String?         @db.VarChar(255)
   memoryBooks           MemoryBook?
   multiProfiles         MultiProfile[]
   posts                 Post[]
@@ -338,24 +347,25 @@ model ViewingRecord {
   seat      Seat?          @relation(fields: [seatId], references: [id])
   user      User           @relation(fields: [userId], references: [id])
 
+  ViewingCasts ViewingCast[]
+
   @@index([musicalId], map: "ViewingRecord_musicalId_fkey")
   @@index([seatId], map: "ViewingRecord_seatId_fkey")
   @@index([userId], map: "ViewingRecord_userId_fkey")
 }
 
 model ViewingLike {
-  id          Int           @id @default(autoincrement())
-  viewingId   Int
-  userId      Int
-  createdAt   DateTime      @default(now())
-  viewing     ViewingRecord @relation(fields: [viewingId], references: [id])
-  user        User          @relation(fields: [userId], references: [id])
+  id        Int           @id @default(autoincrement())
+  viewingId Int
+  userId    Int
+  createdAt DateTime      @default(now())
+  viewing   ViewingRecord @relation(fields: [viewingId], references: [id])
+  user      User          @relation(fields: [userId], references: [id])
 
   @@unique([userId, viewingId])
   @@index([viewingId])
   @@index([userId])
 }
-
 
 model ViewingImage {
   id        Int           @id @default(autoincrement())
@@ -484,18 +494,20 @@ model Region {
 }
 
 model Casting {
-  id        Int     @id @default(autoincrement())
-  musicalId Int
-  actorId   Int
-  role      String?
-  performanceCount Int  @default(0) // 해당 역할로 공연한 횟수 
+  id               Int    @id @default(autoincrement())
+  musicalId        Int
+  actorId          Int
+  role             String @default("미지정")
+  performanceCount Int    @default(0) // 해당 역할로 공연한 횟수 
 
+  actor       Actor         @relation(fields: [actorId], references: [id])
+  musical     Musical       @relation(fields: [musicalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ViewingCast ViewingCast[]
 
-  actor     Actor   @relation(fields: [actorId], references: [id])
-  musical   Musical @relation(fields: [musicalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
+  @@unique([musicalId, actorId, role], name: "Casting_unique_role_per_musical_actor") // ✅ 추가
   @@index([actorId], map: "Casting_actorId_fkey")
   @@index([musicalId], map: "Casting_musicalId_fkey")
+  @@index([musicalId, role]) // ✅ 역할별 조회/정렬 최적화(선택)
 }
 
 model UserCommunity {
@@ -509,7 +521,6 @@ model UserCommunity {
   @@index([communityId], map: "UserCommunity_communityId_fkey")
   @@index([userId], map: "UserCommunity_userId_fkey")
 }
-
 
 model MultiProfile {
   id          Int       @id @default(autoincrement())
@@ -639,6 +650,20 @@ model MessageRead {
   readAt    DateTime @default(now())
 
   @@unique([messageId, userId])
+}
+
+model ViewingCast {
+  id        Int      @id @default(autoincrement())
+  viewingId Int
+  castingId Int
+  createdAt DateTime @default(now())
+
+  viewing ViewingRecord @relation(fields: [viewingId], references: [id], onDelete: Cascade)
+  casting Casting       @relation(fields: [castingId], references: [id])
+
+  @@unique([viewingId, castingId], name: "unique_cast_per_viewing") // ✅ 같은 관극에서 동일 캐스팅 중복 방지
+  @@index([viewingId]) // ✅ 관극 상세 조회
+  @@index([castingId]) // ✅ 집계/조인
 }
 
 enum ChatRoomType {
