@@ -103,17 +103,24 @@ export const createViewingRecord = async (userId, body) => {
   const floor        = Number(seat?.floor);
   const zone         = String(seat?.zone ?? "").trim();
   const rowNumber    = String(seat?.rowNumber ?? seat?.row ?? "").trim(); // 문자열
-  const columnNumber = Number(seat?.columnNumber ?? seat?.column);
+  const columnNumber = seat?.columnNumber != null ? Number(seat.columnNumber) : null;
 
-  if (!Number.isInteger(theaterId) || !Number.isInteger(floor) || !Number.isInteger(columnNumber) || !zone || !rowNumber) {
-    throw new Error("좌석 필드 형식이 올바르지 않습니다. (theaterId/floor/columnNumber=정수, zone/rowNumber=문자열)");
+  if (!Number.isInteger(theaterId) || !Number.isInteger(floor) || !zone || !rowNumber) {
+    throw new Error("좌석 필드 형식이 올바르지 않습니다. (theaterId/floor=정수, zone/rowNumber=문자열, columnNumber=정수 또는 null)");
+  }
+  if (columnNumber !== null && !Number.isInteger(columnNumber)) {
+    throw new Error("columnNumber는 정수 또는 null이어야 합니다.");
   }
 
   const viewing = await prisma.$transaction(async (tx) => {
     // 1) 좌석 존재 확인
-    const seatRecord = await tx.seat.findUnique({
+    const seatRecord = await tx.seat.findFirst({
       where: {
-        seat_unique_by_position: { theaterId, floor, zone, rowNumber, columnNumber },
+        theaterId,
+        floor,
+        zone,
+        rowNumber,
+        columnNumber: columnNumber, // null이면 null로 검색됨
       },
     });
     if (!seatRecord) {
