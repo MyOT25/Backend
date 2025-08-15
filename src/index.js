@@ -109,7 +109,6 @@ app.use("/api", authRouter);
 app.use("/api/questions", questionRouter);
 app.use("/api/answers", answerRouter);
 app.use("/api/communities", postRouter);
-app.use("/api/posts", postRouter);
 app.use("/api/post", postRouter);
 
 //app.use("/api", questionTagRouter);
@@ -163,6 +162,8 @@ app.get("/api/viewingrecords/musicals", getMusicalByName);
 app.get("/", (req, res) => {
   res.send("Hello MyOT!");
 });
+
+app.use("/api/posts", postRouter);
 
 // 공통 예외 처리 미들웨어
 app.use(errorHandler);

@@ -497,15 +497,25 @@ export const getRepostedUsersService = async (postId) => {
   return await PostRepository.findUsersWhoReposted(postId);
 };
 
-// 인용한 게시물 정보 받아옴
-export const getQuotedPostService = async (postId) => {
-  const quoted = await PostRepository.findQuotedPost(postId);
+// 특정 게시글을 인용한 모든 인용 게시글 조회
+export const getQuotedPostsService = async (targetPostId) => {
+  const quotes = await PostRepository.findAllQuotesOfPost(targetPostId);
 
-  if (!quoted) {
-    throw new NotFoundError("해당 게시글은 인용한 게시글이 없습니다.");
+  if (!quotes || quotes.length === 0) {
+    throw new NotFoundError("해당 게시글을 인용한 게시글이 없습니다.");
   }
 
-  return quoted;
+  // 필요한 데이터 가공
+  return quotes.map((post) => ({
+    id: post.id,
+    content: post.content,
+    createdAt: post.createdAt,
+    user: post.user,
+    postImages: post.postImages,
+    community: post.community,
+    likeCount: post.postLikes.length,
+    bookmarkCount: post.postBookmarks.length,
+  }));
 };
 
 /**

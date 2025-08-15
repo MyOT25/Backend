@@ -295,7 +295,7 @@ class PostRepository {
       where: {
         isRepost: true,
         repostTargetId: Number(postId),
-        repostType: "post", // ✅ enum 값에 맞게 소문자로!
+        repostType: "repost", // ✅ enum 값에 맞게 소문자로!
       },
       include: {
         user: true,
@@ -308,29 +308,22 @@ class PostRepository {
     return reposts;
   }
 
-  async findQuotedPost(postId) {
-    const post = await prisma.post.findUnique({
-      where: { id: Number(postId) },
-    });
-
-    if (!post?.repostTargetId || post.repostType !== "POST") {
-      return null; // 인용이 아님
-    }
-
-    // 인용 대상 게시글 가져오기
-    const quoted = await prisma.post.findUnique({
-      where: { id: post.repostTargetId },
-      include: {
-        postImages: true,
+  async findAllQuotesOfPost(targetPostId) {
+    return prisma.post.findMany({
+      where: {
+        isRepost: true,
+        repostType: "quote",
+        repostTargetId: targetPostId,
       },
+      include: {
+        user: { select: { id: true, nickname: true, profileImage: true } },
+        postImages: { select: { url: true } },
+        community: { select: { id: true, type: true, coverImage: true } },
+        postLikes: true,
+        postBookmarks: true,
+      },
+      orderBy: { createdAt: "desc" },
     });
-
-    if (!quoted) return null;
-
-    return {
-      content: quoted.content,
-      media: quoted.postimages.map((img) => ({ url: img.url })),
-    };
   }
 
   //게시글 상세 조회
