@@ -19,7 +19,7 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   bio          String?
-  birthDate    DateTime?
+  birthDate    String?
   isSubscribed Boolean?
 
   // 관계 필드

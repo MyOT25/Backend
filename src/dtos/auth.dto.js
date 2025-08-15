@@ -18,11 +18,12 @@ export class LoginRequestDto {
 
 //일반 회원가입 DTO
 export class SignUpDto {
-  constructor({ username, email, loginId, password, nickname }) {
+  constructor({ username, email, loginId, password, nickname, birthDate }) {
     this.username = username;
     this.email = email;
     this.loginId = loginId;
     this.password = password;
     this.nickname = nickname;
+    this.birthDate = birthDate;
   }
 }

@@ -126,7 +126,7 @@ dist
 
 # TernJS port file
 .tern-port
-d
+
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
@@ -136,8 +136,6 @@ d
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-
-src/generated/prisma/
 
 
 # node modules 
@@ -160,6 +158,6 @@ d
 #Yarn integrity file
 .yarn-integrity
 
-
+/src/generated/
 
 node_modules/
