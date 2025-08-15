@@ -162,22 +162,12 @@ export const handleCommunityRequest = async ({
   type,
   targetId,
   groupName,
-  musicalName,
-  recentPerformanceDate,
-  theaterName,
-  ticketLink,
 }) => {
   return await prisma.community.create({
     data: {
       type,
       targetId,
       groupName,
-      musicalName,
-      recentPerformanceDate: recentPerformanceDate
-        ? new Date(recentPerformanceDate)
-        : null,
-      theaterName,
-      ticketLink,
     },
   });
 };
@@ -187,22 +177,12 @@ export const insertCommunityRequest = async ({
   type,
   targetId,
   groupName,
-  musicalName,
-  recentPerformanceDate,
-  theaterName,
-  ticketLink,
 }) => {
   return await prisma.community.create({
     data: {
       type,
       targetId,
       groupName,
-      musicalName,
-      recentPerformanceDate: recentPerformanceDate
-        ? new Date(recentPerformanceDate)
-        : null,
-      theaterName,
-      ticketLink,
       createdAt: new Date(),
 
       userCommunities: {
@@ -234,6 +214,98 @@ export const fetchMyCommunities = async (userId) => {
 // 커뮤니티 정보 조회
 export const fetchCommunityById = async (communityId) => {
   return await findCommunityById(communityId);
+};
+
+// 커뮤니티 상세 + 대상별(display) 조립
+export const getCommunityDetail = async (communityId) => {
+  const c = await prisma.community.findUnique({
+    where: { id: Number(communityId) },
+    select: {
+      id: true,
+      type: true,
+      targetId: true,
+      groupName: true,
+      coverImage: true,
+      createdAt: true,
+    },
+  });
+  if (!c) throw new Error("커뮤니티를 찾을 수 없습니다.");
+
+  if (c.type === "musical") {
+    const m = c.targetId
+      ? await prisma.musical.findUnique({
+          where: { id: c.targetId },
+          select: {
+            id: true,
+            name: true,
+            startDate: true,
+            endDate: true,
+            poster: true,
+            ticketpic: true,
+            theater: { select: { id: true, name: true } },
+          },
+        })
+      : null;
+
+    return {
+      communityId: c.id,
+      type: c.type,
+      groupName: c.groupName,
+      coverImage: c.coverImage,
+      createdAt: c.createdAt,
+      targetId: c.targetId,
+      display: m
+        ? {
+            musicalName: m.name ?? null,
+            theaterName: m.theater?.name ?? null,
+            recentPerformanceDate: m.endDate ?? m.startDate ?? null,
+            ticketLink: m.ticketpic ?? null,
+            poster: m.poster ?? null,
+          }
+        : null,
+    };
+  }
+
+  if (c.type === "actor") {
+    const a = c.targetId
+      ? await prisma.actor.findUnique({
+          where: { id: c.targetId },
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            profile: true,
+            birthDate: true,
+          },
+        })
+      : null;
+
+    return {
+      communityId: c.id,
+      type: c.type,
+      groupName: c.groupName,
+      coverImage: c.coverImage,
+      createdAt: c.createdAt,
+      targetId: c.targetId,
+      display: a
+        ? {
+            actorName: a.name ?? null,
+            profileImage: a.image ?? null,
+            birthDate: a.birthDate ?? null,
+            profile: a.profile ?? null,
+          }
+        : null,
+    };
+  }
+
+  return {
+    communityId: c.id,
+    type: c.type,
+    groupName: c.groupName,
+    coverImage: c.coverImage,
+    createdAt: c.createdAt,
+    targetId: c.targetId,
+  };
 };
 
 // 커뮤니티 프로필 추가
@@ -335,6 +407,12 @@ export const getOtherUserProfile = async (communityId, userId) => {
 // 현재 등록된 내 프로필 개수 확인
 export const getMyProfileCount = async (userId) => {
   return await countMyProfile(userId);
+  const used = await countMyProfile(userId);
+  const u = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isSubscribed: true },
+  });
+  return { used, isSubscribed: !!u?.isSubscribed };
 };
 
 // 커뮤니티 전체 피드

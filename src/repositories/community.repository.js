@@ -52,26 +52,12 @@ export const checkDuplicateCommunityName = async (groupName) => {
 };
 
 //  커뮤니티 신청 (등록)
-export const insertCommunityRequest = async ({
-  type,
-  targetId,
-  groupName,
-  musicalName,
-  recentPerformanceDate,
-  theaterName,
-  ticketLink,
-}) => {
+export const insertCommunityRequest = async ({ type, targetId, groupName }) => {
   return await prisma.community.create({
     data: {
       type,
       targetId,
       groupName,
-      musicalName,
-      recentPerformanceDate: recentPerformanceDate
-        ? new Date(recentPerformanceDate)
-        : null,
-      theaterName,
-      ticketLink,
     },
   });
 };
@@ -148,10 +134,6 @@ export const findCommunityById = async (communityId) => {
       groupName: true,
       type: true,
       targetId: true,
-      musicalName: true,
-      recentPerformanceDate: true,
-      theaterName: true,
-      ticketLink: true,
       createdAt: true,
       coverImage: true,
     },

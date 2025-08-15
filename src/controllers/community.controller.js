@@ -20,6 +20,7 @@ import {
   getMyCommunityProfile,
   getOtherUserProfile,
   getMyProfileCount,
+  getCommunityDetail,
   switchCommunityProfileType,
   getCommunityFeedAll,
   editMyCommunityProfile,
@@ -446,19 +447,6 @@ router.patch("/profile/me/:communityId", authenticateJWT, async (req, res) => {
  *                 type: string
  *                 example: "노트르담 드 파리 팬모임"
  *                 description: 생성할 커뮤니티의 이름
- *               musicalName:
- *                 type: string
- *                 example: "노트르담 드 파리"
- *               recentPerformanceDate:
- *                 type: string
- *                 format: date
- *                 example: "2025-06-01"
- *               theaterName:
- *                 type: string
- *                 example: "블루스퀘어"
- *               ticketLink:
- *                 type: string
- *                 example: "https://ticketsite.com/show/123"
  *     responses:
  *       201:
  *         description: 커뮤니티 생성 성공
@@ -524,15 +512,7 @@ router.post("/type/request", async (req, res) => {
         .json({ success: false, message: "유효하지 않은 토큰입니다." });
     }
 
-    const {
-      type,
-      targetId,
-      groupName,
-      musicalName,
-      recentPerformanceDate,
-      theaterName,
-      ticketLink,
-    } = req.body;
+    const { type, targetId, groupName } = req.body;
 
     if (!type || !["musical", "actor"].includes(type)) {
       return res.status(400).json({
@@ -551,10 +531,6 @@ router.post("/type/request", async (req, res) => {
       type,
       targetId,
       groupName,
-      musicalName,
-      recentPerformanceDate,
-      theaterName,
-      ticketLink,
     });
 
     res.status(201).json({
@@ -908,53 +884,52 @@ router.get("/profile/my/:communityId", authenticateJWT, async (req, res) => {
  *                   type: boolean
  *                   example: true
  *                 community:
- *                   $ref: '#/components/schemas/CommunityDetail'
+ *                   type: object
+ *                   description: 상세 정보 + 타입별 display 필드가 포함됩니다.
+ *                   properties:
+ *                     communityId: { type: integer, example: 3 }
+ *                     type: { type: string, example: "musical" }
+ *                     groupName: { type: string, example: "레베카 팬모임" }
+ *                     targetId: { type: integer, nullable: true, example: 12 }
+ *                     coverImage: { type: string, nullable: true, example: "https://..." }
+ *                     createdAt: { type: string, format: date-time, example: "2025-07-25T12:00:00.000Z" }
+ *                     display:
+ *                       oneOf:
+ *                         - type: object
+ *                           description: type=musical일 때
+ *                           properties:
+ *                             musicalName: { type: string, nullable: true, example: "레베카" }
+ *                             theaterName: { type: string, nullable: true, example: "블루스퀘어" }
+ *                             recentPerformanceDate: { type: string, format: date-time, nullable: true }
+ *                             ticketLink: { type: string, nullable: true, example: "https://..." }
+ *                             poster: { type: string, nullable: true, example: "https://..." }
+ *                         - type: object
+ *                           description: type=actor일 때
+ *                           properties:
+ *                             actorName: { type: string, nullable: true, example: "홍길동" }
+ *                             profileImage: { type: string, nullable: true, example: "https://..." }
+ *                             birthDate: { type: string, format: date-time, nullable: true }
+ *                             profile: { type: string, nullable: true }
  *                 isJoined:
  *                   type: boolean
  *                   description: 요청에 사용자 토큰이 있을 때 계산됨. 없으면 false
  *                   example: true
- *                 joinedProfile:
+ *                 myProfile:
  *                   type: object
  *                   nullable: true
+ *                   description: 가입되어 있으면, 해당 커뮤니티에서의 내 프로필 스냅샷(BASIC 또는 MULTI)
  *                   properties:
- *                     profileId:
- *                       type: integer
- *                       example: 12
- *                     nickname:
- *                       type: string
- *                       example: "뮤지컬덕후"
- *                     joinedAt:
- *                       type: string
- *                       format: date-time
- *                       example: "2025-07-25T02:04:45.000Z"
+ *                     id: { type: integer, example: 7 }
+ *                     userId: { type: integer, example: 7 }
+ *                     communityId: { type: integer, example: 3 }
+ *                     nickname: { type: string, example: "뮤지컬덕후" }
+ *                     image: { type: string, nullable: true, example: "https://example.com/me.png" }
+ *                     bio: { type: string, nullable: true, example: "자기소개" }
  *       400:
  *         description: 잘못된 타입 등 유효하지 않은 요청
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "유효하지 않은 커뮤니티 타입입니다."
  *       404:
  *         description: 커뮤니티를 찾을 수 없음
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "커뮤니티를 찾을 수 없습니다."
  */
-
 router.get("/:type/:id", authenticateJWT, async (req, res) => {
   try {
     const communityId = Number(req.params.id);
@@ -967,45 +942,33 @@ router.get("/:type/:id", authenticateJWT, async (req, res) => {
       });
     }
 
-    const community = await fetchCommunityById(communityId);
-    if (!community || community.type !== type) {
+    const detail = await getCommunityDetail(communityId);
+    if (!detail || detail.type !== type) {
       return res
         .status(404)
         .json({ success: false, message: "커뮤니티를 찾을 수 없습니다." });
     }
 
-    const formatted = {
-      communityId: community.id,
-      groupName: community.groupName,
-      type: community.type,
-      targetId: community.targetId,
-      recentPerformanceDate: community.recentPerformanceDate,
-      theaterName: community.theaterName,
-      ticketLink: community.ticketLink,
-      createdAt: community.createdAt,
-      coverImage: community.coverImage,
-    };
-
     const userId = req.user?.id;
-    let joinedProfile = null;
+    let isJoined = false;
+    let myProfile = null;
+
     if (userId) {
-      joinedProfile = await checkUserInCommunity(userId, communityId);
+      isJoined = await checkUserInCommunity(userId, communityId); // boolean
+      if (isJoined) {
+        const me = await getMyCommunityProfile(userId, communityId);
+        myProfile = me?.profile ?? null;
+      }
     }
 
     return res.status(200).json({
       success: true,
-      community: formatted,
-      isJoined: !!joinedProfile,
-      joinedProfile: joinedProfile
-        ? {
-            profileId: joinedProfile.id,
-            nickname: joinedProfile.nickname,
-            joinedAt: joinedProfile.createdAt,
-          }
-        : null,
+      community: detail,
+      isJoined,
+      myProfile,
     });
   } catch (err) {
-    res.status(400).json({ success: false, message: err.message });
+    return res.status(400).json({ success: false, message: err.message });
   }
 });
 

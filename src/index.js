@@ -50,7 +50,7 @@ import {
   getUserTicketbookWatchingRecords,
   getMonthlySummary,
   createViewingPost,
-  getMusicalCast
+  getMusicalCast,
 } from "./controllers/viewingRecord.controller.js";
 import { getMusicalByName } from "./controllers/musical.controller.js";
 
@@ -119,7 +119,7 @@ app.use("/api/users/:userId/profilefeed", profileFeedRouter);
 
 // Swagger UI 경로 설정
 
-// -- 하경 API 
+// -- 하경 API
 app.post("/api/posts/musical/castings", authenticateJWT, addCasting);
 app.post("/api/posts/memorybooks", authenticateJWT, addMemoryBook);
 app.get("/api/posts/memorybooks", authenticateJWT, getMemoryBook);
@@ -149,12 +149,16 @@ app.post(
   createViewingPost
 );
 // 작품 모아보기(시리즈)
-app.get("/api/ticketbook/:musicalId/series", authenticateJWT,getTicketbookSeriesController);
-// 역할별 출연진 목록 조회 
-app.get("/api/viewingrecords/:musicalId/cast",authenticateJWT,getMusicalCast);
-app.get("/api/viewingrecords/musicals",getMusicalByName);
+app.get(
+  "/api/ticketbook/:musicalId/series",
+  authenticateJWT,
+  getTicketbookSeriesController
+);
+// 역할별 출연진 목록 조회
+app.get("/api/viewingrecords/:musicalId/cast", authenticateJWT, getMusicalCast);
+app.get("/api/viewingrecords/musicals", getMusicalByName);
 
-// 하경 API -- 
+// 하경 API --
 
 app.get("/", (req, res) => {
   res.send("Hello MyOT!");
