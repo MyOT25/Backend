@@ -42,6 +42,7 @@ import {
   getUserTicketbookWatchingRecords,
   getMonthlySummary,
   createViewingPost,
+  getMusicalCast
 } from "./controllers/viewingRecord.controller.js";
 
 dotenv.config();
@@ -136,6 +137,8 @@ app.post(
 );
 // 작품 모아보기(시리즈)
 app.get("/api/ticketbook/:musicalId/series", authenticateJWT,getTicketbookSeriesController);
+// 역할별 출연진 목록 조회 
+app.get("/api/viewingrecords/:musicalId/cast",authenticateJWT,getMusicalCast);
 
 app.get("/", (req, res) => {
   res.send("Hello MyOT!");

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `Musical` ADD COLUMN `ratingCount` INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN `ratingSum` DECIMAL(10, 2) NOT NULL DEFAULT 0;
