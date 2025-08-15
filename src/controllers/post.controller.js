@@ -10,6 +10,7 @@ import { uploadToS3 } from "../middlewares/s3Uploader.js";
 
 //일반 게시글 등록 import
 import { CreatePostDTO } from "../dtos/post.dto.js";
+import { createCommunityPostService } from "../services/post.service.js";
 import { createPostService } from "../services/post.service.js";
 //재게시용 게시글 등록 import
 import { CreateRepostDTO } from "../dtos/post.dto.js";
@@ -211,7 +212,7 @@ router.post(
     const userId = req.user.id;
     const { communityId } = req.params;
     const createPostDto = new CreatePostDTO({ ...req.body, communityId });
-    const post = await createPostService(userId, createPostDto);
+    const post = await createCommunityPostService(userId, createPostDto);
 
     res.status(201).json({
       resultType: "SUCCESS",

@@ -38,15 +38,20 @@ class PostRepository {
 
   //Post 테이블 업데이트
   async createPost({ userId, communityId, content, hasMedia, visibility }) {
-    return prisma.post.create({
-      data: {
-        userId,
-        communityId,
-        content,
-        hasMedia,
-        visibility,
-      },
-    });
+    const data = {
+      userId,
+      content,
+      hasMedia,
+      visibility,
+    };
+
+    // communityId가 숫자로 변환 가능한 경우만 추가
+    const parsedCommunityId = Number(communityId);
+    if (!isNaN(parsedCommunityId)) {
+      data.communityId = parsedCommunityId;
+    }
+
+    return prisma.post.create({ data });
   }
 
   //PostImage 테이블 업데이트
@@ -80,11 +85,11 @@ class PostRepository {
     return prisma.post.create({
       data: {
         userId,
-        communityId,
         isRepost: true,
         repostType: "repost",
         repostTargetId,
         visibility,
+        ...(communityId ? { communityId: Number(communityId) } : {}),
       },
     });
   }
@@ -101,12 +106,12 @@ class PostRepository {
     return prisma.post.create({
       data: {
         userId,
-        communityId,
         isRepost: true,
         repostType,
         repostTargetId,
         content,
         visibility,
+        ...(communityId ? { communityId: Number(communityId) } : {}),
       },
     });
   }
@@ -188,7 +193,7 @@ class PostRepository {
     return prisma.post.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-        postimages: true,
+        postImages: true,
       },
     });
   }
@@ -316,7 +321,7 @@ class PostRepository {
     const quoted = await prisma.post.findUnique({
       where: { id: post.repostTargetId },
       include: {
-        postimages: true,
+        postImages: true,
       },
     });
 

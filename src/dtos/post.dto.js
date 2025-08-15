@@ -5,7 +5,7 @@ export const formatPostResponse = (post) => ({
   content: post.content,
   imageUrls: post.postimages?.map((img) => img.url) || [],
 });
-//일반 게시물 등록 DTO (커뮤니티 내 등록)
+//일반 게시물 등록 DTO
 export class CreatePostDTO {
   constructor({ content, postimages = [], communityId, visibility }) {
     this.content = content;

@@ -23,6 +23,7 @@ import questionTagRouter from "./controllers/questionTag.controller.js";
 import homeFeedRouter from "./controllers/homeFeed.controller.js";
 import profileFeedRouter from "./controllers/profileFeed.controller.js";
 import communityReviewRouter from "./controllers/communityReview.controller.js";
+import bookmarkRouter from "./controllers/bookmark.controller.js";
 
 import "./config/passport.js"; // passport 설정
 
@@ -114,6 +115,7 @@ app.use("/api/post", postRouter);
 //app.use("/api", questionTagRouter);
 app.use("/api/homefeed", homeFeedRouter);
 app.use("/api/users/:userId/profilefeed", profileFeedRouter);
+app.use("/api/bookmarks", bookmarkRouter);
 
 // 기본 라우트
 
