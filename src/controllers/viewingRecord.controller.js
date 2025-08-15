@@ -1,7 +1,7 @@
 import { authenticateJWT } from "../middlewares/authMiddleware.js";
 import asyncHandler from "../middlewares/asyncHandler.js";
 import { getTicketbook,getMonthlySummary as getMonthlySummaryService,
-  createViewingRecord
+  createViewingRecord, getMusicalCastGroupedByRole
  } from "../services/viewingRecord.service.js"; // 기존 getTicketbook 재사용
  import { uploadToS3 } from "../middlewares/s3Uploader.js";
 
@@ -305,15 +305,20 @@ export const getMonthlySummary = async (req, res, next) => {
  *                             - "https://bucket.s3.amazonaws.com/img2.jpg"
  */
 export const createViewingPost = asyncHandler(async (req, res) => {
-  const userId = req.user.id; // JWT로부터 유저 ID 추출
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.error({
+      statusCode: 401,
+      errorCode: "A001",
+      reason: "인증이 필요합니다.",
+      data: null,
+    });
+  }
 
-  // ✅ multer로 업로드된 이미지 파일들
-  const imageFiles = req.files; // 배열 형태
-
-  // ✅ S3 업로드
+  // 1) 파일 업로드(S3)
+  const imageFiles = Array.isArray(req.files) ? req.files : [];
   let imageUrls = [];
-
-  if (imageFiles && imageFiles.length > 0) {
+  if (imageFiles.length > 0) {
     imageUrls = await Promise.all(
       imageFiles.map((file) =>
         uploadToS3(file.buffer, file.originalname, file.mimetype)
@@ -321,27 +326,98 @@ export const createViewingPost = asyncHandler(async (req, res) => {
     );
   }
 
-  // ✅ body에서 다른 데이터 추출
-  const { musicalId, watchDate, watchTime, seat, casts, content, rating } =
-    req.body;
+  // 2) body 추출 
+  const {
+    musicalId: _musicalId,
+    watchDate,
+    watchTime,
+    seat: _seat,
+    castingIds: _castingIds, // 추가 
+    content,
+    rating: _rating,
+  } = req.body ?? {};
 
-  // ✅ JSON 문자열 데이터 파싱
-  const parsedSeat = JSON.parse(seat);
-  const parsedCasts = JSON.parse(casts);
+  // 3) 기본 검증
+  if (!_musicalId) {
+    return res.error({ statusCode: 400, errorCode: "V001", reason: "musicalId가 필요합니다.", data: null });
+  }
+  if (!watchDate || !watchTime) {
+    return res.error({ statusCode: 400, errorCode: "V002", reason: "watchDate, watchTime이 필요합니다.", data: null });
+  }
+  if (!_seat) {
+    return res.error({ statusCode: 400, errorCode: "V003", reason: "seat 정보가 필요합니다.", data: null });
+  }
 
+  // 4) 타입 변환/파싱
+  const musicalId = Number.parseInt(_musicalId, 10);
+  if (!Number.isInteger(musicalId)) {
+    return res.error({ statusCode: 400, errorCode: "V004", reason: "musicalId는 정수여야 합니다.", data: null });
+  }
+
+  const rating =
+    _rating === undefined || _rating === null || `${_rating}`.trim() === ""
+      ? undefined
+      : Number.parseFloat(_rating);
+  if (rating !== undefined && (Number.isNaN(rating) || rating < 0)) {
+    return res.error({ statusCode: 400, errorCode: "V005", reason: "rating 형식이 올바르지 않습니다.", data: null });
+  }
+
+  let parsedSeat;
+  try {
+    parsedSeat = typeof _seat === "string" ? JSON.parse(_seat) : _seat;
+  } catch {
+    return res.error({ statusCode: 400, errorCode: "V006", reason: "seat JSON 파싱에 실패했습니다.", data: null });
+  }
+
+   // 🎯 castingIds 파싱
+   let castingIds = [];
+   try {
+     castingIds = typeof _castingIds === "string" ? JSON.parse(_castingIds) : _castingIds;
+     if (!Array.isArray(castingIds)) castingIds = [];
+     castingIds = castingIds.map((id) => Number(id)).filter((id) => Number.isInteger(id));
+   } catch {
+     castingIds = [];
+   }
+
+  // 5) 서비스 호출(casts 전달 없음)
   const result = await createViewingRecord(userId, {
-    musicalId: parseInt(musicalId),
+    musicalId,
     watchDate,
     watchTime,
     seat: parsedSeat,
-    casts: parsedCasts,
+    castingIds, // 추가 
     content,
-    rating: parseFloat(rating),
-    imageUrls, // S3 업로드된 URL 배열
+    rating,      // number | undefined
+    imageUrls,   // S3 URL[]
   });
 
-  res.success({
+  return res.success({
     message: "관극 기록이 성공적으로 등록되었습니다.",
-    data: result,
+    data: result, // averageRating 포함
+  });
+});
+
+
+/**
+ * 역할별 출연진 목록 조회
+ */
+export const getMusicalCast = asyncHandler(async (req, res) => {
+  const { musicalId } = req.params;
+  const { order = "asc" } = req.query;
+
+  if (!Number.isInteger(Number(musicalId))) {
+    return res.error({
+      statusCode: 400,
+      errorCode: "V_MUSICAL_ID",
+      reason: "musicalId는 정수여야 합니다.",
+      data: null,
+    });
+  }
+
+  const data = await getMusicalCastGroupedByRole(musicalId, order);
+
+  return res.success({
+    message: "역할별 출연진 목록 조회 성공",
+    data,
   });
 });

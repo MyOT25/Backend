@@ -88,95 +88,178 @@ export const getMonthlySummary = async (userId, year, month) => {
 /* 오늘의 관극 등록
  */
 export const createViewingRecord = async (userId, body) => {
-    const {
-      musicalId,
-      watchDate,
-      watchTime,
-      seat,        // { theaterId, floor, zone, rowNumber(string), columnNumber(int) }
-      casts,       // [{ actorId, role }]
-      content,
-      rating,
-      imageUrls,
-    } = body;
-  
-    const theaterId     = Number(seat?.theaterId ?? seat?.locationId);
-    const floor         = Number(seat?.floor);
-    const zone          = String(seat?.zone ?? "").trim();
-    const rowNumber     = String(seat?.rowNumber ?? seat?.row ?? "").trim(); // 문자열
-    const columnNumber  = Number(seat?.columnNumber ?? seat?.column);
-  
-    if (!Number.isInteger(theaterId) || !Number.isInteger(floor) || !Number.isInteger(columnNumber) || !zone || !rowNumber) {
-      throw new Error("좌석 필드 형식이 올바르지 않습니다. (theaterId/floor/columnNumber=정수, zone/rowNumber=문자열)");
-    }
-  
-    const result = await prisma.$transaction(async (tx) => {
-      // 1) 좌석 존재 확인(사전 시드 필수). 없으면 에러
-      const seatRecord = await tx.seat.findUnique({
-        where: {
-          seat_unique_by_position: { theaterId, floor, zone, rowNumber, columnNumber },
-        },
-      });
-      if (!seatRecord) {
-        throw new Error("존재하지 않는 좌석입니다. 좌석을 먼저 등록해 주세요.");
-      }
-  
-      // 2) 관극 기록 생성
-      const viewing = await tx.viewingRecord.create({
-        data: {
-          userId,
-          musicalId,
-          seatId: seatRecord.id,
-          date: new Date(watchDate),
-          time: new Date(`${watchDate}T${watchTime}`),
-          content,
-          rating,
-        },
-      });
-  
-      // 3) UserSeat 카운트 증가: 있으면 +1, 없으면 디폴트(1)로 생성
-      await tx.userSeat.upsert({
-        where: { userId_seatId: { userId, seatId: seatRecord.id } },
-        update: { numberOfSittings: { increment: 1 } },
-        create: { userId, seatId: seatRecord.id }, // default(1) 사용
-      });
-  
-      // 4) 이미지
-      if (imageUrls?.length) {
-        await tx.viewingImage.createMany({
-          data: imageUrls.map((url) => ({ viewingId: viewing.id, url })),
-        });
-      }
-  
-      // 5) 출연진
-      if (casts?.length) {
-        const actorIds = casts.map(c => Number(c.actorId)).filter(Boolean);
-      
-        // 배우 존재 여부 확인
-        const actors = await tx.actor.findMany({
-          where: { id: { in: actorIds } },
-          select: { id: true },
-        });
-        const existing = new Set(actors.map(a => a.id));
-        const missing = actorIds.filter(id => !existing.has(id));
-      
-        if (missing.length) {
-          throw new Error(`존재하지 않는 배우 ID: [${missing.join(", ")}]. 먼저 Actor를 등록해 주세요.`);
-          // 여기서 CustomError로 400 반환하면 더 좋습니다.
-        }
-      
-        const result = await tx.casting.createMany({
-          data: casts.map(c => ({
-            musicalId,
-            actorId: c.actorId,
-            role: c.role,
-          })),
-          skipDuplicates: true,
-        });
-        console.log("casting.createMany:", result); // { count: N }
-      }
-  
-      return viewing;
+  const {
+    musicalId,
+    watchDate,
+    watchTime,
+    seat,        // { theaterId, floor, zone, rowNumber(string), columnNumber(int) }
+    castingIds=[],
+    content,
+    rating,      // number | undefined
+    imageUrls,
+  } = body;
+
+  const theaterId    = Number(seat?.theaterId ?? seat?.locationId);
+  const floor        = Number(seat?.floor);
+  const zone         = String(seat?.zone ?? "").trim();
+  const rowNumber    = String(seat?.rowNumber ?? seat?.row ?? "").trim(); // 문자열
+  const columnNumber = Number(seat?.columnNumber ?? seat?.column);
+
+  if (!Number.isInteger(theaterId) || !Number.isInteger(floor) || !Number.isInteger(columnNumber) || !zone || !rowNumber) {
+    throw new Error("좌석 필드 형식이 올바르지 않습니다. (theaterId/floor/columnNumber=정수, zone/rowNumber=문자열)");
+  }
+
+  const viewing = await prisma.$transaction(async (tx) => {
+    // 1) 좌석 존재 확인
+    const seatRecord = await tx.seat.findUnique({
+      where: {
+        seat_unique_by_position: { theaterId, floor, zone, rowNumber, columnNumber },
+      },
     });
-  
-    return result;
+    if (!seatRecord) {
+      throw new Error("존재하지 않는 좌석입니다. 좌석을 먼저 등록해 주세요.");
+    }
+
+    // 2) 관극 기록 생성
+    const created = await tx.viewingRecord.create({
+      data: {
+        userId,
+        musicalId,
+        seatId: seatRecord.id,
+        date: new Date(watchDate),
+        time: new Date(`${watchDate}T${watchTime}`),
+        content,
+        rating,
+      },
+    });
+
+    // 2-1) 뮤지컬 별점 집계 업데이트(별점이 있을 때만)
+    if (typeof rating === "number") {
+      await tx.musical.update({
+        where: { id: musicalId },
+        data: {
+          ratingSum:   { increment: rating },
+          ratingCount: { increment: 1 },
+        },
+      });
+    }
+
+    // 3) UserSeat 카운트 증가
+    await tx.userSeat.upsert({
+      where: { userId_seatId: { userId, seatId: seatRecord.id } },
+      update: { numberOfSittings: { increment: 1 } },
+      create: { userId, seatId: seatRecord.id },
+    });
+
+    // 4) 이미지
+    if (imageUrls?.length) {
+      await tx.viewingImage.createMany({
+        data: imageUrls.map((url) => ({ viewingId: created.id, url })),
+      });
+    }
+
+    // 🎯 viewingCast 저장
+    if (castingIds.length) {
+      const castingExist = await tx.casting.findMany({
+        where: { id: { in: castingIds }, musicalId },
+        select: { id: true },
+      });
+      const validIds = castingExist.map((c) => c.id);
+
+      if (validIds.length) {
+        await tx.viewingCast.createMany({
+          data: validIds.map((castingId) => ({
+            viewingId: created.id,
+            castingId,
+          })),
+        });
+      }
+    }
+
+    return created;
+  });
+
+  // 5) 평균 별점 계산(트랜잭션 종료 후)
+  const musicalAgg = await prisma.musical.findUnique({
+    where: { id: viewing.musicalId },
+    select: { ratingSum: true, ratingCount: true },
+  });
+
+  const averageRating =
+    musicalAgg && musicalAgg.ratingCount > 0
+      ? Number(musicalAgg.ratingSum) / musicalAgg.ratingCount
+      : null;
+
+  return { ...viewing, averageRating };
+};
+
+
+/**
+ * 역할별 출연진 목록 조회 
+ */
+export async function getMusicalCastGroupedByRole(musicalId, order = "asc") {
+  const sortAsc = order !== "desc";
+
+  // 1) 캐스팅 + 배우 정보 로드
+  const castings = await prisma.casting.findMany({
+    where: { musicalId: Number(musicalId) },
+    select: {
+      role: true,
+      performanceCount: true,
+      actor: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          birthDate: true,
+          profile: true,
+          snsLink: true,
+        },
+      },
+    },
+  });
+
+  // 2) 역할별 그룹핑
+  const byRole = new Map(); // role -> [{actorId, ...}]
+  for (const c of castings) {
+    const list = byRole.get(c.role ?? "미지정") ?? [];
+    list.push({
+      actorId: c.actor.id,
+      name: c.actor.name ?? "",
+      image: c.actor.image ?? null,
+      birthDate: c.actor.birthDate ?? null,
+      profile: c.actor.profile ?? null,
+      snsLink: c.actor.snsLink ?? null,
+      performanceCount: c.performanceCount ?? 0,
+    });
+    byRole.set(c.role ?? "미지정", list);
+  }
+
+  // 3) 각 역할 내부를 생년월일 기준 정렬 (NULL은 맨 뒤)
+  const nullWeight = (d) => (d ? 0 : 1);
+  const cmp = (a, b) => {
+    const na = nullWeight(a.birthDate);
+    const nb = nullWeight(b.birthDate);
+    if (na !== nb) return na - nb; // null last
+    if (!a.birthDate && !b.birthDate) {
+      return a.name.localeCompare(b.name, "ko"); // 생일 둘 다 없음 → 이름으로
+    }
+    // 생일 있음 → asc/desc
+    const ta = new Date(a.birthDate).getTime();
+    const tb = new Date(b.birthDate).getTime();
+    return sortAsc ? ta - tb : tb - ta;
   };
+
+  const roles = [...byRole.entries()].map(([role, actors]) => ({
+    role,
+    actors: actors.sort(cmp),
+  }));
+
+  // 4) 역할 자체도 보기 좋게 정렬(알파벳/한글 오름차순)
+  roles.sort((a, b) => a.role.localeCompare(b.role, "ko"));
+
+  return {
+    musicalId: Number(musicalId),
+    roles,
+  };
+}
