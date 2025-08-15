@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE `Seat` ADD COLUMN `hasColumn` BOOLEAN NOT NULL DEFAULT false,
+    ADD COLUMN `hasFloor` BOOLEAN NOT NULL DEFAULT false,
+    ADD COLUMN `hasRowNumber` BOOLEAN NOT NULL DEFAULT false,
+    ADD COLUMN `hasZone` BOOLEAN NOT NULL DEFAULT false;
