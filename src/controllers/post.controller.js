@@ -10,6 +10,7 @@ import { uploadToS3 } from "../middlewares/s3Uploader.js";
 
 //일반 게시글 등록 import
 import { CreatePostDTO } from "../dtos/post.dto.js";
+import { createCommunityPostService } from "../services/post.service.js";
 import { createPostService } from "../services/post.service.js";
 //재게시용 게시글 등록 import
 import { CreateRepostDTO } from "../dtos/post.dto.js";
@@ -45,7 +46,7 @@ import {
 // 재게시 관련 import
 import { getRepostedUsersService } from "../services/post.service.js";
 // 인용한 게시물 import
-import { getQuotedPostService } from "../services/post.service.js";
+import { getQuotedPostsService } from "../services/post.service.js";
 // 게시글 상세 조회 import
 import { getPostDetail } from "../services/post.service.js";
 
@@ -71,6 +72,7 @@ export const createPost = asyncHandler(async (req, res) => {
 /**
  * 미등록 출연진 추가
  */
+
 export const addCasting = asyncHandler(async (req, res) => {
   const { musicalId, actorId, role } = req.body;
 
@@ -211,7 +213,7 @@ router.post(
     const userId = req.user.id;
     const { communityId } = req.params;
     const createPostDto = new CreatePostDTO({ ...req.body, communityId });
-    const post = await createPostService(userId, createPostDto);
+    const post = await createCommunityPostService(userId, createPostDto);
 
     res.status(201).json({
       resultType: "SUCCESS",
@@ -1694,15 +1696,25 @@ router.get(
  */
 router.get(
   "/:postId/quoted",
+  authenticateJWT, // 필요하면 추가
   asyncHandler(async (req, res) => {
-    const { postId } = req.params;
+    const postId = Number(req.params.postId);
+    if (isNaN(postId)) {
+      return res.status(400).json({
+        resultType: "FAIL",
+        error: {
+          errorCode: "invalid_parameter",
+          reason: "postId가 유효하지 않습니다.",
+        },
+      });
+    }
 
-    const quotedPost = await getQuotedPostService(Number(postId));
+    const quotedPosts = await getQuotedPostsService(postId);
 
     return res.status(200).json({
       resultType: "SUCCESS",
       error: null,
-      success: quotedPost,
+      success: quotedPosts,
     });
   })
 );

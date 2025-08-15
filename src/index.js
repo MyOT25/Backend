@@ -23,6 +23,7 @@ import questionTagRouter from "./controllers/questionTag.controller.js";
 import homeFeedRouter from "./controllers/homeFeed.controller.js";
 import profileFeedRouter from "./controllers/profileFeed.controller.js";
 import communityReviewRouter from "./controllers/communityReview.controller.js";
+import bookmarkRouter from "./controllers/bookmark.controller.js";
 
 import "./config/passport.js"; // passport 설정
 
@@ -108,12 +109,12 @@ app.use("/api", authRouter);
 app.use("/api/questions", questionRouter);
 app.use("/api/answers", answerRouter);
 app.use("/api/communities", postRouter);
-app.use("/api/posts", postRouter);
 app.use("/api/post", postRouter);
 
 //app.use("/api", questionTagRouter);
 app.use("/api/homefeed", homeFeedRouter);
 app.use("/api/users/:userId/profilefeed", profileFeedRouter);
+app.use("/api/bookmarks", bookmarkRouter);
 
 // 기본 라우트
 
@@ -161,6 +162,8 @@ app.get("/api/viewingrecords/musicals", getMusicalByName);
 app.get("/", (req, res) => {
   res.send("Hello MyOT!");
 });
+
+app.use("/api/posts", postRouter);
 
 // 공통 예외 처리 미들웨어
 app.use(errorHandler);

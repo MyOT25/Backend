@@ -16,9 +16,9 @@ export const getPostByActorName = async (actorName) => {
 };
 
 /*
- *일반 게시글 등록(생성)
+ *일반 게시글 등록(커뮤니티)
  */
-export const createPostService = async (userId, dto) => {
+export const createCommunityPostService = async (userId, dto) => {
   const { communityId, content, hasMedia, postimages, visibility } = dto;
 
   // 커뮤니티 가입 여부 확인
@@ -29,6 +29,73 @@ export const createPostService = async (userId, dto) => {
   if (!membership) {
     throw new Error("해당 커뮤니티에 가입된 사용자만 글을 작성할 수 있습니다.");
   }
+
+  // 트랜잭션 시작
+  const post = await prisma.$transaction(async (tx) => {
+    // 1. 게시글 생성
+    const createdPost = await tx.post.create({
+      data: {
+        userId,
+        communityId,
+        content,
+        hasMedia,
+        visibility,
+      },
+      select: {
+        id: true,
+        userId: true,
+        communityId: true,
+        content: true,
+        visibility: true,
+        createdAt: true,
+      },
+    });
+
+    // 2. 이미지 저장
+    let savedImages = [];
+
+    if (postimages && postimages.length > 0) {
+      const imageList = Array.isArray(postimages) ? postimages : [postimages];
+      const imageData = imageList.map((url) => ({
+        postId: createdPost.id,
+        url,
+      }));
+
+      await tx.postImage.createMany({ data: imageData });
+      savedImages = imageList;
+    }
+
+    // 3. 해시태그 추출 및 저장
+    const tags = dto.extractHashtags();
+    for (const tagName of tags) {
+      const tag = await tx.tag_Post.upsert({
+        where: { name: tagName },
+        update: {},
+        create: { name: tagName },
+      });
+
+      await tx.postTag.create({
+        data: {
+          postId: createdPost.id,
+          tagId: tag.id,
+        },
+      });
+    }
+
+    return {
+      post: createdPost,
+      postimages: savedImages,
+    };
+  });
+
+  return post;
+};
+
+/*
+ *일반 게시글 등록(홈피드)
+ */
+export const createPostService = async (userId, dto) => {
+  const { communityId, content, hasMedia, postimages, visibility } = dto;
 
   // 트랜잭션 시작
   const post = await prisma.$transaction(async (tx) => {
@@ -430,15 +497,25 @@ export const getRepostedUsersService = async (postId) => {
   return await PostRepository.findUsersWhoReposted(postId);
 };
 
-// 인용한 게시물 정보 받아옴
-export const getQuotedPostService = async (postId) => {
-  const quoted = await PostRepository.findQuotedPost(postId);
+// 특정 게시글을 인용한 모든 인용 게시글 조회
+export const getQuotedPostsService = async (targetPostId) => {
+  const quotes = await PostRepository.findAllQuotesOfPost(targetPostId);
 
-  if (!quoted) {
-    throw new NotFoundError("해당 게시글은 인용한 게시글이 없습니다.");
+  if (!quotes || quotes.length === 0) {
+    throw new NotFoundError("해당 게시글을 인용한 게시글이 없습니다.");
   }
 
-  return quoted;
+  // 필요한 데이터 가공
+  return quotes.map((post) => ({
+    id: post.id,
+    content: post.content,
+    createdAt: post.createdAt,
+    user: post.user,
+    postImages: post.postImages,
+    community: post.community,
+    likeCount: post.postLikes.length,
+    bookmarkCount: post.postBookmarks.length,
+  }));
 };
 
 /**
