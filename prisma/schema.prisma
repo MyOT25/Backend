@@ -206,7 +206,7 @@ model Actor {
 model Musical {
   id               Int       @id @default(autoincrement())
   theaterId        Int
-  name             String?
+  name             String
   startDate        DateTime?
   endDate          DateTime?
   poster           String?
@@ -244,10 +244,15 @@ model Theater {
 model Seat {
   id           Int    @id @default(autoincrement())
   theaterId    Int
-  floor        Int
-  zone         String
-  rowNumber    String
-  columnNumber Int
+  floor        Int?
+  zone         String?
+  rowNumber    String?
+  columnNumber Int?
+
+  hasFloor     Boolean @default(false) // 층 정보 있는지
+  hasZone      Boolean @default(false) // 구역 정보 있는지
+  hasRowNumber Boolean @default(false) // 열 정보 있는지
+  hasColumn    Boolean @default(false) // 번호 정보 있는지
 
   theater   Theater         @relation(fields: [theaterId], references: [id])
   userSeats UserSeat[]
