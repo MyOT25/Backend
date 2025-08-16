@@ -155,3 +155,13 @@ chore : 빌드 업무 수정, 패키지 매니저 수정
 
 - 비동기 처리 로직에서 발생하던 메모리 누수 문제 해결
 
+
+<br/>
+<br/>
+
+
+# 9. 서비스 아키텍쳐
+<img width="1746" height="988" alt="image" src="https://github.com/user-attachments/assets/34b956c5-3734-46bc-a3b4-24e920b08582" />
+
+
+
