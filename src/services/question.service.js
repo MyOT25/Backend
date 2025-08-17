@@ -170,6 +170,78 @@ const formatQuestionDetail = (q) => ({
   })),
 });
 
+const getPopularQuestions = async ({ page = 1, size = 20 } = {}) => {
+  const basics = await prisma.question.findMany({ select: { id: true, createdAt: true } });
+  const allIds = basics.map(b => b.id);
+  if (allIds.length === 0) return [];
+
+  const [likeAgg, commentAgg] = await Promise.all([
+    prisma.questionLike.groupBy({ by: ['questionId'], _count: { _all: true }, where: { questionId: { in: allIds } } }),
+    prisma.questionComment.groupBy({ by: ['questionId'], _count: { _all: true }, where: { questionId: { in: allIds } } }),
+  ]);
+
+  const likeMap = new Map(likeAgg.map(r => [r.questionId, r._count._all]));
+  const commentMap = new Map(commentAgg.map(r => [r.questionId, r._count._all]));
+  const createdAtMap = new Map(basics.map(b => [b.id, b.createdAt]));
+
+  const scored = allIds.map(id => ({
+    id,
+    likeCount: likeMap.get(id) ?? 0,
+    commentCount: commentMap.get(id) ?? 0,
+    createdAt: createdAtMap.get(id),
+  })).sort((a, b) =>
+    (b.likeCount - a.likeCount) ||
+    (b.commentCount - a.commentCount) ||
+    (b.createdAt - a.createdAt)
+  );
+
+  // ✅ pageIds를 먼저 계산
+  const start = (page - 1) * size;
+  const pageIds = scored.slice(start, start + size).map(s => s.id);
+  if (pageIds.length === 0) return [];
+
+  // ✅ 그 다음에 조회에 사용
+  const rows = await prisma.question.findMany({
+    where: { id: { in: pageIds } },
+    include: {
+      user: { select: { id: true, nickname: true, profileImage: true } },
+      questionTags: { include: { tag: true } },
+      images: true,
+      answers: {
+        include: { user: { select: { id: true, nickname: true } } },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  });
+
+  const rowMap = new Map(rows.map(r => [r.id, r]));
+  return pageIds.map(id => ({
+    ...formatQuestionSummary(rowMap.get(id)),
+    likeCount: likeMap.get(id) ?? 0,
+    commentCount: commentMap.get(id) ?? 0,
+  }));
+};
+
+// 오래된순: createdAt asc
+const getOldestQuestions = async ({ page = 1, size = 20 } = {}) => {
+  const skip = (page - 1) * size;
+  const questions = await questionRepository.getQuestionsOldest({ skip, take: size });
+
+  const ids = questions.map(q => q.id);
+  const [likeAgg, commentAgg] = await Promise.all([
+    prisma.questionLike.groupBy({ by: ['questionId'], _count: { _all: true }, where: { questionId: { in: ids } } }),
+    prisma.questionComment.groupBy({ by: ['questionId'], _count: { _all: true }, where: { questionId: { in: ids } } }),
+  ]);
+  const likeMap = new Map(likeAgg.map(r => [r.questionId, r._count._all]));
+  const commentMap = new Map(commentAgg.map(r => [r.questionId, r._count._all]));
+
+  return questions.map(q => ({
+    ...formatQuestionSummary(q),
+    likeCount: likeMap.get(q.id) ?? 0,
+    commentCount: commentMap.get(q.id) ?? 0,
+  }));
+};
+
 // ───────── Export ─────────
 export const QuestionService = {
   registerQuestion,
@@ -179,4 +251,6 @@ export const QuestionService = {
   likeQuestion,
   unlikeQuestion,
   getQuestionLikeCount,
+  getPopularQuestions,
+  getOldestQuestions,
 };
