@@ -98,6 +98,7 @@ router.post(
  *               - loginId
  *               - password
  *               - nickname
+ *               - birthDate
  *             properties:
  *               username:
  *                 type: string
@@ -115,6 +116,9 @@ router.post(
  *               nickname:
  *                 type: string
  *                 example: 닉네임
+ *               birthDate:
+ *                 type: string
+ *                 example: 2000-01-01
  *     responses:
  *       200:
  *         description: 회원가입 성공
@@ -126,15 +130,9 @@ router.post(
  *                 id:
  *                   type: integer
  *                   example: 1
- *                 username:
- *                   type: string
- *                   example: 사용자이름
  *                 nickname:
  *                   type: string
  *                   example: 닉네임
- *                 email:
- *                   type: string
- *                   example: test@example.com
  */
 router.post(
   "/auth/signup",
