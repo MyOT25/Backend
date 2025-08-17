@@ -58,7 +58,7 @@ model User {
 model Post {
   id             Int         @id @default(autoincrement())
   userId         Int
-  communityId    Int
+  communityId    Int?
   isRepost       Boolean     @default(false)
   repostType     RepostType?
   repostTargetId Int?
@@ -73,7 +73,7 @@ model Post {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   hasMedia      Boolean        @default(false)
-  community     Community      @relation(fields: [communityId], references: [id])
+  community     Community?      @relation(fields: [communityId], references: [id])
   user          User           @relation(fields: [userId], references: [id])
   postBookmarks PostBookmark[]
   postComments  PostComment[]
@@ -109,15 +109,12 @@ model Tag_Post {
 model PostTag {
   postId    Int
   tagId     Int
-  tagPostId Int?
   createdAt DateTime  @default(now())
   post      Post      @relation(fields: [postId], references: [id])
-  tag       Tag       @relation(fields: [tagId], references: [id])
-  tagPost   Tag_Post? @relation(fields: [tagPostId], references: [id])
+  tag       Tag_Post      @relation(fields: [tagId], references: [id])
 
   @@id([postId, tagId])
-  @@index([tagId], map: "PostTag_tagId_fkey")
-  @@index([tagPostId], map: "PostTag_tagPostId_fkey")
+  @@index([tagId])
 }
 
 model PostComment {
@@ -296,13 +293,6 @@ model Setting {
   useProfilePhoto Boolean?
   allowRepost     Boolean?
   users           User     @relation(fields: [userId], references: [id])
-}
-
-model Tag {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique
-  createdAt DateTime  @default(now())
-  postTags  PostTag[]
 }
 
 model Subscribe {
