@@ -279,6 +279,171 @@ const toBoolean = (v) => {
 
 /**
  * @swagger
+ * /api/questions/popular:
+ *   get:
+ *     summary: 인기순 질문 목록 조회
+ *     description: 좋아요 수 DESC → 댓글 수 DESC → 생성일 DESC 순으로 정렬합니다.
+ *     tags:
+ *       - Questions
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: 페이지 번호(1-base)
+ *       - in: query
+ *         name: size
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: 페이지 크기
+ *     responses:
+ *       200:
+ *         description: 인기순 질문 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 error:
+ *                   type: object
+ *                   nullable: true
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                           title:
+ *                             type: string
+ *                           content:
+ *                             type: string
+ *                           thumbnailUrl:
+ *                             type: string
+ *                             nullable: true
+ *                           tagList:
+ *                             type: array
+ *                             items:
+ *                               type: string
+ *                           isAnonymous:
+ *                             type: boolean
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                           user:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: integer
+ *                                 nullable: true
+ *                               nickname:
+ *                                 type: string
+ *                               profileImage:
+ *                                 type: string
+ *                                 nullable: true
+ *                           likeCount:
+ *                             type: integer
+ *                           commentCount:
+ *                             type: integer
+ */
+
+/**
+ * @swagger
+ * /api/questions/oldest:
+ *   get:
+ *     summary: 오래된순 질문 목록 조회
+ *     description: 생성일 ASC(오래된순)으로 정렬합니다.
+ *     tags:
+ *       - Questions
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: 페이지 번호(1-base)
+ *       - in: query
+ *         name: size
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: 페이지 크기
+ *     responses:
+ *       200:
+ *         description: 오래된순 질문 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 error:
+ *                   type: object
+ *                   nullable: true
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                           title:
+ *                             type: string
+ *                           content:
+ *                             type: string
+ *                           thumbnailUrl:
+ *                             type: string
+ *                             nullable: true
+ *                           tagList:
+ *                             type: array
+ *                             items:
+ *                               type: string
+ *                           isAnonymous:
+ *                             type: boolean
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                           user:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: integer
+ *                                 nullable: true
+ *                               nickname:
+ *                                 type: string
+ *                               profileImage:
+ *                                 type: string
+ *                                 nullable: true
+ *                           likeCount:
+ *                             type: integer
+ *                           commentCount:
+ *                             type: integer
+ */
+
+
+/**
+ * @swagger
  * /api/questions/{questionId}/like:
  *   post:
  *     summary: 질문 좋아요 등록
