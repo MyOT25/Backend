@@ -187,3 +187,37 @@ export const deleteQuestion = async (questionId) => {
   // 5) 질문 삭제
   return await prisma.question.delete({ where: { id } });
 };
+
+// 여러 개 ID로 질문 묶어 가져오기 (정렬은 서비스에서 유지)
+export const getQuestionsByIds = async (ids = []) => {
+  console.log('[getQuestionsByIds] ids=', ids); 
+  const list = ids.map(Number).filter((n) => Number.isInteger(n));
+  if (list.length === 0) return [];
+
+  return await prisma.question.findMany({        // ✅ findMany!
+    where: { id: { in: list } },                 // ✅ in 조건
+    include: {
+      user: { select: { id: true, nickname: true, profileImage: true } },
+      questionTags: { include: { tag: true } },
+      images: true,
+      answers: {
+        include: { user: { select: { id: true, nickname: true } } },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  });
+};
+
+// 오래된순(ASC) 페이징
+export const getQuestionsOldest = async ({ skip = 0, take = 20 } = {}) => {
+  return await prisma.question.findMany({
+    orderBy: { createdAt: 'asc' },
+    include: {
+      user: { select: { id: true, nickname: true, profileImage: true } },
+      questionTags: { include: { tag: true } },
+      images: true,
+    },
+    skip,
+    take,
+  });
+};

@@ -854,6 +854,37 @@ router.get('/', async (req, res, next) => {
 });
 
 /**
+ * 인기순 질문 목록
+ * GET /api/questions/popular?page=1&size=20
+ */
+router.get('/popular', async (req, res, next) => {
+  try {
+    const page = Number(req.query.page ?? 1);
+    const size = Number(req.query.size ?? 20);
+    const list = await QuestionService.getPopularQuestions({ page, size });
+    return res.status(200).json(response.success('인기순 질문 목록을 불러왔습니다.', list));
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * 오래된순 질문 목록
+ * GET /api/questions/oldest?page=1&size=20
+ */
+router.get('/oldest', async (req, res, next) => {
+  try {
+    const page = Number(req.query.page ?? 1);
+    const size = Number(req.query.size ?? 20);
+    const list = await QuestionService.getOldestQuestions({ page, size });
+    return res.status(200).json(response.success('오래된순 질문 목록을 불러왔습니다.', list));
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+/**
  * 질문 상세 조회
  * - 서비스 결과 그대로 전달 (answers 포함, isAnonymous/마스킹 반영)
  */
@@ -1058,6 +1089,36 @@ router.get('/:questionId/comments/:commentId/me', authenticateJWT, async (req, r
   } catch (err) {
     if (err?.errorCode === 'QC404')
       return res.status(404).json(response.fail('QC404', '댓글을 찾을 수 없습니다.'));
+    next(err);
+  }
+});
+
+/**
+ * 인기순 질문 목록
+ * GET /api/questions/popular?page=1&size=20
+ */
+router.get('/popular', async (req, res, next) => {
+  try {
+    const page = Number(req.query.page ?? 1);
+    const size = Number(req.query.size ?? 20);
+    const list = await QuestionService.getPopularQuestions({ page, size });
+    return res.status(200).json(response.success('인기순 질문 목록을 불러왔습니다.', list));
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * 오래된순 질문 목록
+ * GET /api/questions/oldest?page=1&size=20
+ */
+router.get('/oldest', async (req, res, next) => {
+  try {
+    const page = Number(req.query.page ?? 1);
+    const size = Number(req.query.size ?? 20);
+    const list = await QuestionService.getOldestQuestions({ page, size });
+    return res.status(200).json(response.success('오래된순 질문 목록을 불러왔습니다.', list));
+  } catch (err) {
     next(err);
   }
 });
