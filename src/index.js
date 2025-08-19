@@ -38,6 +38,7 @@ import { getMusicalCastings } from "./controllers/casting.controller.js";
 import {
   getTicketBookDetail,
   getTicketbookSeriesController,
+  getTicketbookCount
 } from "./controllers/ticketbook.controller.js";
 import {
   createChatRoomController,
@@ -125,12 +126,14 @@ app.post("/api/posts/musical/castings", authenticateJWT, addCasting);
 app.post("/api/posts/memorybooks", authenticateJWT, addMemoryBook);
 app.get("/api/posts/memorybooks", authenticateJWT, getMemoryBook);
 app.put("/api/posts/memorybooks", authenticateJWT, updateMemoryBook);
-app.get("/api/posts/musical/castings", getMusicalCastings);
+app.get("/api/posts/musical/castings", authenticateJWT,getMusicalCastings);
 app.get("/api/ticketbook/:musicalId", authenticateJWT, getTicketBookDetail);
+
 app.post("/api/chatrooms", authenticateJWT, createChatRoomController);
 app.get("/api/chat/rooms", authenticateJWT, getChatRoomListController);
 app.post("/api/chat/send", authenticateJWT, sendMessage);
 app.get("/api/messages", authenticateJWT, getMessages);
+
 app.get(
   "/api/viewingrecords/ticketbook",
   authenticateJWT,
@@ -156,6 +159,8 @@ app.get(
 // 역할별 출연진 목록 조회
 app.get("/api/viewingrecords/:musicalId/cast", authenticateJWT, getMusicalCast);
 app.get("/api/viewingrecords/musicals", getMusicalByName);
+// 티켓북 카운트 조회 API
+app.get("/api/ticketbook/count/:musicalId",authenticateJWT,getTicketbookCount);
 
 // 하경 API --
 
