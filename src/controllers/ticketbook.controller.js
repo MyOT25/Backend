@@ -251,7 +251,6 @@ export const getTicketbookSeriesController = asyncHandler(async (req, res) => {
  *       401:
  *         description: 인증 실패
  */
-
 export const getTicketbookCount = async (req, res, next) => {
   try {
     console.log("params:", req.params);

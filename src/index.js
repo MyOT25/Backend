@@ -126,12 +126,14 @@ app.post("/api/posts/musical/castings", authenticateJWT, addCasting);
 app.post("/api/posts/memorybooks", authenticateJWT, addMemoryBook);
 app.get("/api/posts/memorybooks", authenticateJWT, getMemoryBook);
 app.put("/api/posts/memorybooks", authenticateJWT, updateMemoryBook);
-app.get("/api/posts/musical/castings", getMusicalCastings);
+app.get("/api/posts/musical/castings", authenticateJWT,getMusicalCastings);
 app.get("/api/ticketbook/:musicalId", authenticateJWT, getTicketBookDetail);
+
 app.post("/api/chatrooms", authenticateJWT, createChatRoomController);
 app.get("/api/chat/rooms", authenticateJWT, getChatRoomListController);
 app.post("/api/chat/send", authenticateJWT, sendMessage);
 app.get("/api/messages", authenticateJWT, getMessages);
+
 app.get(
   "/api/viewingrecords/ticketbook",
   authenticateJWT,
