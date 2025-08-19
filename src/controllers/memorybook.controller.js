@@ -202,6 +202,7 @@ export const addMemoryBook = asyncHandler(async (req, res) => {
  */
 
 export const getMemoryBook = async (req, res, next) => {
+  
   try {
     const userId = req.user.id; // JWT로부터 userId 추출
     const { targetType, targetId } = req.query;

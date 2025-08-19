@@ -230,6 +230,7 @@ export const getMonthlySummary = async (req, res, next) => {
  *                 example: '{"theaterId":2,"floor":1,"zone":"가구역","rowNumber":"2","columnNumber":3}'
  *               casts:
  *                 type: string
+ *                 nullable: true
  *                 example: '[{"actorId":1,"role":"루케니"},{"actorId":2,"role":"엘리자벳"}]'
  *               content:
  *                 type: string
@@ -246,7 +247,7 @@ export const getMonthlySummary = async (req, res, next) => {
  *                 description: 여러 이미지 파일 첨부
  *     responses:
  *       200:
- *         description: 등록 성공
+ *         description: 관극 기록 등록 성공
  *         content:
  *           application/json:
  *             schema:
@@ -304,6 +305,7 @@ export const getMonthlySummary = async (req, res, next) => {
  *                             - "https://bucket.s3.amazonaws.com/img1.jpg"
  *                             - "https://bucket.s3.amazonaws.com/img2.jpg"
  */
+
 export const createViewingPost = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   if (!userId) {
@@ -371,13 +373,22 @@ export const createViewingPost = asyncHandler(async (req, res) => {
 
    // 🎯 castingIds 파싱
    let castingIds = [];
-   try {
-     castingIds = typeof _castingIds === "string" ? JSON.parse(_castingIds) : _castingIds;
-     if (!Array.isArray(castingIds)) castingIds = [];
-     castingIds = castingIds.map((id) => Number(id)).filter((id) => Number.isInteger(id));
-   } catch {
-     castingIds = [];
-   }
+    try {
+    if (typeof _castingIds === "string") {
+      // "[1,2,3]" 같은 문자열을 배열로
+      castingIds = JSON.parse(_castingIds);
+    } else if (Array.isArray(_castingIds)) {
+      // form-data에서 같은 키 여러 번 전달된 경우
+      castingIds = _castingIds;
+    }
+
+    if (!Array.isArray(castingIds)) castingIds = [];
+    castingIds = castingIds
+      .map((id) => Number(id))
+      .filter((id) => Number.isInteger(id));
+  } catch {
+    castingIds = [];
+  }
 
   // 5) 서비스 호출(casts 전달 없음)
   const result = await createViewingRecord(userId, {
