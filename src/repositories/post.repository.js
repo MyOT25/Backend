@@ -1,4 +1,4 @@
-import prisma from "../config/prismaClient.js";
+import prisma from '../config/prismaClient.js';
 
 class PostRepository {
   async findViewingRecordsByMonth(userId, year, month) {
@@ -86,7 +86,7 @@ class PostRepository {
       data: {
         userId,
         isRepost: true,
-        repostType: "repost",
+        repostType: 'repost',
         repostTargetId,
         visibility,
         ...(communityId ? { communityId: Number(communityId) } : {}),
@@ -95,14 +95,7 @@ class PostRepository {
   }
 
   // 인용 게시글 생성
-  async createQuotePost({
-    userId,
-    communityId,
-    repostType,
-    repostTargetId,
-    content,
-    visibility,
-  }) {
+  async createQuotePost({ userId, communityId, repostType, repostTargetId, content, visibility }) {
     return prisma.post.create({
       data: {
         userId,
@@ -174,11 +167,47 @@ class PostRepository {
     });
   }
 
-  // 게시글 북마크 삭제 (postId 기준)
-  async deletePostBookmarksByPostId(postId) {
-    return prisma.postBookmark.deleteMany({
-      where: { postId },
+  // 북마크 등록(카운트 올라감)
+  async addBookmarkTx(userId, postId) {
+    return prisma.$transaction(async (tx) => {
+      const exists = await tx.postBookmark.findUnique({
+        where: { PostBookmark_userId_postId_key: { userId, postId } },
+      });
+      if (exists) return { created: false };
+
+      await tx.postBookmark.create({ data: { userId, postId } });
+      await tx.post.update({
+        where: { id: postId },
+        data: { bookmarkCount: { increment: 1 } },
+      });
+
+      return { created: true };
     });
+  }
+
+  // 북마크 삭제(횟수 내려감)
+  async removeBookmarkTx(userId, postId) {
+    return prisma.$transaction(async (tx) => {
+      // deleteMany로 삭제 여부 count 확인
+      const deleted = await tx.postBookmark.deleteMany({
+        where: { userId, postId },
+      });
+
+      if (deleted.count > 0) {
+        await tx.post.update({
+          where: { id: postId },
+          data: { bookmarkCount: { decrement: deleted.count } },
+        });
+        return { deleted: true };
+      }
+      return { deleted: false };
+    });
+  }
+
+  // 게시물 존재 여부 확인
+  async ensurePostExists(postId) {
+    const post = await prisma.post.findUnique({ where: { id: postId } });
+    return !!post;
   }
 
   // Post 삭제
@@ -191,7 +220,7 @@ class PostRepository {
   // 전체 게시글 조회
   async getAllPosts() {
     return prisma.post.findMany({
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       include: {
         postImages: true,
       },
@@ -205,7 +234,7 @@ class PostRepository {
         hasMedia: true, // 또는 1 (boolean인지 int인지 스키마에 따라)
       },
       orderBy: {
-        createdAt: "desc",
+        createdAt: 'desc',
       },
     });
   }
@@ -269,7 +298,7 @@ class PostRepository {
       where: { postId: Number(postId) },
       skip,
       take,
-      orderBy: { likedAt: "desc" },
+      orderBy: { likedAt: 'desc' },
       include: {
         user: {
           select: {
@@ -295,13 +324,13 @@ class PostRepository {
       where: {
         isRepost: true,
         repostTargetId: Number(postId),
-        repostType: "repost", // ✅ enum 값에 맞게 소문자로!
+        repostType: 'repost', // ✅ enum 값에 맞게 소문자로!
       },
       include: {
         user: true,
       },
       orderBy: {
-        createdAt: "desc",
+        createdAt: 'desc',
       },
     });
 
@@ -312,7 +341,7 @@ class PostRepository {
     return prisma.post.findMany({
       where: {
         isRepost: true,
-        repostType: "quote",
+        repostType: 'quote',
         repostTargetId: targetPostId,
       },
       include: {
@@ -322,7 +351,7 @@ class PostRepository {
         postLikes: true,
         postBookmarks: true,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
