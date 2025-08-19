@@ -160,6 +160,98 @@ export const getTicketbookSeriesController = asyncHandler(async (req, res) => {
 /**
  * 나의 티켓북 (횟수)
  */
+/**
+ * @swagger
+ * /api/ticektbook/count/{musicalId}:
+ *   get:
+ *     summary: 티켓북 카운트 조회
+ *     description: 특정 뮤지컬에 대해 총 공연 횟수, 내가 본 횟수, 역할별 횟수 및 배우 정보를 조회합니다.
+ *     tags:
+ *       - TicketBook
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: musicalId
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: 조회할 뮤지컬 ID
+ *         example: 5
+ *     responses:
+ *       200:
+ *         description: 티켓북 카운트 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 error:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                       example: 티켓북 카운트 조회 성공
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         musical:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: integer
+ *                               example: 5
+ *                             title:
+ *                               type: string
+ *                               example: 시카고
+ *                             performanceCount:
+ *                               type: integer
+ *                               example: 100
+ *                             myViewingCount:
+ *                               type: integer
+ *                               example: 14
+ *                         castings:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               castingId:
+ *                                 type: integer
+ *                                 example: 1
+ *                               roleName:
+ *                                 type: string
+ *                                 example: 벨마
+ *                               performanceCount:
+ *                                 type: integer
+ *                                 example: 60
+ *                               actor:
+ *                                 type: object
+ *                                 properties:
+ *                                   id:
+ *                                     type: integer
+ *                                     example: 10
+ *                                   name:
+ *                                     type: string
+ *                                     example: 김김김
+ *                                   image:
+ *                                     type: string
+ *                                     example: https://s3.amazonaws.com/actors/kimkimkim.jpg
+ *                               myCount:
+ *                                 type: integer
+ *                                 example: 15
+ *       400:
+ *         description: 잘못된 요청 (musicalId가 정수가 아님 등)
+ *       401:
+ *         description: 인증 실패
+ */
+
 export const getTicketbookCount = async (req, res, next) => {
   try {
     console.log("params:", req.params);
