@@ -109,3 +109,80 @@ const toYearLabel = (startDate, endDate) => {
   
     return { title: base.name, series };
   };
+
+/**
+ * 나의 티켓북(상세-횟수)
+ */
+export const getTicketbookCountService = async (userId, musicalId) => {
+  // 1. 뮤지컬 기본 정보 + 총 공연 횟수
+  const musical = await prisma.musical.findUnique({
+    where: { id: Number(musicalId) },
+    select: {
+      id: true,
+      name: true,
+      performanceCount: true,
+    },
+  });
+
+  if (!musical) throw new Error("해당 뮤지컬이 존재하지 않습니다.");
+
+  // 2. 내가 본 공연 횟수
+  const myViewingCount = await prisma.viewingRecord.count({
+    where: { userId, musicalId: Number(musicalId) },
+  });
+
+  // 3. 캐스팅 정보 (배우 프로필 포함)
+  const castings = await prisma.casting.findMany({
+    where: { musicalId: Number(musicalId) },
+    select: {
+      id: true,
+      role: true,
+      performanceCount: true,
+      actor: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+        },
+      },
+    },
+  });
+
+  // 4. 내가 본 역할별 횟수 (ViewingCast + ViewingRecord 조인)
+  const myCastingCounts = await prisma.viewingCast.groupBy({
+    by: ["castingId"],
+    where: {
+      viewing: {
+        userId,
+        musicalId: Number(musicalId),
+      },
+    },
+    _count: { castingId: true },
+  });
+
+  const myCastingCountMap = myCastingCounts.reduce((acc, curr) => {
+    acc[curr.castingId] = curr._count.castingId;
+    return acc;
+  }, {});
+
+  // 5. 최종 응답 데이터 구성
+  return {
+    musical: {
+      id: musical.id,
+      name: musical.name,
+      performanceCount: musical.performanceCount,
+      myViewingCount,
+    },
+    castings: castings.map((c) => ({
+      castingId: c.id,
+      role: c.role,
+      performanceCount: c.performanceCount,
+      actor: {
+        id: c.actor.id,
+        name: c.actor.name,
+        image: c.actor.image,
+      },
+      myCount: myCastingCountMap[c.id] || 0,
+    })),
+  };
+};

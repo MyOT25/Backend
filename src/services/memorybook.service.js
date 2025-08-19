@@ -14,16 +14,20 @@ export const createMemoryBookService = async (userId, body) => {
   const type = targetType.toUpperCase();
 
   if (type === "MUSICAL") {
+    console.log("🎯 Checking musical with id:", targetId);
     const musical = await prisma.musical.findUnique({
       where: { id: targetId },
     });
+    console.log("🎯 musical result:", musical);
     if (!musical) {
       throw new CustomError.BadRequestError("존재하지 않는 뮤지컬입니다.");
     }
   } else if (type === "ACTOR") {
+    console.log("🎯 Checking actor with id:", targetId);
     const actor = await prisma.actor.findUnique({
       where: { id: targetId },
     });
+    console.log("🎯 actor result:", actor);
     if (!actor) {
       throw new CustomError.BadRequestError("존재하지 않는 배우입니다.");
     }
@@ -44,7 +48,11 @@ export const createMemoryBookService = async (userId, body) => {
   return memoryBook;
 };
 
+/** 
+ * 메모리북 조회
+ */
 export const getMemoryBookService= async (userId, targetType, targetId) => {
+  console.log("📌 getMemoryBookService params:", { userId, targetType, targetId, targetIdType: typeof targetId });
   const memoryBook = await prisma.memoryBook.findFirst({
     where: {
       userId,
@@ -52,6 +60,8 @@ export const getMemoryBookService= async (userId, targetType, targetId) => {
       targetId,
     },
   });
+
+  console.log("📌 memoryBook result:", memoryBook);
 
   if (!memoryBook) {
     throw new BadRequestError("메모리북이 존재하지 않습니다.");

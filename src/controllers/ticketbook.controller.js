@@ -1,7 +1,7 @@
 import asyncHandler from "../middlewares/asyncHandler.js";
 import prisma from "../config/prismaClient.js";
 import { NotFoundError } from "../middlewares/CustomError.js";
-import { getTicketbookSeries } from "../services/ticketbook.service.js";
+import { getTicketbookSeries, getTicketbookCountService } from "../services/ticketbook.service.js";
 
 /**
  * 티켓북 상세 조회 (극장 ID + 좌석 정보)
@@ -156,3 +156,38 @@ export const getTicketbookSeriesController = asyncHandler(async (req, res) => {
     success: { message: "티켓북 시리즈 조회 성공", data }
   });
 });
+
+/**
+ * 나의 티켓북 (횟수)
+ */
+export const getTicketbookCount = async (req, res, next) => {
+  try {
+    console.log("params:", req.params);
+    const { musicalId:_musicalId } = req.params;
+    const userId = req.user?.id; // JWT 인증 미들웨어에서 넣어준 userId 사용
+
+    const musicalId = Number(_musicalId);
+    if (!Number.isInteger(musicalId)) {
+      return res.error({
+        statusCode: 400,
+        errorCode: "V007",
+        reason: "musicalId는 정수여야 합니다.",
+        data: null,
+      });
+    }
+
+
+    const data = await getTicketbookCountService(userId, musicalId);
+
+    return res.json({
+      resultType: "SUCCESS",
+      error: null,
+      success: {
+        message: "티켓북 카운트 조회 성공",
+        data,
+      },
+    });
+  } catch (error) {
+    next(error); // Global error handler로 위임
+  }
+};

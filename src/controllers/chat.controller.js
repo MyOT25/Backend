@@ -115,7 +115,7 @@ export const createChatRoomController = async (req, res) => {
 // 채팅방 조회 API
 /**
  * @swagger
- * /api/chatrooms:
+ * /api/chat/rooms:
  *   get:
  *     summary: 채팅방 목록 조회
  *     description: 로그인한 사용자의 채팅방 목록을 조회합니다.
@@ -178,7 +178,7 @@ export const getChatRoomListController = async (req, res, next) => {
 // 메세지 전송 API
 /**
  * @swagger
- * /api/messages:
+ * /api/chat/send:
  *   post:
  *     summary: 메시지 전송
  *     description: 특정 채팅방에 메시지를 전송합니다.

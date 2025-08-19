@@ -38,6 +38,7 @@ import { getMusicalCastings } from "./controllers/casting.controller.js";
 import {
   getTicketBookDetail,
   getTicketbookSeriesController,
+  getTicketbookCount
 } from "./controllers/ticketbook.controller.js";
 import {
   createChatRoomController,
@@ -156,6 +157,8 @@ app.get(
 // 역할별 출연진 목록 조회
 app.get("/api/viewingrecords/:musicalId/cast", authenticateJWT, getMusicalCast);
 app.get("/api/viewingrecords/musicals", getMusicalByName);
+// 티켓북 카운트 조회 API
+app.get("/api/ticketbook/count/:musicalId",authenticateJWT,getTicketbookCount);
 
 // 하경 API --
 
