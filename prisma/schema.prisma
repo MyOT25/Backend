@@ -485,6 +485,7 @@ model Casting {
   actorId          Int
   role             String @default("미지정")
   performanceCount Int    @default(0) // 해당 역할로 공연한 횟수 
+  importance       Int    @default(0) // 캐스팅 중요도(값이 클수록 우선순위 높음, 부호=원/멀 구분)
 
   actor       Actor         @relation(fields: [actorId], references: [id])
   musical     Musical       @relation(fields: [musicalId], references: [id], onDelete: NoAction, onUpdate: NoAction)

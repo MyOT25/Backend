@@ -1,0 +1,1 @@
+ALTER TABLE `Casting` ADD COLUMN `importance` INT NOT NULL DEFAULT 0;

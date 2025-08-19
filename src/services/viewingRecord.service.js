@@ -207,12 +207,13 @@ export const createViewingRecord = async (userId, body) => {
 export async function getMusicalCastGroupedByRole(musicalId, order = "asc") {
   const sortAsc = order !== "desc";
 
-  // 1) 캐스팅 + 배우 정보 로드
+  // 1) 캐스팅 + 배우 정보 로드 (importance 포함)
   const castings = await prisma.casting.findMany({
     where: { musicalId: Number(musicalId) },
     select: {
       role: true,
       performanceCount: true,
+      importance: true,
       actor: {
         select: {
           id: true,
@@ -227,7 +228,7 @@ export async function getMusicalCastGroupedByRole(musicalId, order = "asc") {
   });
 
   // 2) 역할별 그룹핑
-  const byRole = new Map(); // role -> [{actorId, ...}]
+  const byRole = new Map();
   for (const c of castings) {
     const list = byRole.get(c.role ?? "미지정") ?? [];
     list.push({
@@ -238,20 +239,25 @@ export async function getMusicalCastGroupedByRole(musicalId, order = "asc") {
       profile: c.actor.profile ?? null,
       snsLink: c.actor.snsLink ?? null,
       performanceCount: c.performanceCount ?? 0,
+      importance: c.importance ?? 0,
     });
     byRole.set(c.role ?? "미지정", list);
   }
 
-  // 3) 각 역할 내부를 생년월일 기준 정렬 (NULL은 맨 뒤)
+  // 3) 각 역할 내부 정렬 (importance -> birthDate -> name)
   const nullWeight = (d) => (d ? 0 : 1);
   const cmp = (a, b) => {
+    // importance 우선
+    if (a.importance !== b.importance) {
+      return b.importance - a.importance;
+    }
+    // importance 같으면 생일 여부 체크
     const na = nullWeight(a.birthDate);
     const nb = nullWeight(b.birthDate);
     if (na !== nb) return na - nb; // null last
     if (!a.birthDate && !b.birthDate) {
-      return a.name.localeCompare(b.name, "ko"); // 생일 둘 다 없음 → 이름으로
+      return a.name.localeCompare(b.name, "ko"); // 둘 다 null → 이름순
     }
-    // 생일 있음 → asc/desc
     const ta = new Date(a.birthDate).getTime();
     const tb = new Date(b.birthDate).getTime();
     return sortAsc ? ta - tb : tb - ta;
@@ -262,8 +268,15 @@ export async function getMusicalCastGroupedByRole(musicalId, order = "asc") {
     actors: actors.sort(cmp),
   }));
 
-  // 4) 역할 자체도 보기 좋게 정렬(알파벳/한글 오름차순)
-  roles.sort((a, b) => a.role.localeCompare(b.role, "ko"));
+  // 4) 역할 자체 정렬 (가장 높은 importance → role 이름순)
+  roles.sort((a, b) => {
+    const maxImpA = Math.max(...a.actors.map((x) => x.importance ?? 0));
+    const maxImpB = Math.max(...b.actors.map((x) => x.importance ?? 0));
+    if (maxImpA !== maxImpB) {
+      return maxImpB - maxImpA;
+    }
+    return a.role.localeCompare(b.role, "ko");
+  });
 
   return {
     musicalId: Number(musicalId),
