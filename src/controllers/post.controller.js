@@ -929,6 +929,9 @@ router.post(
  *                           userId:
  *                             type: integer
  *                             example: 1
+ *                           loginId:
+ *                              type: integer
+ *                              example: user01
  *                           nickname:
  *                             type: string
  *                             example: "홍길동"
@@ -1767,6 +1770,9 @@ router.get(
  *                         id:
  *                           type: integer
  *                           example: 10
+ *                         loginId:
+ *                              type: integer
+ *                              example: user01
  *                         nickname:
  *                           type: string
  *                           example: "유저1"

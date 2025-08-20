@@ -260,6 +260,7 @@ class PostRepository {
         user: {
           select: {
             id: true,
+            loginId: true,
             nickname: true,
             profileImage: true,
           },
@@ -324,7 +325,14 @@ class PostRepository {
         likeCount: true,
         repostCount: true,
         bookmarkCount: true,
-        user: { select: { id: true, nickname: true, profileImage: true } },
+        user: {
+          select: {
+            id: true,
+            loginId: true,
+            nickname: true,
+            profileImage: true,
+          },
+        },
         postImages: { select: { url: true } },
         community: { select: { id: true, type: true, coverImage: true } },
         postLikes: { where: { userId }, select: { id: true } },
@@ -338,6 +346,7 @@ class PostRepository {
             user: {
               select: {
                 id: true,
+                loginId: true,
                 nickname: true,
                 profileImage: true,
               },
