@@ -167,49 +167,6 @@ class PostRepository {
     });
   }
 
-  // 북마크 등록(카운트 올라감)
-  async addBookmarkTx(userId, postId) {
-    return prisma.$transaction(async (tx) => {
-      const exists = await tx.postBookmark.findUnique({
-        where: { PostBookmark_userId_postId_key: { userId, postId } },
-      });
-      if (exists) return { created: false };
-
-      await tx.postBookmark.create({ data: { userId, postId } });
-      await tx.post.update({
-        where: { id: postId },
-        data: { bookmarkCount: { increment: 1 } },
-      });
-
-      return { created: true };
-    });
-  }
-
-  // 북마크 삭제(횟수 내려감)
-  async removeBookmarkTx(userId, postId) {
-    return prisma.$transaction(async (tx) => {
-      // deleteMany로 삭제 여부 count 확인
-      const deleted = await tx.postBookmark.deleteMany({
-        where: { userId, postId },
-      });
-
-      if (deleted.count > 0) {
-        await tx.post.update({
-          where: { id: postId },
-          data: { bookmarkCount: { decrement: deleted.count } },
-        });
-        return { deleted: true };
-      }
-      return { deleted: false };
-    });
-  }
-
-  // 게시물 존재 여부 확인
-  async ensurePostExists(postId) {
-    const post = await prisma.post.findUnique({ where: { id: postId } });
-    return !!post;
-  }
-
   // Post 삭제
   async deletePostById(postId) {
     return prisma.post.delete({

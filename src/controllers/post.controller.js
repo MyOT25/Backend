@@ -1,56 +1,53 @@
-import asyncHandler from "../middlewares/asyncHandler.js";
-import prisma from "../config/prismaClient.js";
+import asyncHandler from '../middlewares/asyncHandler.js';
+import prisma from '../config/prismaClient.js';
 // import prisma from "../../prisma/client.js";
-import express from "express";
-import { getPostByActorName } from "../services/post.service.js";
-import { authenticateJWT } from "../middlewares/authMiddleware.js";
-import firebaseAdmin from "firebase-admin";
+import express from 'express';
+import { getPostByActorName } from '../services/post.service.js';
+import { authenticateJWT } from '../middlewares/authMiddleware.js';
+import firebaseAdmin from 'firebase-admin';
 const { messaging } = firebaseAdmin;
-import { uploadToS3 } from "../middlewares/s3Uploader.js";
+import { uploadToS3 } from '../middlewares/s3Uploader.js';
 
 //일반 게시글 등록 import
-import { CreatePostDTO } from "../dtos/post.dto.js";
-import { createCommunityPostService } from "../services/post.service.js";
-import { createPostService } from "../services/post.service.js";
+import { CreatePostDTO } from '../dtos/post.dto.js';
+import { createCommunityPostService } from '../services/post.service.js';
+import { createPostService } from '../services/post.service.js';
 //재게시용 게시글 등록 import
-import { CreateRepostDTO } from "../dtos/post.dto.js";
-import { createRepostService } from "../services/post.service.js";
+import { CreateRepostDTO } from '../dtos/post.dto.js';
+import { createRepostService } from '../services/post.service.js';
 //인용 게시글 등록 import
-import { CreateQuotePostDTO } from "../dtos/post.dto.js";
-import { createQuotePostService } from "../services/post.service.js";
+import { CreateQuotePostDTO } from '../dtos/post.dto.js';
+import { createQuotePostService } from '../services/post.service.js';
 //게시글 수정 import
-import { UpdatePostDTO } from "../dtos/post.dto.js";
-import { updatePostService } from "../services/post.service.js";
+import { UpdatePostDTO } from '../dtos/post.dto.js';
+import { updatePostService } from '../services/post.service.js';
 //게시글 삭제 import
-import { deletePostService } from "../services/post.service.js";
+import { deletePostService } from '../services/post.service.js';
 // 북마크 관련 import
-import {
-  addBookmarkService,
-  removeBookmarkService,
-} from "../services/bookmark.service.js";
+import { addBookmarkService, removeBookmarkService } from '../services/bookmark.service.js';
 //게시글 좋아요 등록/해제 import
-import { postLikeService } from "../services/post.service.js";
+import { postLikeService } from '../services/post.service.js';
 //게시글 좋아요 목록 조회 import
-import { getPostLikedUsersService } from "../services/post.service.js";
+import { getPostLikedUsersService } from '../services/post.service.js';
 // 전체 게시물 조회
-import { getAllPostService } from "../services/post.service.js";
+import { getAllPostService } from '../services/post.service.js';
 // 미디어 게시물 조회
-import { getMediaPostsService } from "../services/post.service.js";
+import { getMediaPostsService } from '../services/post.service.js';
 // 댓글 관련 import
 import {
   createCommentService,
   getCommentsService,
   updateCommentService,
   deleteCommentService,
-} from "../services/post.service.js";
+} from '../services/post.service.js';
 // 재게시 관련 import
-import { getRepostedUsersService } from "../services/post.service.js";
+import { getRepostedUsersService } from '../services/post.service.js';
 // 인용한 게시물 import
-import { getQuotedPostsService } from "../services/post.service.js";
+import { getQuotedPostsService } from '../services/post.service.js';
 // 게시글 상세 조회 import
-import { getPostDetail } from "../services/post.service.js";
+import { getPostDetail } from '../services/post.service.js';
 
-import pkg from "@prisma/client";
+import pkg from '@prisma/client';
 
 const { visibility } = pkg;
 
@@ -61,10 +58,10 @@ export const createPost = asyncHandler(async (req, res) => {
   const post = await createPostService(userId, createPostDto);
 
   res.status(201).json({
-    resultType: "SUCCESS",
+    resultType: 'SUCCESS',
     success: {
       id: post.id,
-      message: "게시글이 성공적으로 생성되었습니다.",
+      message: '게시글이 성공적으로 생성되었습니다.',
     },
   });
 });
@@ -87,8 +84,8 @@ export const addCasting = asyncHandler(async (req, res) => {
 
   if (exists) {
     return res.error({
-      errorCode: "C001",
-      reason: "이미 등록된 출연진입니다.",
+      errorCode: 'C001',
+      reason: '이미 등록된 출연진입니다.',
     });
   }
 
@@ -102,14 +99,14 @@ export const addCasting = asyncHandler(async (req, res) => {
   });
 
   res.success({
-    message: "출연진이 성공적으로 추가되었습니다.",
+    message: '출연진이 성공적으로 추가되었습니다.',
     data: casting,
   });
 });
 
 const router = express.Router();
 
-router.get("/filter", async (req, res) => {
+router.get('/filter', async (req, res) => {
   try {
     const { actorName } = req.query;
     const posts = await getPostByActorName(actorName);
@@ -207,7 +204,7 @@ router.get("/filter", async (req, res) => {
  *                       example: "게시글이 성공적으로 생성되었습니다."
  */
 router.post(
-  "/:communityId/post",
+  '/:communityId/post',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
@@ -216,7 +213,7 @@ router.post(
     const post = await createCommunityPostService(userId, createPostDto);
 
     res.status(201).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       success: {
         postid: post.post.id,
         userid: post.post.userId,
@@ -225,7 +222,7 @@ router.post(
         postimages: post.postimages,
         visibility: post.post.visibility,
         createdAt: post.post.createdAt,
-        message: "게시글이 성공적으로 생성되었습니다.",
+        message: '게시글이 성공적으로 생성되었습니다.',
       },
     });
   })
@@ -321,7 +318,7 @@ router.post(
  *                       example: "게시글이 성공적으로 생성되었습니다."
  */
 router.post(
-  "/",
+  '/',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
@@ -329,7 +326,7 @@ router.post(
     const post = await createPostService(userId, createPostDto);
 
     res.status(201).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       success: {
         postid: post.post.id,
         userid: post.post.userId,
@@ -338,7 +335,7 @@ router.post(
         postimages: post.postimages,
         visibility: post.post.visibility,
         createdAt: post.post.createdAt,
-        message: "게시글이 성공적으로 생성되었습니다.",
+        message: '게시글이 성공적으로 생성되었습니다.',
       },
     });
   })
@@ -406,25 +403,21 @@ router.post(
  *                       example: "성공적으로 재게시하였습니다"
  */
 router.post(
-  "/:postId/repost",
+  '/:postId/repost',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const { postId } = req.params;
     const createRepostDto = new CreateRepostDTO(req.body);
 
-    const repost = await createRepostService(
-      userId,
-      parseInt(postId),
-      createRepostDto
-    );
+    const repost = await createRepostService(userId, parseInt(postId), createRepostDto);
 
     res.status(201).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       success: {
         postId: repost.id,
         repostTargetId: repost.repostTargetId,
-        message: "성공적으로 재게시하였습니다",
+        message: '성공적으로 재게시하였습니다',
       },
     });
   })
@@ -503,7 +496,7 @@ router.post(
  *                       example: "게시글이 성공적으로 인용되었습니다."
  */
 router.post(
-  "/:postId/quote",
+  '/:postId/quote',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
@@ -513,11 +506,11 @@ router.post(
     const result = await createQuotePostService(userId, parseInt(postId), dto);
 
     return res.status(201).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       success: {
         postId: result.post.id,
         repostTargetId: result.post.repostTargetId,
-        message: "게시글이 성공적으로 인용되었습니다.",
+        message: '게시글이 성공적으로 인용되었습니다.',
       },
     });
   })
@@ -597,7 +590,7 @@ router.post(
  *                       example: "게시글이 성공적으로 수정되었습니다."
  */
 router.patch(
-  "/:postId",
+  '/:postId',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
@@ -607,10 +600,10 @@ router.patch(
     // 필수값 검증
     if (!postId || isNaN(postId)) {
       return res.status(400).json({
-        resultType: "FAIL",
+        resultType: 'FAIL',
         error: {
-          errorCode: "INVALID_ID",
-          reason: "유효한 게시글 ID가 아닙니다.",
+          errorCode: 'INVALID_ID',
+          reason: '유효한 게시글 ID가 아닙니다.',
         },
         success: null,
       });
@@ -619,12 +612,12 @@ router.patch(
     const updatedPost = await updatePostService(postId, userId, updatePostDto);
 
     return res.status(200).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       error: null,
       success: {
         postId: updatedPost.id,
         updatedAt: updatedPost.updatedAt,
-        message: "게시글이 성공적으로 수정되었습니다.",
+        message: '게시글이 성공적으로 수정되었습니다.',
       },
     });
   })
@@ -677,7 +670,7 @@ router.patch(
  *                       example: "게시글이 성공적으로 삭제되었습니다."
  */
 router.delete(
-  "/:postId",
+  '/:postId',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const { postId } = req.params;
@@ -685,10 +678,10 @@ router.delete(
 
     if (!postId || isNaN(postId) || parseInt(postId) < 1) {
       return res.status(400).json({
-        resultType: "FAIL",
+        resultType: 'FAIL',
         error: {
-          errorCode: "INVALID_ID",
-          reason: "유효한 게시글 ID가 아닙니다.",
+          errorCode: 'INVALID_ID',
+          reason: '유효한 게시글 ID가 아닙니다.',
         },
         success: null,
       });
@@ -697,11 +690,11 @@ router.delete(
     const deletedPostId = await deletePostService(parseInt(postId), userId);
 
     return res.status(200).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       error: null,
       success: {
         postId: deletedPostId,
-        message: "게시글이 성공적으로 삭제되었습니다.",
+        message: '게시글이 성공적으로 삭제되었습니다.',
       },
     });
   })
@@ -754,7 +747,7 @@ router.delete(
  *                       example: "재게시가 취소되었습니다."
  */
 router.delete(
-  "/:postId/repost",
+  '/:postId/repost',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const { postId } = req.params;
@@ -762,10 +755,10 @@ router.delete(
 
     if (!postId || isNaN(postId) || parseInt(postId) < 1) {
       return res.status(400).json({
-        resultType: "FAIL",
+        resultType: 'FAIL',
         error: {
-          errorCode: "INVALID_ID",
-          reason: "유효한 게시글 ID가 아닙니다.",
+          errorCode: 'INVALID_ID',
+          reason: '유효한 게시글 ID가 아닙니다.',
         },
         success: null,
       });
@@ -774,11 +767,11 @@ router.delete(
     const deletedPostId = await deletePostService(parseInt(postId), userId);
 
     return res.status(200).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       error: null,
       success: {
         postId: deletedPostId,
-        message: "재게시가 취소되었습니다.",
+        message: '재게시가 취소되었습니다.',
       },
     });
   })
@@ -840,7 +833,7 @@ router.delete(
  *                       example: "게시글에 좋아요를 눌렀습니다."
  */
 router.post(
-  "/:postId/like",
+  '/:postId/like',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const postId = parseInt(req.params.postId, 10);
@@ -848,10 +841,10 @@ router.post(
 
     if (!postId || isNaN(postId)) {
       return res.status(400).json({
-        resultType: "FAIL",
+        resultType: 'FAIL',
         error: {
-          errorCode: "INVALID_ID",
-          reason: "유효한 게시글 ID가 아닙니다.",
+          errorCode: 'INVALID_ID',
+          reason: '유효한 게시글 ID가 아닙니다.',
         },
         success: null,
       });
@@ -860,7 +853,7 @@ router.post(
     const { message, isLiked } = await postLikeService(postId, userId);
 
     return res.status(200).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       error: null,
       success: {
         userId,
@@ -954,7 +947,7 @@ router.post(
  *                       example: 10
  */
 router.get(
-  "/:postId/likes",
+  '/:postId/likes',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const postId = parseInt(req.params.postId, 10);
@@ -963,10 +956,10 @@ router.get(
 
     if (isNaN(postId)) {
       return res.status(400).json({
-        resultType: "FAIL",
+        resultType: 'FAIL',
         error: {
-          errorCode: "INVALID_ID",
-          reason: "유효한 게시글 ID가 아닙니다.",
+          errorCode: 'INVALID_ID',
+          reason: '유효한 게시글 ID가 아닙니다.',
         },
         success: null,
       });
@@ -975,10 +968,10 @@ router.get(
     const result = await getPostLikedUsersService(postId, page, limit);
 
     return res.status(200).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       error: null,
       success: {
-        message: "좋아요 누른 유저 목록 조회 성공",
+        message: '좋아요 누른 유저 목록 조회 성공',
         ...result,
       },
     });
@@ -1064,13 +1057,13 @@ router.get(
  *                           - "https://s3.amazonaws.com/your-bucket/image2.jpg"
  */
 router.get(
-  "/",
+  '/',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const posts = await getAllPostService.getAllPosts();
 
     return res.status(200).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       error: null,
       success: posts,
     });
@@ -1141,13 +1134,13 @@ router.get(
  *                         example: "2025-07-23T11:32:45.123Z"
  */
 router.get(
-  "/media",
+  '/media',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const posts = await getMediaPostsService();
 
     return res.status(200).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       error: null,
       success: posts,
     });
@@ -1215,7 +1208,7 @@ router.get(
  *                       example: 좋은 글이네요!
  */
 router.post(
-  "/:postId/comments",
+  '/:postId/comments',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const { postId } = req.params;
@@ -1225,7 +1218,7 @@ router.post(
     const comment = await createCommentService(userId, Number(postId), content);
 
     return res.status(201).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       error: null,
       success: comment,
     });
@@ -1286,14 +1279,14 @@ router.post(
  *                             example: 우강식
  */
 router.get(
-  "/:postId/comments",
+  '/:postId/comments',
   asyncHandler(async (req, res) => {
     const { postId } = req.params;
 
     const comments = await getCommentsService(Number(postId));
 
     return res.status(200).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       error: null,
       success: comments,
     });
@@ -1371,21 +1364,17 @@ router.get(
  *                       example: "2025-07-28T15:12:34.000Z"
  */
 router.patch(
-  "/:postId/comments/:commentId",
+  '/:postId/comments/:commentId',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const { commentId } = req.params;
     const { content } = req.body;
     const userId = req.user.id;
 
-    const updated = await updateCommentService(
-      userId,
-      Number(commentId),
-      content
-    );
+    const updated = await updateCommentService(userId, Number(commentId), content);
 
     return res.status(200).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       error: null,
       success: updated,
     });
@@ -1437,7 +1426,7 @@ router.patch(
  *                   example: 댓글 삭제 완료
  */
 router.delete(
-  "/:postId/comments/:commentId",
+  '/:postId/comments/:commentId',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const { commentId } = req.params;
@@ -1446,9 +1435,9 @@ router.delete(
     await deleteCommentService(userId, Number(commentId));
 
     return res.status(200).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       error: null,
-      success: "댓글 삭제 완료",
+      success: '댓글 삭제 완료',
     });
   })
 );
@@ -1505,7 +1494,7 @@ router.delete(
  *                       example: "2025-07-23T15:12:43.001Z"
  */
 router.post(
-  "/:postId/bookmarks",
+  '/:postId/bookmarks',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
@@ -1514,9 +1503,9 @@ router.post(
     await addBookmarkService(userId, Number(postId));
 
     return res.status(201).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       error: null,
-      success: "북마크 등록 완료",
+      success: '북마크 등록 완료',
     });
   })
 );
@@ -1560,7 +1549,7 @@ router.post(
  *                   example: 북마크 해제 완료
  */
 router.delete(
-  "/:postId/bookmarks",
+  '/:postId/bookmarks',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
@@ -1569,9 +1558,9 @@ router.delete(
     await removeBookmarkService(userId, Number(postId));
 
     return res.status(200).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       error: null,
-      success: "북마크 해제 완료",
+      success: '북마크 해제 완료',
     });
   })
 );
@@ -1627,7 +1616,7 @@ router.delete(
  *                         example: user3@example.com
  */
 router.get(
-  "/:postId/reposted-users",
+  '/:postId/reposted-users',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const { postId } = req.params;
@@ -1635,7 +1624,7 @@ router.get(
     const users = await getRepostedUsersService(Number(postId));
 
     return res.status(200).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       error: null,
       success: users,
     });
@@ -1695,16 +1684,16 @@ router.get(
  *                           - url: "https://cdn.s3/post-123.jpg"
  */
 router.get(
-  "/:postId/quoted",
+  '/:postId/quoted',
   authenticateJWT, // 필요하면 추가
   asyncHandler(async (req, res) => {
     const postId = Number(req.params.postId);
     if (isNaN(postId)) {
       return res.status(400).json({
-        resultType: "FAIL",
+        resultType: 'FAIL',
         error: {
-          errorCode: "invalid_parameter",
-          reason: "postId가 유효하지 않습니다.",
+          errorCode: 'invalid_parameter',
+          reason: 'postId가 유효하지 않습니다.',
         },
       });
     }
@@ -1712,7 +1701,7 @@ router.get(
     const quotedPosts = await getQuotedPostsService(postId);
 
     return res.status(200).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       error: null,
       success: quotedPosts,
     });
@@ -1845,7 +1834,7 @@ router.get(
  *         description: 인증 실패
  */
 router.get(
-  "/:postId",
+  '/:postId',
   authenticateJWT,
   asyncHandler(async (req, res) => {
     const { postId } = req.params;
@@ -1854,7 +1843,7 @@ router.get(
     const result = await getPostDetail(Number(postId), userId);
 
     res.status(200).json({
-      resultType: "SUCCESS",
+      resultType: 'SUCCESS',
       data: result,
     });
   })

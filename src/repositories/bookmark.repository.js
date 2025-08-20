@@ -1,19 +1,61 @@
-import prisma from "../config/prismaClient.js";
+import prisma from '../config/prismaClient.js';
 
 class BookmarkRepository {
   // 북마크 생성
   async createBookmark(userId, postId) {
-    return await prisma.postBookmark.create({
-      data: { userId, postId },
+    const pid = Number(postId);
+
+    return prisma.$transaction(async (tx) => {
+      // 이미 북마크 되어 있으면 count만 조회해서 리턴
+      const exists = await tx.postBookmark.findUnique({
+        where: { userId_postId: { userId, postId: pid } },
+      });
+      if (exists) {
+        const cur = await tx.post.findUnique({
+          where: { id: pid },
+          select: { bookmarkCount: true },
+        });
+        return { created: false, bookmarkCount: cur?.bookmarkCount ?? 0 };
+      }
+
+      // 북마크 생성
+      await tx.postBookmark.create({ data: { userId, postId: pid } });
+
+      // Post.bookmarkCount +1
+      const updated = await tx.post.update({
+        where: { id: pid },
+        data: { bookmarkCount: { increment: 1 } },
+        select: { bookmarkCount: true },
+      });
+
+      return { created: true, bookmarkCount: updated.bookmarkCount };
     });
   }
 
   // 북마크 제거
   async deleteBookmark(userId, postId) {
-    return await prisma.postBookmark.delete({
-      where: {
-        userId_postId: { userId, postId },
-      },
+    const pid = Number(postId);
+
+    return prisma.$transaction(async (tx) => {
+      const deleted = await tx.postBookmark.deleteMany({
+        where: { userId, postId: pid },
+      });
+
+      if (deleted.count === 0) {
+        const cur = await tx.post.findUnique({
+          where: { id: pid },
+          select: { bookmarkCount: true },
+        });
+        return { deleted: false, bookmarkCount: cur?.bookmarkCount ?? 0 };
+      }
+
+      const updated = await tx.post.update({
+        where: { id: pid },
+        data: { bookmarkCount: { decrement: deleted.count } },
+        select: { bookmarkCount: true },
+      });
+
+      return { deleted: true, bookmarkCount: updated.bookmarkCount };
     });
   }
 
@@ -31,7 +73,7 @@ class BookmarkRepository {
     return prisma.postBookmark.findMany({
       where: { userId },
       orderBy: {
-        post: { createdAt: "desc" }, // post의 createdAt 기준으로 정렬
+        post: { createdAt: 'desc' }, // post의 createdAt 기준으로 정렬
       },
       skip,
       take,

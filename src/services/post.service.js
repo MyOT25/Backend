@@ -526,27 +526,3 @@ export const getPostDetail = async (postId, userId) => {
 
   return post;
 };
-
-export async function addBookmarkService(userId, postId) {
-  const exists = await PostRepository.ensurePostExists(postId);
-  if (!exists) {
-    const err = new Error('존재하지 않는 게시글입니다.');
-    err.status = 404;
-    throw err;
-  }
-
-  const { created } = await PostRepository.addBookmarkTx(userId, postId);
-  return { created }; // created=false면 이미 북마크 상태
-}
-
-export async function removeBookmarkService(userId, postId) {
-  const exists = await PostRepository.ensurePostExists(postId);
-  if (!exists) {
-    const err = new Error('존재하지 않는 게시글입니다.');
-    err.status = 404;
-    throw err;
-  }
-
-  const { deleted } = await PostRepository.removeBookmarkTx(userId, postId);
-  return { deleted }; // deleted=false면 북마크가 없었음
-}
