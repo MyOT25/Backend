@@ -23,8 +23,10 @@ export const getHomeFeedPostsService = async ({
         user: post.user,
         postImages: post.postImages,
         community: post.community,
-        postLikes: post.postLikes.length > 0, // true이면 좋아요 눌렀음
-        postBookmarks: post.postBookmarks.length > 0, // true이면 북마크 했음
+        postLikes: post.postLikes.length > 0,
+        postBookmarks: post.postBookmarks.length > 0,
+        postComments: post.postComments.length > 0,
+        reposts: post.reposts.some((r) => r.repostTargetId === post.id),
       };
     }
 
@@ -50,6 +52,10 @@ export const getHomeFeedPostsService = async ({
               community: post.repostTarget.community,
               postLikes: post.repostTarget.postLikes.length > 0,
               postBookmarks: post.repostTarget.postBookmarks.length > 0,
+              postComments: post.repostTarget.postComments.length > 0,
+              reposts: post.repostTarget.reposts.some(
+                (r) => r.repostTargetId === post.repostTarget.id
+              ),
             }
           : { message: "삭제된 게시글 입니다." },
       };
@@ -70,8 +76,10 @@ export const getHomeFeedPostsService = async ({
         user: post.user,
         postImages: post.postImages,
         community: post.community,
-        postLikes: post.postLikes.length > 0, // true이면 좋아요 눌렀음
-        postBookmarks: post.postBookmarks.length > 0, // true이면 북마크 했음
+        postLikes: post.postLikes.length > 0,
+        postBookmarks: post.postBookmarks.length > 0,
+        postComments: post.postComments.length > 0,
+        reposts: post.reposts.some((r) => r.repostTargetId === post.id),
         repostTarget: post.repostTarget
           ? {
               id: post.repostTarget.id,
