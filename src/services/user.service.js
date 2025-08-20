@@ -60,6 +60,15 @@ class FollowService {
   async getFollowCount(userId) {
     return followRepository.getFollowCount(userId);
   }
+
+  // 특정 유저를 현재 팔로우 중인지 확인
+  async isFollowing(followerId, followingId) {
+    const result = await followRepository.isAlreadyFollowing(
+      followerId,
+      followingId
+    );
+    return !!result; // true/false 반환
+  }
 }
 
 export default new FollowService();
