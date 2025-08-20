@@ -29,16 +29,26 @@ export const getHomeFeedPosts = async ({ userId, page = 1, limit = 10 }) => {
       bookmarkCount: true,
       isRepost: true,
       repostType: true,
-      user: { select: { id: true, nickname: true, profileImage: true } },
+      user: {
+        select: { id: true, loginId: true, nickname: true, profileImage: true },
+      },
       postImages: { select: { url: true } },
       community: { select: { id: true, type: true, coverImage: true } },
       postLikes: {
-        where: { userId }, // 로그인 유저
+        where: { userId },
         select: { id: true },
       },
       postBookmarks: {
-        where: { userId }, // 로그인 유저
+        where: { userId },
         select: { id: true },
+      },
+      postComments: {
+        where: { userId },
+        select: { id: true },
+      },
+      reposts: {
+        where: { userId, isRepost: true },
+        select: { id: true, repostTargetId: true },
       },
       repostTarget: {
         select: {
@@ -49,7 +59,14 @@ export const getHomeFeedPosts = async ({ userId, page = 1, limit = 10 }) => {
           likeCount: true,
           repostCount: true,
           bookmarkCount: true,
-          user: { select: { id: true, nickname: true, profileImage: true } },
+          user: {
+            select: {
+              id: true,
+              loginId: true,
+              nickname: true,
+              profileImage: true,
+            },
+          },
           postImages: { select: { url: true } },
           community: { select: { id: true, type: true, coverImage: true } },
           postLikes: {
@@ -59,6 +76,14 @@ export const getHomeFeedPosts = async ({ userId, page = 1, limit = 10 }) => {
           postBookmarks: {
             where: { userId },
             select: { id: true },
+          },
+          postComments: {
+            where: { userId },
+            select: { id: true },
+          },
+          reposts: {
+            where: { userId, isRepost: true },
+            select: { id: true, repostTargetId: true },
           },
         },
       },
