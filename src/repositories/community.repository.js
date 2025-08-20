@@ -86,6 +86,8 @@ export const findUnjoinedCommunities = async (type, userId) => {
       groupName: true,
       type: true,
       createdAt: true,
+      coverImage: true,
+      _count: { select: { userCommunities: true } },
     },
   });
 

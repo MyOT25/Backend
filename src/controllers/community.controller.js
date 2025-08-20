@@ -550,21 +550,17 @@ router.post("/type/request", async (req, res) => {
  *   get:
  *     summary: 가입 가능한 커뮤니티 탐색 (로그인 유저 전용)
  *     description: 로그인한 사용자가 아직 가입하지 않은 커뮤니티 목록을 조회합니다.
- *     tags:
- *       - Community
+ *     tags: [Community]
  *     parameters:
  *       - in: path
  *         name: type
  *         required: true
- *         schema:
- *           type: string
- *           enum: [musical, actor]
+ *         schema: { type: string, enum: [musical, actor] }
  *         description: 커뮤니티 타입 (musical 또는 actor)
  *       - in: path
  *         name: userId
  *         required: true
- *         schema:
- *           type: integer
+ *         schema: { type: integer }
  *         description: 로그인한 유저의 ID
  *     responses:
  *       200:
@@ -582,19 +578,12 @@ router.post("/type/request", async (req, res) => {
  *                   items:
  *                     type: object
  *                     properties:
- *                       communityId:
- *                         type: integer
- *                         example: 4
- *                       communityName:
- *                         type: string
- *                         example: "배우 홍길동 팬클럽"
- *                       type:
- *                         type: string
- *                         example: ACTOR
- *                       createdAt:
- *                         type: string
- *                         format: date-time
- *                         example: "2025-07-25T10:00:00.000Z"
+ *                       communityId: { type: integer, example: 4 }
+ *                       communityName: { type: string, example: "배우 홍길동 팬클럽" }
+ *                       type: { type: string, example: "actor" }
+ *                       createdAt: { type: string, format: date-time, example: "2025-07-25T10:00:00.000Z" }
+ *                       coverImage: { type: string, nullable: true, example: "https://cdn.example.com/cover.jpg" }
+ *                       memberCount: { type: integer, example: 128 }
  *       400:
  *         description: 잘못된 userId 또는 서버 오류
  *         content:
@@ -602,12 +591,8 @@ router.post("/type/request", async (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: 유효한 userId가 필요합니다.
+ *                 success: { type: boolean, example: false }
+ *                 message: { type: string, example: 유효한 userId가 필요합니다. }
  */
 
 // 가입 가능한 커뮤니티 탐색(로그인 유저 전용)
@@ -620,7 +605,7 @@ router.get("/type/:type/:userId", async (req, res) => {
         .json({ success: false, message: "유효한 userId가 필요합니다." });
     }
 
-    const normalizedType = type.toLowerCase();
+    const normalizedType = type.toLowerCase(); // "musical" | "actor"
 
     const community = await fetchAvailableCommunities(
       normalizedType,
@@ -632,6 +617,8 @@ router.get("/type/:type/:userId", async (req, res) => {
       communityName: c.groupName,
       type: c.type,
       createdAt: c.createdAt,
+      coverImage: c.coverImage ?? null,
+      memberCount: c._count?.userCommunities ?? 0,
     }));
 
     res.status(200).json({ success: true, communities: formatted });
