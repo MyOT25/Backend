@@ -451,4 +451,73 @@ router.get(
   })
 );
 
+/**
+ * @swagger
+ * /api/users/{userId}/isFollowing:
+ *   get:
+ *     summary: 특정 유저 팔로우 여부 확인
+ *     tags:
+ *       - Follow
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 팔로우 여부를 확인할 대상 유저 ID
+ *     responses:
+ *       200:
+ *         description: 팔로우 여부 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 error:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     isFollowing:
+ *                       type: boolean
+ *                       example: true
+ */
+router.get(
+  "/:userId/isFollowing",
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const followerId = req.user.id;
+    const followingId = parseInt(req.params.userId, 10);
+
+    if (!followingId || isNaN(followingId)) {
+      return res.status(400).json({
+        resultType: "FAIL",
+        error: {
+          errorCode: "INVALID_ID",
+          reason: "유효한 유저 ID가 아닙니다.",
+        },
+        success: null,
+      });
+    }
+
+    const isFollowing = await followService.isFollowing(
+      followerId,
+      followingId
+    );
+
+    return res.status(200).json({
+      resultType: "SUCCESS",
+      error: null,
+      success: { isFollowing },
+    });
+  })
+);
+
 export default router;
