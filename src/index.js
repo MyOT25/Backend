@@ -55,6 +55,7 @@ import {
   createViewingPost,
   getMusicalCast,
   getViewingRecordPublicById,
+  getMyLatestViewingSummary,
 } from "./controllers/viewingRecord.controller.js";
 import { getMusicalByName } from "./controllers/musical.controller.js";
 
@@ -168,12 +169,19 @@ app.get(
   authenticateJWT,
   getTicketbookCount
 );
+// 최근 관람한 관극
+app.get(
+  "/api/viewingrecords/latest",
+  authenticateJWT,
+  getMyLatestViewingSummary
+)
 // 오늘의 관극 단건 조회
 app.get(
   "/api/viewingrecords/:id",
   authenticateJWT,
   getViewingRecordPublicById
 )
+
 
 // 하경 API --
 
