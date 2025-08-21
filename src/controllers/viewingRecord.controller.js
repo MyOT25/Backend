@@ -4,8 +4,7 @@ import { getTicketbook,getMonthlySummary as getMonthlySummaryService,
   createViewingRecord, getMusicalCastGroupedByRole
  } from "../services/viewingRecord.service.js"; // 기존 getTicketbook 재사용
  import { uploadToS3 } from "../middlewares/s3Uploader.js";
-
-
+ import prisma from "../config/prismaClient.js";
 
 /**
  * GET /api/viewingrecords/ticketbook
