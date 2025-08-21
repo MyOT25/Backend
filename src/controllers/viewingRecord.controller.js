@@ -432,3 +432,224 @@ export const getMusicalCast = asyncHandler(async (req, res) => {
     data,
   });
 });
+
+/**
+ * 오늘의 관극 단건 조회
+ * 
+ */
+/**
+ * @swagger
+ * /api/viewingrecords/{id}:
+ *   get:
+ *     summary: 관극 기록 단건 조회
+ *     description: 로그인한 사용자가 특정 관극 기록을 조회합니다. 본인뿐만 아니라 다른 사용자의 기록도 조회 가능합니다.
+ *     tags: [ViewingRecord]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 관극 기록 ID
+ *         example: 10
+ *     responses:
+ *       200:
+ *         description: 관극 기록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 error:
+ *                   type: object
+ *                   nullable: true
+ *                   example: null
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                       example: 관극 기록 조회 성공
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                           example: 10
+ *                         musicalId:
+ *                           type: integer
+ *                           example: 2
+ *                         musicalTitle:
+ *                           type: string
+ *                           example: 레미제라블
+ *                         seat:
+ *                           type: object
+ *                           nullable: true
+ *                           properties:
+ *                             theaterId: { type: integer, example: 1 }
+ *                             floor: { type: integer, example: 2 }
+ *                             zone: { type: string, example: "A" }
+ *                             rowNumber: { type: string, example: "12" }
+ *                             columnNumber: { type: integer, nullable: true, example: 5 }
+ *                         content:
+ *                           type: string
+ *                           example: 정말 감동적인 공연이었어요!
+ *                         rating:
+ *                           type: number
+ *                           nullable: true
+ *                           example: 4.5
+ *                         averageRating:
+ *                           type: number
+ *                           nullable: true
+ *                           example: 4.2
+ *                         casting:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               castingId: { type: integer, example: 3 }
+ *                               role: { type: string, example: 주연 }
+ *                               actorName: { type: string, example: 홍길동 }
+ *                         images:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                           example:
+ *                             - "https://s3.bucket/viewing/123.jpg"
+ *                             - "https://s3.bucket/viewing/124.jpg"
+ *                         date:
+ *                           type: string
+ *                           format: date
+ *                           example: 2025-08-21
+ *                         time:
+ *                           type: string
+ *                           format: date-time
+ *                           example: 2025-08-21T19:30:00.000Z
+ *                         createdAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: 2025-08-21T12:00:00.000Z
+ *                         updatedAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: 2025-08-21T12:05:00.000Z
+ *                         author:
+ *                           type: object
+ *                           properties:
+ *                             nickname: { type: string, example: 뮤지컬러버 }
+ *                             profileImage: { type: string, example: "https://s3.bucket/profile/1.jpg" }
+ *                         isMine:
+ *                           type: boolean
+ *                           example: false
+ *       400:
+ *         description: 잘못된 요청 (id가 정수가 아님)
+ *       401:
+ *         description: 인증 필요
+ *       404:
+ *         description: 관극 기록 없음
+ */
+
+export const getViewingRecordPublicById = asyncHandler(async (req, res) => {
+  const requesterId = req.user?.id;
+  if (!requesterId) {
+    return res.error({
+      statusCode: 401,
+      errorCode: "A001",
+      reason: "인증이 필요합니다.",
+      data: null,
+    });
+  }
+
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    return res.error({
+      statusCode: 400,
+      errorCode: "V007",
+      reason: "id는 정수여야 합니다.",
+      data: null,
+    });
+  }
+
+  const vr = await prisma.viewingRecord.findUnique({
+    where: { id },
+    include: {
+      seat: true, // Seat?
+      images: {            // ViewingImage[]
+        select: { url: true },
+      },
+      ViewingCasts: {      // ViewingCast[]
+        include: {
+          casting: {
+            select: {
+              id: true,
+              role: true,
+              actor: { select: { name: true } },
+            },
+          },
+        },
+      },
+      musical: {           // Musical
+        select: { name: true, ratingSum: true, ratingCount: true },
+      },
+      user: {              // User
+        select: { nickname: true, profileImage: true },
+      },
+    },
+  });
+
+  if (!vr) {
+    return res.error({
+      statusCode: 404,
+      errorCode: "V008",
+      reason: "관극 기록을 찾을 수 없습니다.",
+      data: null,
+    });
+  }
+
+  const averageRating =
+    vr.musical.ratingCount > 0
+      ? Number(vr.musical.ratingSum) / vr.musical.ratingCount
+      : null;
+
+  return res.success({
+    message: "관극 기록 조회 성공",
+    data: {
+      id: vr.id,
+      musicalId: vr.musicalId,
+      musicalTitle: vr.musical.name,
+      seat: vr.seat
+        ? {
+            theaterId: vr.seat.theaterId,
+            floor: vr.seat.floor,
+            zone: vr.seat.zone,
+            rowNumber: vr.seat.rowNumber,
+            columnNumber: vr.seat.columnNumber,
+          }
+        : null,
+      content: vr.content,
+      // 스키마상 rating은 Int? 입니다.
+      rating: vr.rating,
+      averageRating,
+      casting: vr.ViewingCasts.map((vc) => ({
+        castingId: vc.castingId,
+        role: vc.casting.role,
+        actorName: vc.casting.actor.name,
+      })),
+      images: vr.images.map((i) => i.url),
+      date: vr.date,
+      time: vr.time,
+      createdAt: vr.createdAt,
+      updatedAt: vr.updatedAt,
+      author: {
+        nickname: vr.user.nickname,
+        profileImage: vr.user.profileImage,
+      },
+      isMine: vr.userId === requesterId,
+    },
+  });
+});
