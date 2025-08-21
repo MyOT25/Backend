@@ -652,3 +652,90 @@ export const getViewingRecordPublicById = asyncHandler(async (req, res) => {
     },
   });
 });
+
+/**
+ * 최근 관람한 관극 
+ */
+export const getMyLatestViewingSummary = asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.error({
+      statusCode: 401,
+      errorCode: "A001",
+      reason: "인증이 필요합니다.",
+      data: null,
+    });
+  }
+
+  // 가장 최근 관람 1건
+  const latest = await prisma.viewingRecord.findFirst({
+    where: { userId: Number(userId) },
+    orderBy: [
+      { date: "desc" },     // 관람일 최신
+      { time: "desc" },     // 관람시간 최신
+      { id: "desc" },       // 동률 방지
+    ],
+    select: {
+      id: true,
+      rating: true,            // 나의 별점
+      date: true,
+      time: true,
+      musicalId: true,
+      musical: {
+        select: {
+          name: true,          // 제목
+          poster: true,        // 필요시 카드 이미지
+          startDate: true,     // 공연기간 시작
+          endDate: true,       // 공연기간 끝
+          ratingSum: true,     // 평균 계산용
+          ratingCount: true,
+          theater: {           // 장소
+            select: { name: true, region: true }
+          },
+          castings: {          // 배우 목록
+            select: { 
+              role: true,
+              actor: { select: { name: true } }
+            },
+            orderBy: [{ role: "asc" }, { actor: { name: "asc" } }],
+            take: 12,          // 카드엔 보통 8~12명만
+          },
+        },
+      },
+    },
+  });
+
+  if (!latest) {
+    return res.success({
+      message: "최근 관람 기록이 없습니다.",
+      data: null,
+    });
+  }
+
+  const m = latest.musical;
+  const averageRating =
+    m.ratingCount > 0 ? Number(m.ratingSum) / m.ratingCount : null;
+
+  return res.success({
+    message: "최근 관람 요약 조회 성공",
+    data: {
+      viewingId: latest.id,
+      title: m.name,
+      poster: m.poster ?? null,
+      place: m.theater ? m.theater.name : null,                 // 장소
+      region: m.theater ? m.theater.region : null,
+      period: m.startDate && m.endDate
+        ? `${m.startDate.toISOString().slice(0,10)} ~ ${m.endDate.toISOString().slice(0,10)}`
+        : null,                                                 // 기간
+      actors: m.castings.map(c => ({
+        role: c.role,
+        name: c.actor.name,
+      })),                                                      // 배우 리스트
+      averageRating,                                            // 평균 별점
+      myRating: latest.rating ?? null,                          // 나의 별점 (Int?면 정수로 옴)
+      watchedDate: latest.date,
+      watchedTime: latest.time,
+      musicalId: latest.musicalId,
+    },
+  });
+});
