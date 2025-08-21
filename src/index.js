@@ -24,6 +24,7 @@ import homeFeedRouter from "./controllers/homeFeed.controller.js";
 import profileFeedRouter from "./controllers/profileFeed.controller.js";
 import communityReviewRouter from "./controllers/communityReview.controller.js";
 import bookmarkRouter from "./controllers/bookmark.controller.js";
+import searchRouter from "./controllers/search.controller.js";
 
 import "./config/passport.js"; // passport 설정
 
@@ -38,7 +39,7 @@ import { getMusicalCastings } from "./controllers/casting.controller.js";
 import {
   getTicketBookDetail,
   getTicketbookSeriesController,
-  getTicketbookCount
+  getTicketbookCount,
 } from "./controllers/ticketbook.controller.js";
 import {
   createChatRoomController,
@@ -116,6 +117,7 @@ app.use("/api/post", postRouter);
 app.use("/api/homefeed", homeFeedRouter);
 app.use("/api/users/:userId/profilefeed", profileFeedRouter);
 app.use("/api/bookmarks", bookmarkRouter);
+app.use("/api/posts/search", searchRouter);
 
 // 기본 라우트
 
@@ -126,7 +128,7 @@ app.post("/api/posts/musical/castings", authenticateJWT, addCasting);
 app.post("/api/posts/memorybooks", authenticateJWT, addMemoryBook);
 app.get("/api/posts/memorybooks", authenticateJWT, getMemoryBook);
 app.put("/api/posts/memorybooks", authenticateJWT, updateMemoryBook);
-app.get("/api/posts/musical/castings", authenticateJWT,getMusicalCastings);
+app.get("/api/posts/musical/castings", authenticateJWT, getMusicalCastings);
 app.get("/api/ticketbook/:musicalId", authenticateJWT, getTicketBookDetail);
 
 app.post("/api/chatrooms", authenticateJWT, createChatRoomController);
@@ -160,7 +162,11 @@ app.get(
 app.get("/api/viewingrecords/:musicalId/cast", authenticateJWT, getMusicalCast);
 app.get("/api/viewingrecords/musicals", getMusicalByName);
 // 티켓북 카운트 조회 API
-app.get("/api/ticketbook/count/:musicalId",authenticateJWT,getTicketbookCount);
+app.get(
+  "/api/ticketbook/count/:musicalId",
+  authenticateJWT,
+  getTicketbookCount
+);
 
 // 하경 API --
 
