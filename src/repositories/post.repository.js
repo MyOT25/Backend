@@ -167,9 +167,16 @@ class PostRepository {
     });
   }
 
-  // 게시글 좋아요 삭제 (postId 기준)
+  // 게시글 관련 좋아요 삭제
   async deletePostLikesByPostId(postId) {
     return prisma.postLike.deleteMany({
+      where: { postId },
+    });
+  }
+
+  // 게시글 관련 북마크 삭제
+  async deletePostBookmarksByPostId(postId) {
+    return prisma.postBookmark.deleteMany({
       where: { postId },
     });
   }
