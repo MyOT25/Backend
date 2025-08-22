@@ -1,4 +1,4 @@
-import prisma from '../config/prismaClient.js';
+import prisma from "../config/prismaClient.js";
 
 class PostRepository {
   async findViewingRecordsByMonth(userId, year, month) {
@@ -86,7 +86,7 @@ class PostRepository {
       data: {
         userId,
         isRepost: true,
-        repostType: 'repost',
+        repostType: "repost",
         repostTargetId,
         visibility,
         ...(communityId ? { communityId: Number(communityId) } : {}),
@@ -95,7 +95,14 @@ class PostRepository {
   }
 
   // 인용 게시글 생성
-  async createQuotePost({ userId, communityId, repostType, repostTargetId, content, visibility }) {
+  async createQuotePost({
+    userId,
+    communityId,
+    repostType,
+    repostTargetId,
+    content,
+    visibility,
+  }) {
     return prisma.post.create({
       data: {
         userId,
@@ -177,7 +184,7 @@ class PostRepository {
   // 전체 게시글 조회
   async getAllPosts() {
     return prisma.post.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         postImages: true,
       },
@@ -191,7 +198,7 @@ class PostRepository {
         hasMedia: true, // 또는 1 (boolean인지 int인지 스키마에 따라)
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
   }
@@ -255,7 +262,7 @@ class PostRepository {
       where: { postId: Number(postId) },
       skip,
       take,
-      orderBy: { likedAt: 'desc' },
+      orderBy: { likedAt: "desc" },
       include: {
         user: {
           select: {
@@ -282,34 +289,42 @@ class PostRepository {
       where: {
         isRepost: true,
         repostTargetId: Number(postId),
-        repostType: 'repost', // ✅ enum 값에 맞게 소문자로!
+        repostType: "repost", // ✅ enum 값에 맞게 소문자로!
       },
       include: {
         user: true,
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
 
     return reposts;
   }
 
+  // 인용 게시글 조회
   async findAllQuotesOfPost(targetPostId) {
     return prisma.post.findMany({
       where: {
         isRepost: true,
-        repostType: 'quote',
+        repostType: "quote",
         repostTargetId: targetPostId,
       },
       include: {
-        user: { select: { id: true, nickname: true, profileImage: true } },
+        user: {
+          select: {
+            id: true,
+            loginId: true,
+            nickname: true,
+            profileImage: true,
+          },
+        },
         postImages: { select: { url: true } },
         community: { select: { id: true, type: true, coverImage: true } },
         postLikes: true,
         postBookmarks: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
