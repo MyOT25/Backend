@@ -556,64 +556,73 @@ export const getMusicalCast = asyncHandler(async (req, res) => {
 export const getViewingRecordPublicById = asyncHandler(async (req, res) => {
   const requesterId = req.user?.id;
   if (!requesterId) {
-    return res.error({
-      statusCode: 401,
-      errorCode: "A001",
-      reason: "인증이 필요합니다.",
-      data: null,
-    });
+    return res.error({ statusCode: 401, errorCode: "A001", reason: "인증이 필요합니다.", data: null });
   }
 
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) {
-    return res.error({
-      statusCode: 400,
-      errorCode: "V007",
-      reason: "id는 정수여야 합니다.",
-      data: null,
-    });
+    return res.error({ statusCode: 400, errorCode: "V007", reason: "id는 정수여야 합니다.", data: null });
   }
 
   const vr = await prisma.viewingRecord.findUnique({
     where: { id },
     include: {
-      seat: true, // Seat?
-      images: {            // ViewingImage[]
-        select: { url: true },
-      },
-      ViewingCasts: {      // ViewingCast[]
+      seat: true,
+      images: { select: { url: true } },
+      ViewingCasts: {
         include: {
-          casting: {
-            select: {
-              id: true,
-              role: true,
-              actor: { select: { name: true } },
-            },
-          },
+          casting: { select: { id: true, role: true, actor: { select: { name: true } } } },
         },
       },
-      musical: {           // Musical
-        select: { name: true, ratingSum: true, ratingCount: true },
-      },
-      user: {              // User
-        select: { nickname: true, profileImage: true },
-      },
+      musical: { select: { name: true, ratingSum: true, ratingCount: true } },
+      user:    { select: { nickname: true, profileImage: true } },
     },
   });
-
   if (!vr) {
-    return res.error({
-      statusCode: 404,
-      errorCode: "V008",
-      reason: "관극 기록을 찾을 수 없습니다.",
-      data: null,
+    return res.error({ statusCode: 404, errorCode: "V008", reason: "관극 기록을 찾을 수 없습니다.", data: null });
+  }
+
+  // --- 좌석/카운트 보강 ---
+  // 1) seatId 확정 (레코드에 없으면 include된 seat에서 가져옴)
+  const resolvedSeatId = vr.seatId ?? vr.seat?.id ?? null;
+
+  // 2) Seat가 없으면 seatId로 조회
+  let seatFull = vr.seat;
+  if (!seatFull && resolvedSeatId) {
+    seatFull = await prisma.seat.findUnique({
+      where: { id: resolvedSeatId },
+      select: { id: true, theaterId: true, floor: true, zone: true, rowNumber: true, columnNumber: true },
     });
   }
 
+  // 3) UserSeat에서 앉은 횟수 조회 (작성자 기준)
+  const userSeat = resolvedSeatId
+    ? await prisma.userSeat.findUnique({
+        where: { userId_seatId: { userId: vr.userId, seatId: resolvedSeatId } },
+        select: { numberOfSittings: true },
+      })
+    : null;
+  const numberOfSittings = userSeat?.numberOfSittings ?? 0;
+
+  // 4) has* 플래그 & seatIndex
+  const hasFloor     = seatFull?.floor        !== null && seatFull?.floor        !== undefined;
+  const hasZone      = !!(seatFull?.zone && String(seatFull.zone).trim() !== "");
+  const hasRowNumber = !!(seatFull?.rowNumber && String(seatFull.rowNumber).trim() !== "");
+  const hasColumn    = seatFull?.columnNumber !== null && seatFull?.columnNumber !== undefined;
+
+  const seatIndex = seatFull
+    ? [
+        seatFull.theaterId ?? "",
+        hasFloor     ? seatFull.floor        : "",
+        hasZone      ? seatFull.zone         : "",
+        hasRowNumber ? seatFull.rowNumber    : "",
+        hasColumn    ? seatFull.columnNumber : "",
+      ].join(":")
+    : null;
+
+  // 평균 별점
   const averageRating =
-    vr.musical.ratingCount > 0
-      ? Number(vr.musical.ratingSum) / vr.musical.ratingCount
-      : null;
+    vr.musical.ratingCount > 0 ? Number(vr.musical.ratingSum) / vr.musical.ratingCount : null;
 
   return res.success({
     message: "관극 기록 조회 성공",
@@ -621,33 +630,37 @@ export const getViewingRecordPublicById = asyncHandler(async (req, res) => {
       id: vr.id,
       musicalId: vr.musicalId,
       musicalTitle: vr.musical.name,
-      seat: vr.seat
+
+      seat: seatFull
         ? {
-            theaterId: vr.seat.theaterId,
-            floor: vr.seat.floor,
-            zone: vr.seat.zone,
-            rowNumber: vr.seat.rowNumber,
-            columnNumber: vr.seat.columnNumber,
+            theaterId: seatFull.theaterId,
+            floor: seatFull.floor,
+            zone: seatFull.zone,
+            rowNumber: seatFull.rowNumber,
+            columnNumber: seatFull.columnNumber,
           }
         : null,
+
+      // 🔹 추가 필드
+      seatId: resolvedSeatId,
+      seatMeta: { hasFloor, hasZone, hasRowNumber, hasColumn },
+      seatIndex,                       // "theaterId:floor:zone:rowNumber:columnNumber"
+      numberOfSittings,                // ← 요청한 카운트
+
       content: vr.content,
-      // 스키마상 rating은 Int? 입니다.
       rating: vr.rating,
       averageRating,
-      casting: vr.ViewingCasts.map((vc) => ({
+      casting: vr.ViewingCasts.map(vc => ({
         castingId: vc.castingId,
         role: vc.casting.role,
         actorName: vc.casting.actor.name,
       })),
-      images: vr.images.map((i) => i.url),
+      images: vr.images.map(i => i.url),
       date: vr.date,
       time: vr.time,
       createdAt: vr.createdAt,
       updatedAt: vr.updatedAt,
-      author: {
-        nickname: vr.user.nickname,
-        profileImage: vr.user.profileImage,
-      },
+      author: { nickname: vr.user.nickname, profileImage: vr.user.profileImage },
       isMine: vr.userId === requesterId,
     },
   });

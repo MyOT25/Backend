@@ -71,10 +71,12 @@ export const getTicketBookDetail = asyncHandler(async (req, res) => {
       seats: userSeats.map((userSeat) => ({
         floor: userSeat.seat.floor,
         zone: userSeat.seat.zone,
-        blockNumber: userSeat.seat.blockNumber,
+        columnNumber: userSeat.seat.columnNumber,
         rowNumber: userSeat.seat.rowNumber,
-        seatIndex: userSeat.seat.seatIndex,
-        numberOfSittings: userSeat.numberOfSittings
+        seatIndex: userSeat.seat.id,
+        numberOfSittings: userSeat.numberOfSittings,
+       
+        
       }))
     }
   });
