@@ -215,7 +215,6 @@ export const findRepostFeed = async (communityId, db = prisma) => {
     select: {
       id: true,
       communityId: true,
-      title: true,
       user: { select: { nickname: true } },
       community: { select: { groupName: true } },
     },
@@ -294,7 +293,6 @@ export const findPopularFeed = async (communityId) => {
     },
     select: {
       id: true,
-      title: true,
       content: true,
       likeCount: true,
       viewCount: true,
@@ -391,7 +389,6 @@ export const findCommunityFeedAll = async (
       select: {
         id: true,
         communityId: true,
-        title: true,
         user: { select: { id: true, nickname: true } },
         community: { select: { id: true, groupName: true } },
       },
